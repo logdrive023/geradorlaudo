@@ -1,0 +1,874 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 221.2 83.2% 53.3%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 221.2 83.2% 53.3%;
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 217.2 91.2% 59.8%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 224.3 76.3% 48%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* Estilos para o modo escuro futurista */
+.dark {
+  --background: 220 20% 10%;
+  --foreground: 210 40% 98%;
+  --card: 222 25% 12%;
+  --card-foreground: 210 40% 98%;
+
+  /* Cores mais vibrantes para o modo escuro */
+  --primary: 217 90% 60%;
+  --primary-foreground: 0 0% 100%;
+
+  /* Cores de destaque para badges e elementos interativos */
+  --blue-badge: 220 70% 50%;
+  --purple-badge: 270 70% 50%;
+  --amber-badge: 40 90% 50%;
+}
+
+/* Estilos para cards no modo escuro - MELHORADO PARA MAIOR CONTRASTE */
+.dark .glass-card {
+  background: linear-gradient(135deg, rgba(22, 31, 49, 0.85) 0%, rgba(17, 24, 39, 0.9) 100%);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(78, 108, 180, 0.15);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(78, 108, 180, 0.1), inset 0 0 0 1px rgba(78, 108, 180, 0.05);
+}
+
+/* Estilos para títulos de cards no modo escuro */
+.dark .card-title {
+  color: #3b82f6;
+  text-shadow: 0 0 10px rgba(59, 130, 246, 0.3);
+  font-weight: 600;
+}
+
+/* Estilos para badges no modo escuro */
+.dark [data-type="cautelar"] {
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.2) 0%, rgba(37, 99, 235, 0.1) 100%);
+  color: #60a5fa;
+  border: 1px solid rgba(37, 99, 235, 0.3);
+}
+
+.dark [data-type="contabil"] {
+  background: linear-gradient(135deg, rgba(147, 51, 234, 0.2) 0%, rgba(147, 51, 234, 0.1) 100%);
+  color: #c084fc;
+  border: 1px solid rgba(147, 51, 234, 0.3);
+}
+
+.dark [data-type="extrajudicial"] {
+  background: linear-gradient(135deg, rgba(217, 119, 6, 0.2) 0%, rgba(217, 119, 6, 0.1) 100%);
+  color: #fbbf24;
+  border: 1px solid rgba(217, 119, 6, 0.3);
+}
+
+/* Estilos para botões no modo escuro */
+.dark .btn-open {
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.1) 0%, rgba(37, 99, 235, 0.2) 100%);
+  border: 1px solid rgba(37, 99, 235, 0.3);
+  color: #60a5fa;
+  transition: all 0.2s ease;
+}
+
+.dark .btn-open:hover {
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.2) 0%, rgba(37, 99, 235, 0.3) 100%);
+  box-shadow: 0 0 15px rgba(37, 99, 235, 0.3);
+}
+
+/* Estilos para status no modo escuro */
+.dark .status-completed {
+  color: #34d399;
+  text-shadow: 0 0 10px rgba(52, 211, 153, 0.3);
+}
+
+.dark .status-draft {
+  color: #fbbf24;
+  text-shadow: 0 0 10px rgba(251, 191, 36, 0.3);
+}
+
+/* Estilos para o cabeçalho do dashboard no modo escuro */
+.dark .dashboard-header h1 {
+  color: #3b82f6;
+  text-shadow: 0 0 10px rgba(59, 130, 246, 0.3);
+}
+
+/* Estilos para inputs no modo escuro */
+.dark input,
+.dark select,
+.dark textarea {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(78, 108, 180, 0.2);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.dark input:focus,
+.dark select:focus,
+.dark textarea:focus {
+  border-color: rgba(59, 130, 246, 0.5);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25);
+}
+
+/* Estilos para o header principal no modo escuro */
+.dark header {
+  background: linear-gradient(90deg, rgba(15, 23, 42, 0.9) 0%, rgba(30, 41, 59, 0.9) 100%);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(78, 108, 180, 0.1);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+/* Estilos para a barra lateral no modo escuro */
+.dark aside {
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.9) 0%, rgba(30, 41, 59, 0.9) 100%);
+  border-right: 1px solid rgba(78, 108, 180, 0.1);
+}
+
+/* Estilos para tabs no modo escuro */
+.dark .tabs-list {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(78, 108, 180, 0.1);
+  border-radius: 0.5rem;
+}
+
+.dark .tab-trigger {
+  color: #94a3b8;
+}
+
+.dark .tab-trigger[data-state="active"] {
+  background: #3b82f6;
+  color: white;
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.3);
+}
+
+/* Estilos para a visualização estilo Word */
+.word-page {
+  font-family: "Times New Roman", Times, serif;
+  line-height: 1.5;
+  color: #000;
+  background-color: white;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+  margin-bottom: 20px;
+}
+
+.word-page h1 {
+  font-size: 16pt;
+  font-weight: bold;
+  margin-bottom: 12pt;
+}
+
+.word-page h2 {
+  font-size: 14pt;
+  font-weight: bold;
+  margin-bottom: 10pt;
+}
+
+.word-page p {
+  font-size: 12pt;
+  margin-bottom: 8pt;
+}
+
+.word-page .text-xs {
+  font-size: 10pt;
+}
+
+.word-page .text-sm {
+  font-size: 11pt;
+}
+
+/* Estilos para impressão */
+@media print {
+  .word-page {
+    box-shadow: none;
+    margin: 0;
+    padding: 2cm;
+  }
+}
+
+/* Glassmorphism - adaptado para tema claro e escuro */
+.glass {
+  background: rgba(17, 24, 39, 0.7);
+  border: 1px solid rgba(79, 70, 229, 0.15);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  backdrop-filter: blur(10px);
+}
+
+.dark .glass {
+  background: rgba(17, 24, 39, 0.7);
+  border: 1px solid rgba(79, 70, 229, 0.15);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  backdrop-filter: blur(10px);
+}
+
+.glass-card {
+  @apply bg-background/70 backdrop-blur-md border border-border/30 transition-all duration-300;
+}
+
+/* MELHORADO: Fundo mais escuro para os cards no modo escuro para melhor contraste */
+.dark .glass-card {
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.9) 0%, rgba(17, 24, 39, 0.95) 100%);
+  border: 1px solid rgba(59, 130, 246, 0.15);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(10px);
+}
+
+.glass-card:hover {
+  @apply shadow-lg -translate-y-0.5;
+}
+
+.dark .glass-card:hover {
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3), 0 0 15px rgba(79, 70, 229, 0.2);
+  border: 1px solid rgba(79, 70, 229, 0.25);
+  transform: translateY(-2px);
+}
+
+/* Neon effects */
+.dark .neon-blue {
+  box-shadow: 0 0 5px theme("colors.blue.500"), 0 0 10px theme("colors.blue.500");
+}
+
+.dark .neon-purple {
+  box-shadow: 0 0 5px theme("colors.purple.500"), 0 0 10px theme("colors.purple.500");
+}
+
+.dark .neon-amber {
+  box-shadow: 0 0 5px theme("colors.amber.500"), 0 0 10px theme("colors.amber.500");
+}
+
+/* Gradient buttons */
+.gradient-blue {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+}
+
+.gradient-purple {
+  background: linear-gradient(135deg, #a855f7 0%, #7c3aed 100%);
+}
+
+.gradient-amber {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+}
+
+/* Animated background */
+.animated-bg {
+  position: relative;
+  overflow: hidden;
+}
+
+.dark .animated-bg::before {
+  content: "";
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle at center, transparent 0%, rgba(13, 17, 31, 0.8) 100%),
+    linear-gradient(45deg, rgba(59, 130, 246, 0.08) 0%, rgba(37, 99, 235, 0) 70%);
+  animation: rotate 20s linear infinite;
+  z-index: -1;
+}
+
+@keyframes rotate {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Status indicators */
+.status-dot {
+  position: relative;
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.dark .status-dot.completed {
+  background-color: #10b981;
+  box-shadow: 0 0 5px #10b981, 0 0 10px #10b981;
+}
+
+.dark .status-dot.draft {
+  background-color: #f59e0b;
+  box-shadow: 0 0 5px #f59e0b, 0 0 10px #f59e0b;
+}
+
+.status-dot.completed {
+  background-color: #10b981;
+}
+
+.status-dot.draft {
+  background-color: #f59e0b;
+}
+
+/* Badge styles - adaptados para tema claro e escuro */
+.dark .badge-cautelar {
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.2) 0%, rgba(29, 78, 216, 0.2) 100%);
+  color: #60a5fa;
+  border: 1px solid rgba(37, 99, 235, 0.3);
+  box-shadow: 0 0 10px rgba(37, 99, 235, 0.2);
+  font-weight: 500;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+}
+
+.dark .badge-contabil {
+  background: linear-gradient(135deg, rgba(124, 58, 237, 0.2) 0%, rgba(109, 40, 217, 0.2) 100%);
+  color: #c084fc;
+  border: 1px solid rgba(124, 58, 237, 0.3);
+  box-shadow: 0 0 10px rgba(124, 58, 237, 0.2);
+  font-weight: 500;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+}
+
+.dark .badge-extrajudicial {
+  background: linear-gradient(135deg, rgba(217, 119, 6, 0.2) 0%, rgba(180, 83, 9, 0.2) 100%);
+  color: #fbbf24;
+  border: 1px solid rgba(217, 119, 6, 0.3);
+  box-shadow: 0 0 10px rgba(217, 119, 6, 0.2);
+  font-weight: 500;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+}
+
+/* Versões claras dos badges */
+.badge-cautelar {
+  background: rgba(59, 130, 246, 0.1);
+  color: #1e40af;
+  border: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+.badge-contabil {
+  background: rgba(168, 85, 247, 0.1);
+  color: #7e22ce;
+  border: 1px solid rgba(168, 85, 247, 0.2);
+}
+
+.badge-extrajudicial {
+  background: rgba(245, 158, 11, 0.1);
+  color: #b45309;
+  border: 1px solid rgba(245, 158, 11, 0.2);
+}
+
+/* Garantir que os botões na página inicial sejam visíveis */
+.container a button {
+  display: inline-flex !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+/* Header futurista 2025 */
+.header-futuristic {
+  background: linear-gradient(90deg, rgba(13, 17, 31, 0.95) 0%, rgba(17, 24, 39, 0.95) 100%);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(79, 70, 229, 0.2);
+  box-shadow: 0 4px 20px rgba(0, 0, 255, 0.1);
+}
+
+/* Logo futurista */
+.logo-futuristic {
+  position: relative;
+  font-weight: 700;
+  background: linear-gradient(90deg, #fff 0%, #a5b4fc 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0 0 10px rgba(165, 180, 252, 0.5);
+}
+
+.logo-futuristic::after {
+  content: "";
+  position: absolute;
+  bottom: -4px;
+  left: 0;
+  width: 100%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #a5b4fc, transparent);
+}
+
+/* Botões futuristas */
+.btn-login {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(5px);
+  transition: all 0.3s ease;
+  font-weight: 500;
+  text-shadow: 0 0 5px rgba(255, 255, 255, 0.3);
+}
+
+.btn-login:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.3);
+  box-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
+}
+
+.btn-register {
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+  color: white;
+  border: none;
+  transition: all 0.3s ease;
+  font-weight: 500;
+  text-shadow: 0 0 5px rgba(255, 255, 255, 0.3);
+  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+}
+
+.btn-register:hover {
+  background: linear-gradient(135deg, #4338ca 0%, #6d28d9 100%);
+  box-shadow: 0 4px 20px rgba(124, 58, 237, 0.5);
+  transform: translateY(-1px);
+}
+
+/* Hero section futurista */
+.hero-futuristic {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.hero-futuristic::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: radial-gradient(circle at 20% 30%, rgba(79, 70, 229, 0.15) 0%, transparent 20%),
+    radial-gradient(circle at 80% 70%, rgba(124, 58, 237, 0.15) 0%, transparent 20%);
+  z-index: 0;
+}
+
+.hero-grid {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+  background-size: 40px 40px;
+  z-index: 0;
+}
+
+.hero-content {
+  position: relative;
+  z-index: 1;
+}
+
+/* Efeitos de texto futuristas */
+.text-gradient {
+  background: linear-gradient(90deg, #fff 0%, #a5b4fc 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.text-glow {
+  text-shadow: 0 0 15px rgba(165, 180, 252, 0.7) !important;
+}
+
+/* Animações futuristas */
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.animate-pulse-slow {
+  animation: pulse 3s infinite;
+}
+
+/* Estilos específicos para o botão de entrar - com contraste aumentado */
+a[href="/login"] button {
+  display: inline-flex !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+/* Melhorar o header no modo escuro */
+.dark header {
+  background: linear-gradient(90deg, rgba(13, 17, 31, 0.95) 0%, rgba(17, 24, 39, 0.95) 100%);
+  border-bottom: 1px solid rgba(79, 70, 229, 0.2);
+  box-shadow: 0 4px 20px rgba(0, 0, 255, 0.1);
+}
+
+/* Estilos específicos para o botão de entrar - com contraste aumentado */
+a[href="/login"] button {
+  background: rgba(255, 255, 255, 0.15);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  font-weight: 500;
+  backdrop-filter: blur(5px);
+  text-shadow: 0 0 5px rgba(255, 255, 255, 0.3);
+}
+
+.dark a[href="/login"] button {
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: white;
+}
+
+a[href="/login"] button:hover {
+  background: rgba(255, 255, 255, 0.25);
+  border-color: rgba(255, 255, 255, 0.4);
+  box-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
+}
+
+/* Estilos específicos para o botão de cadastrar */
+a[href="/register"] button {
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+  color: white;
+  border: none;
+  font-weight: 500;
+  text-shadow: 0 0 5px rgba(255, 255, 255, 0.3);
+  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+}
+
+a[href="/register"] button:hover {
+  background: linear-gradient(135deg, #4338ca 0%, #6d28d9 100%);
+  box-shadow: 0 4px 20px rgba(124, 58, 237, 0.5);
+  transform: translateY(-1px);
+}
+
+/* Melhorar o contraste dos textos no cabeçalho do dashboard */
+.dark .dashboard-header h1 {
+  color: white;
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+  font-weight: 600;
+}
+
+.dark .dashboard-header p {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* Melhorar as abas no modo escuro */
+.dark .tabs-list {
+  background: linear-gradient(90deg, rgba(17, 24, 39, 0.8) 0%, rgba(24, 24, 47, 0.8) 100%);
+  border: 1px solid rgba(79, 70, 229, 0.2);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(10px);
+}
+
+.dark [data-state="active"] {
+  background: linear-gradient(90deg, rgba(79, 70, 229, 0.3) 0%, rgba(124, 58, 237, 0.3) 100%) !important;
+  color: white !important;
+  font-weight: 500;
+  box-shadow: 0 0 15px rgba(79, 70, 229, 0.3);
+  border-bottom: 2px solid rgba(124, 58, 237, 0.5);
+}
+
+.dark .tabs-list [data-state="inactive"] {
+  color: rgba(255, 255, 255, 0.7);
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.dark .tabs-list [data-state="inactive"]:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: white;
+}
+
+/* Melhorar o contraste das abas */
+.dark [data-state="active"] {
+  background-color: rgba(79, 70, 229, 0.4) !important; /* Azul mais vibrante */
+  color: white !important;
+  font-weight: 500;
+}
+
+.dark .tabs-list [data-state="inactive"] {
+  color: rgba(255, 255, 255, 0.7); /* Aumentado de 0.5 para 0.7 */
+}
+
+.dark .tabs-list [data-state="inactive"]:hover {
+  color: white;
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Ajustar cores de texto no modo claro para garantir visibilidade */
+
+/* Corrigir cores das abas no modo claro */
+body:not(.dark) .tabs-list {
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(226, 232, 240, 1);
+  border-radius: 0.5rem;
+}
+
+body:not(.dark) .tab-trigger {
+  color: #475569;
+}
+
+body:not(.dark) .tab-trigger[data-state="active"] {
+  background: #3b82f6;
+  color: white;
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.3);
+}
+
+/* Corrigir cores das abas no modo claro - específico para TabsTrigger */
+body:not(.dark) [data-state="active"].rounded-md {
+  background-color: #3b82f6 !important;
+  color: white !important;
+  font-weight: 500;
+}
+
+body:not(.dark) [data-state="inactive"].rounded-md {
+  color: #475569 !important;
+  background-color: transparent !important;
+}
+
+body:not(.dark) [data-state="inactive"].rounded-md:hover {
+  background-color: rgba(226, 232, 240, 0.5) !important;
+}
+
+/* Corrigir cores específicas para as abas de tipos de laudos no modo claro */
+body:not(.dark) [value="cautelar"][data-state="active"] {
+  background-color: #3b82f6 !important;
+  color: white !important;
+}
+
+body:not(.dark) [value="contabil"][data-state="active"] {
+  background-color: #8b5cf6 !important;
+  color: white !important;
+}
+
+body:not(.dark) [value="extrajudicial"][data-state="active"] {
+  background-color: #f59e0b !important;
+  color: white !important;
+}
+
+/* Corrigir o fundo da barra de abas no modo claro */
+body:not(.dark) .glass.tabs-list {
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(226, 232, 240, 1);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  backdrop-filter: blur(10px);
+}
+
+/* Garantir que textos sejam visíveis no modo claro */
+body:not(.dark) .glass-card {
+  color: hsl(222 84% 4.9%);
+}
+
+/* Corrigir cores de texto na página de criação de laudo no modo claro */
+body:not(.dark) .card p,
+body:not(.dark) .card label,
+body:not(.dark) .card div {
+  color: hsl(222 84% 4.9%);
+}
+
+/* Garantir que os textos dos rótulos sejam visíveis no modo claro */
+body:not(.dark) label {
+  color: hsl(222 84% 4.9%);
+}
+
+/* Garantir que os textos dos parágrafos sejam visíveis no modo claro */
+body:not(.dark) p {
+  color: hsl(222 84% 20%);
+}
+
+/* Corrigir cores específicas para a página de novo laudo no modo claro */
+body:not(.dark) .glass-card p,
+body:not(.dark) .glass-card label {
+  color: hsl(222 84% 4.9%);
+}
+
+/* Corrigir cores para os itens de rádio no modo claro */
+body:not(.dark) .flex.items-start.space-x-3 label {
+  color: hsl(222 84% 4.9%);
+}
+
+body:not(.dark) .flex.items-start.space-x-3 p {
+  color: hsl(222 84% 30%);
+}
+
+/* Melhorar visibilidade dos textos na página inicial */
+.hero-futuristic p {
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+/* Aumentar contraste dos textos nos cards de recursos */
+.flex.flex-col.items-center.space-y-2 p {
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+/* Melhorar visibilidade dos textos de contato */
+.flex.items-center.space-x-4 p {
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+/* Garantir que os textos na página inicial tenham contraste adequado */
+.text-blue-100 {
+  color: #e0e7ff !important; /* Azul mais claro e brilhante */
+}
+
+/* Melhorar a visibilidade dos textos no modo escuro */
+.dark label {
+  color: rgba(255, 255, 255, 0.95) !important;
+  font-weight: 500;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.dark .card label,
+.dark .form-card label {
+  color: rgba(255, 255, 255, 0.95) !important;
+}
+
+/* Melhorar a visibilidade dos textos de instruções no modo escuro */
+.dark p.text-sm,
+.dark p.text-xs {
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+/* Melhorar a visibilidade dos textos nos formulários no modo escuro */
+.dark .form-label,
+.dark .input-label {
+  color: rgba(255, 255, 255, 0.95) !important;
+  font-weight: 500;
+}
+
+/* Melhorar a visibilidade dos textos nos campos de upload no modo escuro */
+.dark .upload-text {
+  color: rgba(255, 255, 255, 0.9) !important;
+  font-weight: 500;
+}
+
+/* NOVO: Estilo futurista para os cards do dashboard no modo escuro */
+.dark [class*="Vistoria"],
+.dark [class*="Análise"],
+.dark [class*="Laudo"] {
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.8) 0%, rgba(17, 24, 39, 0.9) 100%);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2), 0 0 15px rgba(59, 130, 246, 0.1);
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
+}
+
+/* NOVO: Estilo futurista para os formulários no modo escuro */
+.dark form,
+.dark [role="form"],
+.dark [class*="form-container"] {
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.85) 0%, rgba(17, 24, 39, 0.9) 100%);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2), 0 0 15px rgba(59, 130, 246, 0.1);
+  backdrop-filter: blur(10px);
+}
+
+/* NOVO: Efeito de borda brilhante para cards e formulários no modo escuro */
+.dark [class*="Vistoria"]:hover,
+.dark [class*="Análise"]:hover,
+.dark [class*="Laudo"]:hover,
+.dark form:focus-within,
+.dark [role="form"]:focus-within {
+  border: 1px solid rgba(59, 130, 246, 0.4);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3), 0 0 20px rgba(59, 130, 246, 0.2);
+}
+
+/* NOVO: Estilo para inputs no modo escuro */
+.dark input,
+.dark textarea,
+.dark select {
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  color: white;
+}
+
+/* NOVO: Estilo para botões no modo escuro */
+.dark button {
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.2) 0%, rgba(29, 78, 216, 0.2) 100%);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  color: white;
+}
+
+.dark button:hover {
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.3) 0%, rgba(29, 78, 216, 0.3) 100%);
+  box-shadow: 0 0 15px rgba(59, 130, 246, 0.3);
+}
+
+/* NOVO: Estilo para o botão de colapsar menu */
+.menu-collapse-button {
+  position: absolute;
+  right: -12px;
+  top: 20px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: white;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  z-index: 10;
+  transition: all 0.3s ease;
+}
+
+.dark .menu-collapse-button {
+  background: rgba(30, 41, 59, 0.8);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.menu-collapse-button:hover {
+  transform: scale(1.1);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+}
+
+.dark .menu-collapse-button:hover {
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3), 0 0 10px rgba(59, 130, 246, 0.2);
+}
+
+/* Estilo para o logo LaudoTech */
+.logo-laudotech {
+  color: #60a5fa;
+  font-weight: 600;
+  text-shadow: 0 0 10px rgba(96, 165, 250, 0.3);
+}
