@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import React, { useState, useEffect, Suspense } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -252,6 +252,7 @@ export default function DashboardPage() {
   }
 
   return (
+    <Suspense fallback={<div>Carregando menu...</div>}>
     <DashboardShell>
       <DashboardHeader
         heading={<span className="logo-laudotech">{getActiveTabTitle()}</span>}
@@ -451,5 +452,6 @@ export default function DashboardPage() {
       {/* Modal para criar novo laudo */}
       <NewReportDialog open={showNewReportDialog} onOpenChange={setShowNewReportDialog} />
     </DashboardShell>
+    </Suspense>
   )
 }
