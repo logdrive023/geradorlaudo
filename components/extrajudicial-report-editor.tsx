@@ -20,9 +20,14 @@ import Link from "next/link"
 interface ExtrajudicialReportEditorProps {
   initialData?: any
   reportId?: string
+  onReportDataChange?: (data: any) => void
 }
 
-export function ExtrajudicialReportEditor({ initialData, reportId }: ExtrajudicialReportEditorProps) {
+export function ExtraJudicialReportEditor({
+  initialData,
+  reportId,
+  onReportDataChange,
+}: ExtrajudicialReportEditorProps) {
   const [activeTab, setActiveTab] = useState("general")
   const [reportData, setReportData] = useState(
     initialData || {
@@ -47,24 +52,42 @@ export function ExtrajudicialReportEditor({ initialData, reportId }: Extrajudici
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
-    setReportData((prev: any) => ({
-      ...prev,
+    const updatedData = {
+      ...reportData,
       [name]: value,
-    }))
+    }
+    setReportData(updatedData)
+
+    // Notificar o componente pai sobre a mudança, se a função for fornecida
+    if (onReportDataChange) {
+      onReportDataChange(updatedData)
+    }
   }
 
   const handleLocationImageUpload = (imageUrl: string) => {
-    setReportData((prev: any) => ({
-      ...prev,
+    const updatedData = {
+      ...reportData,
       locationImage: imageUrl,
-    }))
+    }
+    setReportData(updatedData)
+
+    // Notificar o componente pai sobre a mudança, se a função for fornecida
+    if (onReportDataChange) {
+      onReportDataChange(updatedData)
+    }
   }
 
   const handleLogoUpload = (logoUrl: string) => {
-    setReportData((prev: any) => ({
-      ...prev,
+    const updatedData = {
+      ...reportData,
       logoImage: logoUrl,
-    }))
+    }
+    setReportData(updatedData)
+
+    // Notificar o componente pai sobre a mudança, se a função for fornecida
+    if (onReportDataChange) {
+      onReportDataChange(updatedData)
+    }
   }
 
   const handleSave = () => {
@@ -138,7 +161,7 @@ export function ExtrajudicialReportEditor({ initialData, reportId }: Extrajudici
               <CardDescription>Preencha os dados do laudo extra judicial</CardDescription>
             </CardHeader>
             <CardContent>
-              <Tabs value={activeTab} onValueChange={setActiveTab}>
+              <Tabs defaultValue={activeTab} onValueChange={setActiveTab}>
                 <TabsList className="glass tabs-list backdrop-blur-md border border-white/10">
                   <TabsTrigger value="general" className="tab-trigger">
                     Geral

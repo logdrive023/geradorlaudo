@@ -5,43 +5,15 @@ import { Button } from "@/components/ui/button"
 import { ChevronLeft, ChevronRight, FileDown, Maximize2, Minimize2 } from "lucide-react"
 import { ExportDialog } from "@/components/export-dialog"
 
+// Modifique a interface WordPreviewProps para incluir valores padrão:
 interface WordPreviewProps {
-  reportData: {
-    title: string
-    address?: string
-    occupant?: string
-    inspector?: string
-    usage?: string
-    age?: string
-    buildingType?: string
-    conservationState?: string
-    constructionStandard?: string
-    observations?: string
-    date: string
-    technicalInfo: string
-    engineer: string
-    registration: string
-    locationImage?: string
-    // Campos para laudo contábil
-    company?: string
-    cnpj?: string
-    period?: string
-    accountant?: string
-    crc?: string
-    financialSummary?: string
-    // Campos para laudo extra judicial
-    processNumber?: string
-    court?: string
-    plaintiff?: string
-    defendant?: string
-    object?: string
-    [key: string]: string | undefined
-  }
-  photos: { id: string; url: string; caption: string }[]
+  reportData: any
+  photos?: { id: string; url: string; caption: string }[]
   reportType: string
 }
 
-export function WordPreview({ reportData, photos, reportType }: WordPreviewProps) {
+// E no início da função WordPreview, adicione:
+export function WordPreview({ reportData, photos = [], reportType }: WordPreviewProps) {
   const [currentPage, setCurrentPage] = useState(1)
   const [fullscreen, setFullscreen] = useState(false)
   const [showExportDialog, setShowExportDialog] = useState(false)
@@ -50,7 +22,7 @@ export function WordPreview({ reportData, photos, reportType }: WordPreviewProps
   const getTotalPages = () => {
     const basePages = 3 // Páginas básicas (capa, dados, conclusão)
     const photoPages = Math.ceil(photos.length / 2) // Páginas de fotos (2 por página)
-    return Math.max(basePages, basePages + photoPages)
+    return basePages + photoPages
   }
 
   const totalPages = getTotalPages()
@@ -70,25 +42,15 @@ export function WordPreview({ reportData, photos, reportType }: WordPreviewProps
   // Renderizar a página apropriada com base no tipo de relatório
   const renderPage = () => {
     if (currentPage === 1) {
-      return <PageOne reportData={reportData} reportType={reportType} />
+      return <PageOne reportData={reportData} />
     } else if (currentPage === 2) {
-      if (reportType === "contabil") {
-        return <ContabilPageTwo reportData={reportData} />
-      } else if (reportType === "extrajudicial") {
-        return <ExtraJudicialPageTwo reportData={reportData} />
-      } else {
-        return <CautelarPageTwo reportData={reportData} />
-      }
+      return <PageTwo reportData={reportData} />
     } else if (currentPage === 3) {
-      return <PageThree reportData={reportData} reportType={reportType} />
+      return <PageThree reportData={reportData} />
     } else {
-      return (
-        <PhotoPage
-          pageNumber={currentPage}
-          photos={photos.slice((currentPage - 4) * 2, (currentPage - 4) * 2 + 2)}
-          reportData={reportData}
-        />
-      )
+      // Calcular quais fotos mostrar com base na página atual
+      const photoStartIndex = (currentPage - 4) * 2
+      return <PhotoPage pageNumber={currentPage} photos={photos.slice(photoStartIndex, photoStartIndex + 2)} />
     }
   }
 
@@ -113,12 +75,7 @@ export function WordPreview({ reportData, photos, reportType }: WordPreviewProps
             {fullscreen ? <Minimize2 className="h-4 w-4 mr-2" /> : <Maximize2 className="h-4 w-4 mr-2" />}
             {fullscreen ? "Sair da tela cheia" : "Tela cheia"}
           </Button>
-          <Button
-            onClick={() => setShowExportDialog(true)}
-            variant="default"
-            size="sm"
-            className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
-          >
+          <Button onClick={() => setShowExportDialog(true)} variant="default" size="sm">
             <FileDown className="mr-2 h-4 w-4" />
             Exportar
           </Button>
@@ -126,7 +83,7 @@ export function WordPreview({ reportData, photos, reportType }: WordPreviewProps
       </div>
 
       <div
-        className={`mx-auto bg-white shadow-lg rounded-lg overflow-hidden ${fullscreen ? "flex-1 overflow-auto" : ""}`}
+        className={`mx-auto bg-white dark:bg-gray-900 shadow-lg rounded-lg overflow-hidden ${fullscreen ? "flex-1 overflow-auto" : ""}`}
       >
         <div className="mx-auto" style={{ width: "210mm", minHeight: "297mm" }}>
           {renderPage()}
@@ -144,124 +101,47 @@ export function WordPreview({ reportData, photos, reportType }: WordPreviewProps
   )
 }
 
-// Ajustar o componente PageOne para garantir que a imagem de localização tenha tamanho consistente
-
-function PageOne({ reportData, reportType }: { reportData: WordPreviewProps["reportData"]; reportType: string }) {
-  // Determinar as cores com base no tipo de relatório
-  const getColors = () => {
-    switch (reportType) {
-      case "contabil":
-        return {
-          gradient: "from-white to-purple-50",
-          border: "border-purple-200",
-          text: "text-purple-700",
-          borderLeft: "border-purple-500",
-          badge: "bg-purple-100 text-purple-700",
-        }
-      case "extrajudicial":
-        return {
-          gradient: "from-white to-amber-50",
-          border: "border-amber-200",
-          text: "text-amber-700",
-          borderLeft: "border-amber-500",
-          badge: "bg-amber-100 text-amber-700",
-        }
-      default:
-        return {
-          gradient: "from-white to-blue-50",
-          border: "border-blue-200",
-          text: "text-blue-700",
-          borderLeft: "border-blue-500",
-          badge: "bg-blue-100 text-blue-700",
-        }
-    }
-  }
-
-  const colors = getColors()
-
+function PageOne({ reportData }: { reportData: WordPreviewProps["reportData"] }) {
   return (
-    <div className={`bg-gradient-to-br ${colors.gradient} p-8 min-h-[297mm] w-[210mm] flex flex-col word-page`}>
-      {/* Logo */}
-      <div className="flex justify-center mb-6">
-        <div className="w-32">
-          <img src="/images/logo.png" alt="OSVALDOSILVA Engenharia Civil" className="w-full" />
-        </div>
+    <div className="p-8 min-h-[297mm] w-[210mm] flex flex-col word-page">
+      {/* Cabeçalho */}
+      <div className="text-center mb-6 pb-4 border-b border-gray-200 dark:border-gray-700">
+        <p className="text-xs mb-1 text-gray-700 dark:text-gray-300">
+          Rua Fernão Albernaz 332 - apto 14 - Vila Nova Savoia – Contato: 11 97413-4386
+        </p>
       </div>
 
       {/* Título */}
       <div className="text-center mb-8">
-        <h1 className={`text-2xl font-bold ${colors.text}`}>{reportData.title}</h1>
-        <div className={`mt-2 h-1 w-32 mx-auto ${colors.borderLeft} rounded-full`}></div>
+        <h1 className="text-2xl font-bold uppercase">
+          {reportData.title || "VISTORIA 3: RUA BENEDITO DOS SANTOS, 44 – PARQUE SÃO JORGE – SP"}
+        </h1>
       </div>
 
-      {/* Imagem de localização ou conteúdo específico do tipo */}
+      {/* Imagem de localização */}
       <div className="flex-grow flex items-center justify-center">
-        {reportType === "cautelar" ? (
-          <div className="w-full max-w-md flex items-center justify-center" style={{ height: "280px" }}>
-            {reportData.locationImage ? (
-              <img
-                src={reportData.locationImage || "/placeholder.svg"}
-                alt="Localização do imóvel"
-                className="max-w-full max-h-full object-contain border border-gray-300 rounded-lg shadow-md"
-              />
-            ) : (
-              <img
-                src="/placeholder.svg?key=mwe0q"
-                alt="Localização do imóvel"
-                className="max-w-full max-h-full object-contain border border-gray-300 rounded-lg shadow-md"
-              />
-            )}
-          </div>
-        ) : reportType === "contabil" ? (
-          <div className="w-full max-w-md p-6 bg-white rounded-lg shadow-md">
-            <h2 className="text-lg font-semibold mb-4 text-center text-purple-700">Análise Contábil</h2>
-            <div className="flex justify-between items-center mb-4">
-              <span className="font-medium">Empresa:</span>
-              <span>{reportData.company || "N/A"}</span>
+        <div className="w-full max-w-md flex items-center justify-center" style={{ height: "280px" }}>
+          {reportData.locationImage ? (
+            <img
+              src={reportData.locationImage || "/placeholder.svg"}
+              alt="Localização do imóvel"
+              className="max-w-full max-h-full object-contain border border-gray-300 rounded-lg"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center bg-gray-100 dark:bg-gray-800 rounded-md text-gray-400 dark:text-gray-600 text-sm">
+              Imagem de localização não disponível
             </div>
-            <div className="flex justify-between items-center mb-4">
-              <span className="font-medium">CNPJ:</span>
-              <span>{reportData.cnpj || "N/A"}</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="font-medium">Período:</span>
-              <span>{reportData.period || "N/A"}</span>
-            </div>
-          </div>
-        ) : (
-          <div className="w-full max-w-md p-6 bg-white rounded-lg shadow-md">
-            <h2 className="text-lg font-semibold mb-4 text-center text-amber-700">Processo Extra Judicial</h2>
-            <div className="flex justify-between items-center mb-4">
-              <span className="font-medium">Processo nº:</span>
-              <span>{reportData.processNumber || "N/A"}</span>
-            </div>
-            <div className="flex justify-between items-center mb-4">
-              <span className="font-medium">Requerente:</span>
-              <span>{reportData.plaintiff || "N/A"}</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="font-medium">Requerido:</span>
-              <span>{reportData.defendant || "N/A"}</span>
-            </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
-      {/* Legenda da imagem ou data */}
+      {/* Legenda da imagem */}
       <div className="text-center mt-6">
-        {reportType === "cautelar" ? (
-          <p className="text-sm inline-block px-4 py-2 bg-white rounded-full shadow-sm border border-gray-200">
-            Localização esquemática do imóvel
-          </p>
-        ) : (
-          <p className="text-sm inline-block px-4 py-2 bg-white rounded-full shadow-sm border border-gray-200">
-            Data: {reportData.date || new Date().toLocaleDateString("pt-BR")}
-          </p>
-        )}
+        <p className="text-sm">Localização esquemática do imóvel</p>
       </div>
 
       {/* Rodapé com número da página */}
-      <div className="mt-auto pt-4 flex justify-between items-center border-t border-gray-300">
+      <div className="mt-auto pt-4 flex justify-between items-center border-t border-gray-300 dark:border-gray-700">
         <p className="text-xs">Rua Fernão Albernaz 332 - apto 14 - Vila Nova Savoia – Contato: 11 97413-4386</p>
         <p className="text-xs">1</p>
       </div>
@@ -269,12 +149,12 @@ function PageOne({ reportData, reportType }: { reportData: WordPreviewProps["rep
   )
 }
 
-function CautelarPageTwo({ reportData }: { reportData: WordPreviewProps["reportData"] }) {
+function PageTwo({ reportData }: { reportData: WordPreviewProps["reportData"] }) {
   return (
-    <div className="bg-white p-8 min-h-[297mm] w-[210mm] flex flex-col word-page">
+    <div className="p-8 min-h-[297mm] w-[210mm] flex flex-col word-page">
       {/* Conteúdo */}
       <div className="mb-8">
-        <h2 className="text-lg font-semibold mb-4 text-blue-700">Ficha com dados da construção e seus ocupantes:</h2>
+        <h2 className="text-lg font-semibold mb-4">Ficha com dados da construção e seus ocupantes:</h2>
         <div className="space-y-3">
           <p>
             <span className="font-semibold">Ocupante / telefone:</span> {reportData.occupant || "N/A"}
@@ -309,7 +189,7 @@ function CautelarPageTwo({ reportData }: { reportData: WordPreviewProps["reportD
       </div>
 
       {/* Rodapé com número da página */}
-      <div className="mt-auto pt-4 flex justify-between items-center border-t border-gray-300">
+      <div className="mt-auto pt-4 flex justify-between items-center border-t border-gray-300 dark:border-gray-700">
         <p className="text-xs">Rua Fernão Albernaz 332 - apto 14 - Vila Nova Savoia – Contato: 11 97413-4386</p>
         <p className="text-xs">2</p>
       </div>
@@ -317,101 +197,12 @@ function CautelarPageTwo({ reportData }: { reportData: WordPreviewProps["reportD
   )
 }
 
-function ContabilPageTwo({ reportData }: { reportData: WordPreviewProps["reportData"] }) {
+function PageThree({ reportData }: { reportData: WordPreviewProps["reportData"] }) {
   return (
-    <div className="bg-white p-8 min-h-[297mm] w-[210mm] flex flex-col word-page">
+    <div className="p-8 min-h-[297mm] w-[210mm] flex flex-col word-page">
       {/* Conteúdo */}
       <div className="mb-8">
-        <h2 className="text-lg font-semibold mb-4 text-purple-700">Dados da Empresa e Análise Financeira</h2>
-        <div className="space-y-3">
-          <p>
-            <span className="font-semibold">Empresa:</span> {reportData.company || "N/A"}
-          </p>
-          <p>
-            <span className="font-semibold">CNPJ:</span> {reportData.cnpj || "N/A"}
-          </p>
-          <p>
-            <span className="font-semibold">Período Analisado:</span> {reportData.period || "N/A"}
-          </p>
-          <p>
-            <span className="font-semibold">Contador Responsável:</span> {reportData.accountant || "N/A"}
-          </p>
-          <p>
-            <span className="font-semibold">CRC:</span> {reportData.crc || "N/A"}
-          </p>
-        </div>
-
-        <h3 className="text-lg font-semibold mt-8 mb-4 text-purple-700">Resumo Financeiro</h3>
-        <div className="whitespace-pre-line">
-          {reportData.financialSummary || "Nenhuma informação financeira disponível."}
-        </div>
-      </div>
-
-      {/* Rodapé com número da página */}
-      <div className="mt-auto pt-4 flex justify-between items-center border-t border-gray-300">
-        <p className="text-xs">Rua Fernão Albernaz 332 - apto 14 - Vila Nova Savoia – Contato: 11 97413-4386</p>
-        <p className="text-xs">2</p>
-      </div>
-    </div>
-  )
-}
-
-function ExtraJudicialPageTwo({ reportData }: { reportData: WordPreviewProps["reportData"] }) {
-  return (
-    <div className="bg-white p-8 min-h-[297mm] w-[210mm] flex flex-col word-page">
-      {/* Conteúdo */}
-      <div className="mb-8">
-        <h2 className="text-lg font-semibold mb-4 text-amber-700">Informações do Processo</h2>
-        <div className="space-y-3">
-          <p>
-            <span className="font-semibold">Número do Processo:</span> {reportData.processNumber || "N/A"}
-          </p>
-          <p>
-            <span className="font-semibold">Tribunal/Câmara:</span> {reportData.court || "N/A"}
-          </p>
-          <p>
-            <span className="font-semibold">Requerente:</span> {reportData.plaintiff || "N/A"}
-          </p>
-          <p>
-            <span className="font-semibold">Requerido:</span> {reportData.defendant || "N/A"}
-          </p>
-        </div>
-
-        <h3 className="text-lg font-semibold mt-8 mb-4 text-amber-700">Objeto da Perícia</h3>
-        <div className="whitespace-pre-line">
-          {reportData.object || "Nenhuma informação sobre o objeto da perícia disponível."}
-        </div>
-      </div>
-
-      {/* Rodapé com número da página */}
-      <div className="mt-auto pt-4 flex justify-between items-center border-t border-gray-300">
-        <p className="text-xs">Rua Fernão Albernaz 332 - apto 14 - Vila Nova Savoia – Contato: 11 97413-4386</p>
-        <p className="text-xs">2</p>
-      </div>
-    </div>
-  )
-}
-
-function PageThree({ reportData, reportType }: { reportData: WordPreviewProps["reportData"]; reportType: string }) {
-  // Determinar as cores com base no tipo de relatório
-  const getTextColor = () => {
-    switch (reportType) {
-      case "contabil":
-        return "text-purple-700"
-      case "extrajudicial":
-        return "text-amber-700"
-      default:
-        return "text-blue-700"
-    }
-  }
-
-  const textColor = getTextColor()
-
-  return (
-    <div className="bg-white p-8 min-h-[297mm] w-[210mm] flex flex-col word-page">
-      {/* Conteúdo */}
-      <div className="mb-8">
-        <h2 className={`text-lg font-semibold mb-4 ${textColor}`}>Informações técnicas</h2>
+        <h2 className="text-lg font-semibold mb-4">Informações técnicas</h2>
         <div className="whitespace-pre-line">
           {reportData.technicalInfo || "Nenhuma informação técnica disponível."}
         </div>
@@ -424,7 +215,7 @@ function PageThree({ reportData, reportType }: { reportData: WordPreviewProps["r
       </div>
 
       {/* Rodapé com número da página */}
-      <div className="mt-4 pt-4 flex justify-between items-center border-t border-gray-300">
+      <div className="mt-4 pt-4 flex justify-between items-center border-t border-gray-300 dark:border-gray-700">
         <p className="text-xs">Rua Fernão Albernaz 332 - apto 14 - Vila Nova Savoia – Contato: 11 97413-4386</p>
         <p className="text-xs">3</p>
       </div>
@@ -435,14 +226,12 @@ function PageThree({ reportData, reportType }: { reportData: WordPreviewProps["r
 function PhotoPage({
   pageNumber,
   photos,
-  reportData,
 }: {
   pageNumber: number
   photos: { id: string; url: string; caption: string }[]
-  reportData: WordPreviewProps["reportData"]
 }) {
   return (
-    <div className="bg-white p-8 min-h-[297mm] w-[210mm] flex flex-col word-page">
+    <div className="p-8 min-h-[297mm] w-[210mm] flex flex-col word-page">
       {/* Fotos e legendas */}
       <div className="flex-grow flex flex-col justify-between">
         {photos.length > 0 && (
@@ -453,7 +242,7 @@ function PhotoPage({
             </div>
 
             <div
-              className="w-full bg-gray-100 flex items-center justify-center overflow-hidden rounded-md"
+              className="w-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center overflow-hidden rounded-md"
               style={{ height: "90mm" }}
             >
               {photos[0].url ? (
@@ -463,7 +252,7 @@ function PhotoPage({
                   className="w-full h-full object-contain"
                 />
               ) : (
-                <p className="text-gray-500">Imagem não disponível</p>
+                <p className="text-gray-500 dark:text-gray-400">Imagem não disponível</p>
               )}
             </div>
           </div>
@@ -477,7 +266,7 @@ function PhotoPage({
             </div>
 
             <div
-              className="w-full bg-gray-100 flex items-center justify-center overflow-hidden rounded-md"
+              className="w-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center overflow-hidden rounded-md"
               style={{ height: "90mm" }}
             >
               {photos[1].url ? (
@@ -487,7 +276,7 @@ function PhotoPage({
                   className="w-full h-full object-contain"
                 />
               ) : (
-                <p className="text-gray-500">Imagem não disponível</p>
+                <p className="text-gray-500 dark:text-gray-400">Imagem não disponível</p>
               )}
             </div>
           </div>
@@ -495,7 +284,7 @@ function PhotoPage({
       </div>
 
       {/* Rodapé com número da página */}
-      <div className="mt-auto pt-4 flex justify-between items-center border-t border-gray-300">
+      <div className="mt-auto pt-4 flex justify-between items-center border-t border-gray-300 dark:border-gray-700">
         <p className="text-xs">Rua Fernão Albernaz 332 - apto 14 - Vila Nova Savoia – Contato: 11 97413-4386</p>
         <p className="text-xs">{pageNumber}</p>
       </div>

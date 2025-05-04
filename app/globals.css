@@ -75,7 +75,7 @@
   --amber-badge: 40 90% 50%;
 }
 
-/* Estilos para cards no modo escuro - MELHORADO PARA MAIOR CONTRASTE */
+/* Estilos para cards no modo escuro - RESTAURADO PARA O ORIGINAL */
 .dark .glass-card {
   background: linear-gradient(135deg, rgba(22, 31, 49, 0.85) 0%, rgba(17, 24, 39, 0.9) 100%);
   backdrop-filter: blur(10px);
@@ -169,7 +169,7 @@
   border-right: 1px solid rgba(78, 108, 180, 0.1);
 }
 
-/* Estilos para tabs no modo escuro */
+/* Corrigir cores das abas no modo escuro */
 .dark .tabs-list {
   background: rgba(15, 23, 42, 0.6);
   border: 1px solid rgba(78, 108, 180, 0.1);
@@ -230,14 +230,7 @@
   }
 }
 
-/* Glassmorphism - adaptado para tema claro e escuro */
-.glass {
-  background: rgba(17, 24, 39, 0.7);
-  border: 1px solid rgba(79, 70, 229, 0.15);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-  backdrop-filter: blur(10px);
-}
-
+/* Restaurar o estilo da barra de pesquisa no modo escuro */
 .dark .glass {
   background: rgba(17, 24, 39, 0.7);
   border: 1px solid rgba(79, 70, 229, 0.15);
@@ -591,26 +584,16 @@ a[href="/register"] button:hover {
   color: rgba(255, 255, 255, 0.8);
 }
 
-/* Melhorar as abas no modo escuro */
-.dark .tabs-list {
-  background: linear-gradient(90deg, rgba(17, 24, 39, 0.8) 0%, rgba(24, 24, 47, 0.8) 100%);
-  border: 1px solid rgba(79, 70, 229, 0.2);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-  backdrop-filter: blur(10px);
-}
-
+/* Remover estilos que afetam o modo escuro nas abas */
 .dark [data-state="active"] {
-  background: linear-gradient(90deg, rgba(79, 70, 229, 0.3) 0%, rgba(124, 58, 237, 0.3) 100%) !important;
+  background: #3b82f6 !important;
   color: white !important;
-  font-weight: 500;
-  box-shadow: 0 0 15px rgba(79, 70, 229, 0.3);
-  border-bottom: 2px solid rgba(124, 58, 237, 0.5);
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.3);
+  border-bottom: none;
 }
 
 .dark .tabs-list [data-state="inactive"] {
-  color: rgba(255, 255, 255, 0.7);
-  font-weight: 500;
-  transition: all 0.3s ease;
+  color: #94a3b8;
 }
 
 .dark .tabs-list [data-state="inactive"]:hover {

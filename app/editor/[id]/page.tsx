@@ -1,6 +1,5 @@
 "use client"
-
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { DashboardHeader } from "@/components/dashboard-header"
@@ -19,8 +18,14 @@ import { ContabilReportEditor } from "@/components/contabil-report-editor"
 import { ExtraJudicialReportEditor } from "@/components/extrajudicial-report-editor"
 import { Badge } from "@/components/ui/badge"
 import { motion } from "framer-motion"
+import { useToast } from "@/components/ui/use-toast"
 
 export default function EditorPage({ params }: { params: { id: string } }) {
+  const router = useRouter()
+  const { user, isLoading } = useAuth()
+  const { toast } = useToast()
+
+  // Define os estados no escopo do componente
   const [activeTab, setActiveTab] = useState("editor")
   const [reportTitle, setReportTitle] = useState("")
   const [reportType, setReportType] = useState("cautelar")
@@ -53,43 +58,67 @@ export default function EditorPage({ params }: { params: { id: string } }) {
     plaintiff: "",
     defendant: "",
     object: "",
+    logoImage: "", // Campo para armazenar a logo personalizada
+    locationImage: "", // Campo para armazenar a imagem de localização
   })
 
   const [showExportDialog, setShowExportDialog] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const { user, isLoading } = useAuth()
-  const router = useRouter()
 
-  useEffect(() => {
-    // Redirecionar para login se não estiver autenticado
+  // Verificar autenticação
+  const checkAuthentication = useCallback(() => {
     if (!isLoading && !user) {
       router.push("/login")
     }
   }, [user, isLoading, router])
 
-  // Carregar dados do relatório se não for novo
   useEffect(() => {
-    if (params.id !== "new") {
-      const storedReports = localStorage.getItem("reports")
-      if (storedReports) {
-        try {
-          const reports = JSON.parse(storedReports)
-          const report = reports.find((r: any) => r.id === params.id)
-          if (report) {
-            setReportData(report.reportData || reportData)
-            setReportTitle(report.title || reportTitle)
-            setReportType(report.type || "cautelar")
-            setPhotos(report.photos || [])
+    checkAuthentication()
+  }, [checkAuthentication])
+
+  // Redirecionar se o ID for "new"
+  useEffect(() => {
+    if (params.id === "new") {
+      router.push("/editor/new")
+      return
+    }
+
+    // Carregar dados do relatório se não for novo
+    const loadReportData = async () => {
+      if (params.id !== "new") {
+        const storedReports = localStorage.getItem("reports")
+        if (storedReports) {
+          try {
+            const reports = JSON.parse(storedReports)
+            const report = reports.find((r: any) => r.id === params.id)
+            if (report) {
+              setReportData(report.reportData || reportData)
+              setReportTitle(report.title || reportTitle)
+              setReportType(report.type || "cautelar")
+              setPhotos(report.photos || [])
+
+              // Log para debug
+              console.log("Carregando dados do relatório:", report)
+              console.log("Imagem de localização:", report.reportData?.locationImage)
+              console.log("Logo personalizado:", report.reportData?.logoImage)
+            }
+          } catch (error) {
+            console.error("Erro ao carregar relatório:", error)
           }
-        } catch (error) {
-          console.error("Erro ao carregar relatório:", error)
         }
       }
     }
-  }, [params.id])
+
+    loadReportData()
+  }, [params.id, router])
 
   // Se estiver carregando ou não tiver usuário, não renderizar o conteúdo
   if (isLoading || !user) {
+    return null
+  }
+
+  // Se o ID for "new", não renderizar nada enquanto redireciona
+  if (params.id === "new") {
     return null
   }
 
@@ -97,15 +126,32 @@ export default function EditorPage({ params }: { params: { id: string } }) {
   const reportId = isNewReport ? "novo" : params.id
 
   const handleSave = () => {
-    // Save report logic would go here
-    console.log("Saving report...")
+    // Log para debug
+    console.log("Salvando relatório com dados:", reportData)
+    console.log("Imagem de localização:", reportData.locationImage ? "Presente" : "Ausente")
+    console.log("Logo personalizado:", reportData.logoImage ? "Presente" : "Ausente")
+    console.log("Fotos:", photos.length)
+
+    // Verificar se as imagens estão presentes
+    if (!reportData.locationImage) {
+      console.warn("Imagem de localização não encontrada ao salvar")
+    }
+
+    if (!reportData.logoImage) {
+      console.warn("Logo personalizado não encontrado ao salvar")
+    }
 
     // Salvar no localStorage para demonstração
     const report = {
       id: reportId === "novo" ? Date.now().toString() : reportId,
-      title: reportData.title,
+      title: reportData.title || reportTitle,
       date: reportData.date || new Date().toLocaleDateString("pt-BR"),
-      reportData,
+      reportData: {
+        ...reportData,
+        // Garantir que as imagens sejam incluídas explicitamente
+        locationImage: reportData.locationImage || "",
+        logoImage: reportData.logoImage || "",
+      },
       photos,
       type: reportType,
       status: "Rascunho",
@@ -129,6 +175,12 @@ export default function EditorPage({ params }: { params: { id: string } }) {
     // Salvar de volta no localStorage
     localStorage.setItem("reports", JSON.stringify(existingReports))
 
+    // Mostrar toast de sucesso
+    toast({
+      title: "Laudo salvo com sucesso",
+      description: "Todas as informações foram salvas corretamente.",
+    })
+
     // Redirecionar para o dashboard
     router.push("/dashboard")
   }
@@ -146,17 +198,32 @@ export default function EditorPage({ params }: { params: { id: string } }) {
   }
 
   const handleReportDataChange = (newData: typeof reportData) => {
+    console.log("Atualizando dados do relatório:", newData)
     setReportData(newData)
-    setReportTitle(newData.title)
+    if (newData.title) {
+      setReportTitle(newData.title)
+    }
   }
 
   // Determinar qual editor mostrar com base no tipo de laudo
   const renderEditor = () => {
     switch (reportType) {
       case "contabil":
-        return <ContabilReportEditor reportData={reportData} onReportDataChange={handleReportDataChange} />
+        return (
+          <ContabilReportEditor
+            initialData={reportData}
+            reportId={params.id}
+            onReportDataChange={handleReportDataChange}
+          />
+        )
       case "extrajudicial":
-        return <ExtraJudicialReportEditor reportData={reportData} onReportDataChange={handleReportDataChange} />
+        return (
+          <ExtraJudicialReportEditor
+            initialData={reportData}
+            reportId={params.id}
+            onReportDataChange={handleReportDataChange}
+          />
+        )
       default:
         return <ReportEditor reportData={reportData} onReportDataChange={handleReportDataChange} />
     }
@@ -259,7 +326,7 @@ export default function EditorPage({ params }: { params: { id: string } }) {
         </DashboardHeader>
 
         {/* Melhorar as abas para um visual mais premium */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-4 p-1 glass tabs-list backdrop-blur-md border border-white/10">
             <TabsTrigger
               value="editor"

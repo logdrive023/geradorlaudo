@@ -16,6 +16,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { motion } from "framer-motion"
+import { NewReportDialog } from "@/components/new-report-dialog"
 
 interface Report {
   id: string
@@ -33,6 +34,7 @@ export default function DashboardPage() {
   const [message, setMessage] = useState("")
   const [activeTab, setActiveTab] = useState("todos")
   const [statusFilter, setStatusFilter] = useState("todos")
+  const [showNewReportDialog, setShowNewReportDialog] = useState(false)
   const { user, isLoading } = useAuth()
   const router = useRouter()
 
@@ -247,12 +249,13 @@ export default function DashboardPage() {
         text={getActiveTabDescription()}
         className="dashboard-header"
       >
-        <Link href="/editor/new">
-          <Button className="gradient-blue hover:opacity-90 transition-opacity">
-            <Plus className="mr-2 h-4 w-4" />
-            Novo Laudo
-          </Button>
-        </Link>
+        <Button
+          className="gradient-blue hover:opacity-90 transition-opacity"
+          onClick={() => setShowNewReportDialog(true)}
+        >
+          <Plus className="mr-2 h-4 w-4" />
+          Novo Laudo
+        </Button>
       </DashboardHeader>
 
       {message && (
@@ -264,28 +267,29 @@ export default function DashboardPage() {
 
       {/* Abas com visual melhorado para modo claro */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full mb-6">
+        {/* Corrigir as classes das abas no modo escuro */}
         <TabsList className="grid w-full grid-cols-4 p-1 bg-gray-100 dark:glass tabs-list dark:backdrop-blur-md border border-gray-200 dark:border-white/10 rounded-lg">
           <TabsTrigger
             value="todos"
-            className="tab-trigger rounded-md text-gray-700 data-[state=active]:bg-blue-600 data-[state=active]:shadow-md data-[state=active]:text-white dark:data-[state=active]:bg-secondary dark:data-[state=active]:shadow-md dark:data-[state=active]:text-white"
+            className="tab-trigger rounded-md text-gray-700 data-[state=active]:bg-blue-600 data-[state=active]:shadow-md data-[state=active]:text-white dark:text-gray-300 dark:data-[state=active]:bg-blue-600"
           >
             Todos
           </TabsTrigger>
           <TabsTrigger
             value="cautelar"
-            className="tab-trigger rounded-md text-gray-700 data-[state=active]:bg-blue-600 data-[state=active]:shadow-md data-[state=active]:text-white dark:text-gray-300 dark:data-[state=active]:bg-blue-900/50 dark:data-[state=active]:text-blue-100"
+            className="tab-trigger rounded-md text-gray-700 data-[state=active]:bg-blue-600 data-[state=active]:shadow-md data-[state=active]:text-white dark:text-gray-300 dark:data-[state=active]:bg-blue-600"
           >
             Cautelar de Vizinhança
           </TabsTrigger>
           <TabsTrigger
             value="contabil"
-            className="tab-trigger rounded-md text-gray-700 data-[state=active]:bg-purple-600 data-[state=active]:shadow-md data-[state=active]:text-white dark:text-gray-300 dark:data-[state=active]:bg-purple-900/50 dark:data-[state=active]:text-purple-100"
+            className="tab-trigger rounded-md text-gray-700 data-[state=active]:bg-purple-600 data-[state=active]:shadow-md data-[state=active]:text-white dark:text-gray-300 dark:data-[state=active]:bg-purple-600"
           >
             Contábil
           </TabsTrigger>
           <TabsTrigger
             value="extrajudicial"
-            className="tab-trigger rounded-md text-gray-700 data-[state=active]:bg-amber-600 data-[state=active]:shadow-md data-[state=active]:text-white dark:text-gray-300 dark:data-[state=active]:bg-amber-900/50 dark:data-[state=active]:text-amber-100"
+            className="tab-trigger rounded-md text-gray-700 data-[state=active]:bg-amber-600 data-[state=active]:shadow-md data-[state=active]:text-white dark:text-gray-300 dark:data-[state=active]:bg-amber-600"
           >
             Extra Judicial
           </TabsTrigger>
@@ -294,7 +298,8 @@ export default function DashboardPage() {
 
       {/* Barra de pesquisa com visual melhorado para modo claro */}
       <div className="grid gap-4 mb-6">
-        <div className="flex items-center gap-4 flex-wrap bg-gray-100 dark:glass p-4 rounded-lg dark:backdrop-blur-md border border-gray-200 dark:border-white/10">
+        {/* Corrigir a barra de pesquisa no modo escuro */}
+        <div className="flex items-center gap-4 flex-wrap bg-gray-100 dark:bg-background/30 p-4 rounded-lg dark:backdrop-blur-md border border-gray-200 dark:border-white/10">
           <div className="flex items-center gap-2 flex-1 min-w-[200px] bg-white dark:bg-background/50 rounded-md px-3 py-1 border border-gray-200 dark:border-white/10">
             <Search className="h-4 w-4 text-gray-500 dark:text-muted-foreground" />
             <Input
@@ -310,7 +315,7 @@ export default function DashboardPage() {
               <SelectTrigger className="w-[180px] border-0 bg-transparent focus:ring-0 focus:ring-offset-0">
                 <SelectValue placeholder="Filtrar por status" />
               </SelectTrigger>
-              <SelectContent className="bg-white dark:glass dark:backdrop-blur-md border border-gray-200 dark:border-white/10">
+              <SelectContent className="bg-white dark:bg-background/80 dark:backdrop-blur-md border border-gray-200 dark:border-white/10">
                 <SelectItem value="todos">Todos os status</SelectItem>
                 <SelectItem value="concluído">Concluído</SelectItem>
                 <SelectItem value="rascunho">Rascunho</SelectItem>
@@ -321,18 +326,20 @@ export default function DashboardPage() {
       </div>
 
       {filteredReports.length === 0 ? (
-        <div className="flex flex-col items-center justify-center p-8 text-center bg-white dark:glass rounded-lg border border-gray-200 dark:border-transparent">
+        /* Corrigir o card vazio no modo escuro */
+        <div className="flex flex-col items-center justify-center p-8 text-center bg-white dark:bg-background/30 rounded-lg border border-gray-200 dark:border-white/10">
           <FileText className="h-16 w-16 text-gray-400 dark:text-muted-foreground mb-4 opacity-50" />
           <h3 className="text-lg font-medium mb-2">Nenhum laudo encontrado</h3>
           <p className="text-gray-500 dark:text-muted-foreground mb-6 max-w-md">
             Não encontramos laudos que correspondam aos seus critérios de busca.
           </p>
-          <Link href="/editor/new">
-            <Button className="gradient-blue hover:opacity-90 transition-opacity">
-              <Plus className="mr-2 h-4 w-4" />
-              Criar novo laudo
-            </Button>
-          </Link>
+          <Button
+            className="gradient-blue hover:opacity-90 transition-opacity"
+            onClick={() => setShowNewReportDialog(true)}
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            Criar novo laudo
+          </Button>
         </div>
       ) : (
         <motion.div
@@ -344,7 +351,8 @@ export default function DashboardPage() {
           {filteredReports.map((report) => (
             <motion.div key={report.id} variants={item}>
               {/* Cards com visual melhorado para modo claro */}
-              <Card className="bg-white dark:glass-card overflow-hidden border border-gray-200 dark:border-0 dark:backdrop-blur-md">
+              {/* Corrigir os cards no modo escuro */}
+              <Card className="bg-white dark:bg-background/30 overflow-hidden border border-gray-200 dark:border-white/10 dark:backdrop-blur-md">
                 <CardHeader className="pb-2 relative">
                   <div className="flex items-start justify-between">
                     <CardTitle className="text-base card-title">{report.title}</CardTitle>
@@ -430,6 +438,9 @@ export default function DashboardPage() {
           ))}
         </motion.div>
       )}
+
+      {/* Modal para criar novo laudo */}
+      <NewReportDialog open={showNewReportDialog} onOpenChange={setShowNewReportDialog} />
     </DashboardShell>
   )
 }

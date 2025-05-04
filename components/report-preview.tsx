@@ -1,387 +1,321 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Download, FileText, Printer } from "lucide-react"
-import Image from "next/image"
+import { Card, CardContent } from "@/components/ui/card"
+import { FileDown, ChevronLeft, ChevronRight } from "lucide-react"
+import { ExportDialog } from "@/components/export-dialog"
 
+// Modifique a interface ReportPreviewProps para incluir valores padrão:
 interface ReportPreviewProps {
   reportData: any
+  photos?: { id: string; url: string; caption: string }[]
   reportType: string
 }
 
-export function ReportPreview({ reportData, reportType }: ReportPreviewProps) {
-  const [activeTab, setActiveTab] = useState("preview")
-  const [currentDate, setCurrentDate] = useState("")
+// E no início da função ReportPreview, adicione:
+export function ReportPreview({ reportData, photos = [], reportType }: ReportPreviewProps) {
+  const [currentPage, setCurrentPage] = useState(1)
+  const [showExportDialog, setShowExportDialog] = useState(false)
 
-  useEffect(() => {
-    const date = new Date()
-    setCurrentDate(date.toLocaleDateString("pt-BR"))
-  }, [])
-
-  const handlePrint = () => {
-    window.print()
+  // Calcular o número total de páginas com base no tipo de relatório e fotos
+  const getTotalPages = () => {
+    const basePages = 3 // Páginas básicas (capa, dados, conclusão)
+    const photoPages = Math.ceil(photos.length / 2) // Páginas de fotos (2 por página)
+    return basePages + photoPages
   }
 
-  const renderCautelarReport = () => {
-    return (
-      <div className="word-page bg-white text-black p-8 rounded-md shadow-md">
-        {/* Cabeçalho com Logo */}
-        <div className="flex justify-between items-center mb-6 border-b pb-4">
-          <div className="flex items-center">
-            {reportData.logoImage ? (
-              <Image
-                src={reportData.logoImage || "/placeholder.svg"}
-                alt="Logo da empresa"
-                width={150}
-                height={60}
-                className="object-contain max-h-16"
-              />
-            ) : (
-              <div className="w-[150px] h-[60px] bg-gray-100 flex items-center justify-center text-gray-400 text-xs">
-                Logo não definido
-              </div>
-            )}
-          </div>
-          <div className="text-right">
-            <p className="text-sm font-bold">LAUDO CAUTELAR DE VIZINHANÇA</p>
-            <p className="text-xs">Data: {currentDate}</p>
-            <p className="text-xs">Ref: {reportData.reference || "N/A"}</p>
-          </div>
-        </div>
+  const totalPages = getTotalPages()
 
-        {/* Informações do Imóvel */}
-        <div className="mb-6">
-          <h1 className="text-xl font-bold mb-4">LAUDO CAUTELAR DE VIZINHANÇA</h1>
-          <h2 className="text-lg font-bold mb-2">1. IDENTIFICAÇÃO DO IMÓVEL</h2>
-          <p>
-            <strong>Endereço:</strong> {reportData.address || "N/A"}
-          </p>
-          <p>
-            <strong>Proprietário:</strong> {reportData.owner || "N/A"}
-          </p>
-          <p>
-            <strong>Tipo de Imóvel:</strong> {reportData.propertyType || "N/A"}
-          </p>
-        </div>
-
-        {/* Objetivo */}
-        <div className="mb-6">
-          <h2 className="text-lg font-bold mb-2">2. OBJETIVO</h2>
-          <p>{reportData.objective || "Realizar vistoria cautelar para documentar o estado atual do imóvel."}</p>
-        </div>
-
-        {/* Metodologia */}
-        <div className="mb-6">
-          <h2 className="text-lg font-bold mb-2">3. METODOLOGIA</h2>
-          <p>
-            {reportData.methodology ||
-              "A vistoria foi realizada através de inspeção visual, com registro fotográfico detalhado de todos os ambientes e estruturas do imóvel."}
-          </p>
-        </div>
-
-        {/* Vistoria */}
-        <div className="mb-6">
-          <h2 className="text-lg font-bold mb-2">4. VISTORIA</h2>
-          <h3 className="text-md font-bold mb-1">4.1. Estrutura</h3>
-          <p>{reportData.structure || "Não foram identificadas anomalias estruturais significativas."}</p>
-
-          <h3 className="text-md font-bold mb-1 mt-2">4.2. Revestimentos</h3>
-          <p>{reportData.coatings || "Os revestimentos apresentam-se em bom estado de conservação."}</p>
-
-          <h3 className="text-md font-bold mb-1 mt-2">4.3. Instalações</h3>
-          <p>
-            {reportData.installations ||
-              "As instalações elétricas e hidráulicas foram testadas e encontram-se em funcionamento normal."}
-          </p>
-        </div>
-
-        {/* Imagem de Localização */}
-        {reportData.locationImage && (
-          <div className="mb-6">
-            <h2 className="text-lg font-bold mb-2">5. LOCALIZAÇÃO</h2>
-            <div className="border p-1 inline-block">
-              <Image
-                src={reportData.locationImage || "/placeholder.svg"}
-                alt="Imagem de localização"
-                width={500}
-                height={300}
-                className="object-cover"
-              />
-            </div>
-            <p className="text-xs mt-1">Figura 1: Localização do imóvel vistoriado.</p>
-          </div>
-        )}
-
-        {/* Conclusão */}
-        <div className="mb-6">
-          <h2 className="text-lg font-bold mb-2">6. CONCLUSÃO</h2>
-          <p>
-            {reportData.conclusion ||
-              "Com base na vistoria realizada, conclui-se que o imóvel encontra-se em bom estado de conservação, sem danos estruturais significativos."}
-          </p>
-        </div>
-
-        {/* Assinatura */}
-        <div className="mt-12 pt-8 border-t">
-          <div className="text-center">
-            <p className="mb-8">____________________________________</p>
-            <p className="font-bold">{reportData.engineer || "Engenheiro Responsável"}</p>
-            <p>{reportData.crea || "CREA 000000-D"}</p>
-          </div>
-        </div>
-      </div>
-    )
+  const handlePreviousPage = () => {
+    setCurrentPage((prev) => Math.max(prev - 1, 1))
   }
 
-  const renderContabilReport = () => {
-    return (
-      <div className="word-page bg-white text-black p-8 rounded-md shadow-md">
-        {/* Cabeçalho com Logo */}
-        <div className="flex justify-between items-center mb-6 border-b pb-4">
-          <div className="flex items-center">
-            {reportData.logoImage ? (
-              <Image
-                src={reportData.logoImage || "/placeholder.svg"}
-                alt="Logo da empresa"
-                width={150}
-                height={60}
-                className="object-contain max-h-16"
-              />
-            ) : (
-              <div className="w-[150px] h-[60px] bg-gray-100 flex items-center justify-center text-gray-400 text-xs">
-                Logo não definido
-              </div>
-            )}
-          </div>
-          <div className="text-right">
-            <p className="text-sm font-bold">LAUDO CONTÁBIL</p>
-            <p className="text-xs">Data: {currentDate}</p>
-            <p className="text-xs">Ref: {reportData.reference || "N/A"}</p>
-          </div>
-        </div>
-
-        {/* Informações da Empresa */}
-        <div className="mb-6">
-          <h1 className="text-xl font-bold mb-4">LAUDO CONTÁBIL</h1>
-          <h2 className="text-lg font-bold mb-2">1. IDENTIFICAÇÃO DA EMPRESA</h2>
-          <p>
-            <strong>Empresa:</strong> {reportData.company || "N/A"}
-          </p>
-          <p>
-            <strong>CNPJ:</strong> {reportData.cnpj || "N/A"}
-          </p>
-          <p>
-            <strong>Endereço:</strong> {reportData.address || "N/A"}
-          </p>
-        </div>
-
-        {/* Objetivo */}
-        <div className="mb-6">
-          <h2 className="text-lg font-bold mb-2">2. OBJETIVO</h2>
-          <p>{reportData.objective || "Realizar análise contábil para avaliação da situação financeira da empresa."}</p>
-        </div>
-
-        {/* Metodologia */}
-        <div className="mb-6">
-          <h2 className="text-lg font-bold mb-2">3. METODOLOGIA</h2>
-          <p>
-            {reportData.methodology ||
-              "A análise foi realizada com base nos documentos contábeis fornecidos pela empresa, incluindo balanços patrimoniais, demonstrações de resultados e livros fiscais."}
-          </p>
-        </div>
-
-        {/* Análise */}
-        <div className="mb-6">
-          <h2 className="text-lg font-bold mb-2">4. ANÁLISE CONTÁBIL</h2>
-          <h3 className="text-md font-bold mb-1">4.1. Situação Patrimonial</h3>
-          <p>{reportData.patrimony || "A empresa apresenta situação patrimonial estável."}</p>
-
-          <h3 className="text-md font-bold mb-1 mt-2">4.2. Análise de Resultados</h3>
-          <p>{reportData.results || "Os resultados operacionais mostram-se consistentes com o setor."}</p>
-
-          <h3 className="text-md font-bold mb-1 mt-2">4.3. Indicadores Financeiros</h3>
-          <p>
-            {reportData.indicators ||
-              "Os indicadores financeiros apontam para uma situação de liquidez adequada e endividamento controlado."}
-          </p>
-        </div>
-
-        {/* Conclusão */}
-        <div className="mb-6">
-          <h2 className="text-lg font-bold mb-2">5. CONCLUSÃO</h2>
-          <p>
-            {reportData.conclusion ||
-              "Com base na análise realizada, conclui-se que a empresa apresenta situação contábil regular, com controles adequados e conformidade com as normas contábeis vigentes."}
-          </p>
-        </div>
-
-        {/* Assinatura */}
-        <div className="mt-12 pt-8 border-t">
-          <div className="text-center">
-            <p className="mb-8">____________________________________</p>
-            <p className="font-bold">{reportData.accountant || "Contador Responsável"}</p>
-            <p>{reportData.crc || "CRC 000000-O"}</p>
-          </div>
-        </div>
-      </div>
-    )
+  const handleNextPage = () => {
+    setCurrentPage((prev) => Math.min(prev + 1, totalPages))
   }
 
-  const renderExtrajudicialReport = () => {
-    return (
-      <div className="word-page bg-white text-black p-8 rounded-md shadow-md">
-        {/* Cabeçalho com Logo */}
-        <div className="flex justify-between items-center mb-6 border-b pb-4">
-          <div className="flex items-center">
-            {reportData.logoImage ? (
-              <Image
-                src={reportData.logoImage || "/placeholder.svg"}
-                alt="Logo da empresa"
-                width={150}
-                height={60}
-                className="object-contain max-h-16"
-              />
-            ) : (
-              <div className="w-[150px] h-[60px] bg-gray-100 flex items-center justify-center text-gray-400 text-xs">
-                Logo não definido
-              </div>
-            )}
-          </div>
-          <div className="text-right">
-            <p className="text-sm font-bold">LAUDO EXTRAJUDICIAL</p>
-            <p className="text-xs">Data: {currentDate}</p>
-            <p className="text-xs">Ref: {reportData.reference || "N/A"}</p>
-          </div>
-        </div>
-
-        {/* Informações do Caso */}
-        <div className="mb-6">
-          <h1 className="text-xl font-bold mb-4">LAUDO EXTRAJUDICIAL</h1>
-          <h2 className="text-lg font-bold mb-2">1. IDENTIFICAÇÃO DO CASO</h2>
-          <p>
-            <strong>Processo:</strong> {reportData.process || "N/A"}
-          </p>
-          <p>
-            <strong>Partes:</strong> {reportData.parties || "N/A"}
-          </p>
-          <p>
-            <strong>Objeto:</strong> {reportData.object || "N/A"}
-          </p>
-        </div>
-
-        {/* Objetivo */}
-        <div className="mb-6">
-          <h2 className="text-lg font-bold mb-2">2. OBJETIVO</h2>
-          <p>{reportData.objective || "Realizar perícia extrajudicial para avaliação técnica do objeto em questão."}</p>
-        </div>
-
-        {/* Metodologia */}
-        <div className="mb-6">
-          <h2 className="text-lg font-bold mb-2">3. METODOLOGIA</h2>
-          <p>
-            {reportData.methodology ||
-              "A perícia foi realizada através de análise documental, vistorias in loco e aplicação de métodos técnicos específicos para o caso."}
-          </p>
-        </div>
-
-        {/* Análise */}
-        <div className="mb-6">
-          <h2 className="text-lg font-bold mb-2">4. ANÁLISE TÉCNICA</h2>
-          <h3 className="text-md font-bold mb-1">4.1. Aspectos Técnicos</h3>
-          <p>{reportData.technical || "Os aspectos técnicos foram avaliados conforme normas aplicáveis."}</p>
-
-          <h3 className="text-md font-bold mb-1 mt-2">4.2. Documentação</h3>
-          <p>{reportData.documentation || "A documentação apresentada foi analisada e considerada suficiente."}</p>
-
-          <h3 className="text-md font-bold mb-1 mt-2">4.3. Constatações</h3>
-          <p>{reportData.findings || "Foram constatados os seguintes aspectos relevantes para o caso em análise..."}</p>
-        </div>
-
-        {/* Imagem de Localização */}
-        {reportData.locationImage && (
-          <div className="mb-6">
-            <h2 className="text-lg font-bold mb-2">5. DOCUMENTAÇÃO VISUAL</h2>
-            <div className="border p-1 inline-block">
-              <Image
-                src={reportData.locationImage || "/placeholder.svg"}
-                alt="Imagem relevante"
-                width={500}
-                height={300}
-                className="object-cover"
-              />
-            </div>
-            <p className="text-xs mt-1">Figura 1: Documentação visual relevante para o caso.</p>
-          </div>
-        )}
-
-        {/* Conclusão */}
-        <div className="mb-6">
-          <h2 className="text-lg font-bold mb-2">6. CONCLUSÃO</h2>
-          <p>{reportData.conclusion || "Com base na análise técnica realizada, conclui-se que..."}</p>
-        </div>
-
-        {/* Assinatura */}
-        <div className="mt-12 pt-8 border-t">
-          <div className="text-center">
-            <p className="mb-8">____________________________________</p>
-            <p className="font-bold">{reportData.expert || "Perito Responsável"}</p>
-            <p>{reportData.registration || "Registro Profissional 000000"}</p>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  const renderReport = () => {
-    switch (reportType) {
-      case "cautelar":
-        return renderCautelarReport()
-      case "contabil":
-        return renderContabilReport()
-      case "extrajudicial":
-        return renderExtrajudicialReport()
-      default:
-        return renderCautelarReport()
+  // Renderizar a página apropriada com base no tipo de relatório
+  const renderPage = () => {
+    if (currentPage === 1) {
+      return <PageOne reportData={reportData} reportType={reportType} />
+    } else if (currentPage === 2) {
+      return <PageTwo reportData={reportData} />
+    } else if (currentPage === 3) {
+      return <PageThree reportData={reportData} />
+    } else {
+      // Calcular quais fotos mostrar com base na página atual
+      const photoStartIndex = (currentPage - 4) * 2
+      return <PhotoPage pageNumber={currentPage} photos={photos.slice(photoStartIndex, photoStartIndex + 2)} />
     }
   }
 
   return (
-    <Card className="border-0 shadow-none bg-transparent">
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <div className="flex justify-between items-center mb-4">
-          <TabsList className="glass tabs-list backdrop-blur-md border border-white/10">
-            <TabsTrigger value="preview" className="tab-trigger">
-              Pré-visualização
-            </TabsTrigger>
-            <TabsTrigger value="print" className="tab-trigger">
-              Impressão
-            </TabsTrigger>
-          </TabsList>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={handlePrint}>
-              <Printer className="mr-2 h-4 w-4" />
-              Imprimir
-            </Button>
-            <Button variant="outline" size="sm">
-              <Download className="mr-2 h-4 w-4" />
-              Exportar PDF
-            </Button>
-            <Button variant="outline" size="sm">
-              <FileText className="mr-2 h-4 w-4" />
-              Exportar Word
-            </Button>
+    <div className="space-y-4">
+      <div className="flex justify-between items-center">
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={handlePreviousPage} disabled={currentPage === 1}>
+            <ChevronLeft className="h-4 w-4" />
+            Anterior
+          </Button>
+          <span className="text-sm">
+            Página {currentPage} de {totalPages}
+          </span>
+          <Button variant="outline" size="sm" onClick={handleNextPage} disabled={currentPage === totalPages}>
+            Próxima
+            <ChevronRight className="h-4 w-4 ml-1" />
+          </Button>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button onClick={() => setShowExportDialog(true)} variant="outline" size="sm">
+            <FileDown className="mr-2 h-4 w-4" />
+            Exportar
+          </Button>
+        </div>
+      </div>
+
+      <Card className="border dark:border-gray-800 shadow-sm overflow-hidden">
+        <CardContent className="p-0">{renderPage()}</CardContent>
+      </Card>
+
+      <ExportDialog
+        open={showExportDialog}
+        onOpenChange={setShowExportDialog}
+        reportData={reportData}
+        photos={photos}
+        reportType={reportType}
+      />
+    </div>
+  )
+}
+
+function PageOne({ reportData, reportType }: { reportData: ReportPreviewProps["reportData"]; reportType: string }) {
+  return (
+    <div className="bg-white dark:bg-gray-900 text-black dark:text-white p-8 min-h-[842px] w-full flex flex-col">
+      {/* Cabeçalho */}
+      <div className="text-center mb-6 pb-4 border-b border-gray-200 dark:border-gray-700">
+        <p className="text-xs mb-1 text-gray-700 dark:text-gray-300">
+          Rua Fernão Albernaz 332 - apto 14 - Vila Nova Savoia – Contato: 11 97413-4386
+        </p>
+      </div>
+
+      {/* Título */}
+      <div className="text-center mb-8">
+        <h1 className="text-2xl font-bold uppercase text-gray-900 dark:text-white">
+          {reportData.title || "VISTORIA 3: RUA BENEDITO DOS SANTOS, 44 – PARQUE SÃO JORGE – SP"}
+        </h1>
+      </div>
+
+      {/* Imagem de localização */}
+      <div className="flex-grow flex items-center justify-center">
+        <div className="w-full max-w-md aspect-video bg-white dark:bg-gray-800 rounded-lg overflow-hidden flex items-center justify-center">
+          {reportData.locationImage ? (
+            <img
+              src={reportData.locationImage || "/placeholder.svg"}
+              alt="Localização do imóvel"
+              className="max-w-full max-h-full object-contain"
+            />
+          ) : (
+            <div className="text-gray-400 dark:text-gray-600 text-sm">Imagem de localização não disponível</div>
+          )}
+        </div>
+      </div>
+
+      {/* Legenda da imagem */}
+      <div className="text-center mt-6">
+        <p className="text-sm text-gray-700 dark:text-gray-300">Localização esquemática do imóvel</p>
+      </div>
+
+      {/* Rodapé com número da página */}
+      <div className="mt-auto pt-6 text-center">
+        <div className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300">
+          <p className="text-xs font-medium">1</p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function PageTwo({ reportData }: { reportData: ReportPreviewProps["reportData"] }) {
+  return (
+    <div className="bg-white dark:bg-gray-900 text-black dark:text-white p-8 min-h-[842px] w-full flex flex-col">
+      {/* Cabeçalho */}
+      <div className="text-center mb-6 pb-4 border-b border-gray-200 dark:border-gray-700">
+        <p className="text-xs mb-1 text-gray-700 dark:text-gray-300">
+          Rua Fernão Albernaz 332 - apto 14 - Vila Nova Savoia – Contato: 11 97413-4386
+        </p>
+      </div>
+
+      {/* Conteúdo */}
+      <div className="mb-8">
+        <h2 className="text-xl font-semibold mb-6 text-gray-900 dark:text-white">
+          Ficha com dados da construção e seus ocupantes:
+        </h2>
+
+        <div className="space-y-4">
+          <div className="flex flex-col">
+            <span className="text-sm font-bold">Ocupante / telefone:</span>
+            <span>{reportData.occupant || "N/A"}</span>
+          </div>
+
+          <div className="flex flex-col">
+            <span className="text-sm font-bold">Vistoriador:</span>
+            <span>{reportData.inspector || "N/A"}</span>
+          </div>
+
+          <div className="flex flex-col">
+            <span className="text-sm font-bold">Uso do Imóvel:</span>
+            <span>{reportData.usage || "N/A"}</span>
+          </div>
+
+          <div className="flex flex-col">
+            <span className="text-sm font-bold">Idade real ou estimada / aparente:</span>
+            <span>{reportData.age || "N/A"}</span>
+          </div>
+
+          <div className="flex flex-col">
+            <span className="text-sm font-bold">Tipo de edificação:</span>
+            <span>{reportData.buildingType || "N/A"}</span>
+          </div>
+
+          <div className="flex flex-col">
+            <span className="text-sm font-bold">Estado de conservação:</span>
+            <span>{reportData.conservationState || "N/A"}</span>
+          </div>
+
+          <div className="flex flex-col">
+            <span className="text-sm font-bold">Padrão construtivo:</span>
+            <span>{reportData.constructionStandard || "N/A"}</span>
           </div>
         </div>
-        <TabsContent value="preview" className="mt-0">
-          <div className="bg-gray-100 p-4 rounded-md">{renderReport()}</div>
-        </TabsContent>
-        <TabsContent value="print" className="mt-0">
-          <div className="bg-gray-100 p-4 rounded-md">{renderReport()}</div>
-        </TabsContent>
-      </Tabs>
-    </Card>
+
+        <div className="mt-8">
+          <h3 className="text-lg font-medium mb-3">Observações gerais:</h3>
+          <p>{reportData.observations || "Sem observações registradas."}</p>
+        </div>
+
+        <div className="mt-8">
+          <div className="flex items-center gap-2">
+            <span className="font-bold">Data da Diligência:</span>
+            <span>{reportData.date || "N/A"}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Rodapé com número da página */}
+      <div className="mt-auto pt-6 text-center">
+        <div className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300">
+          <p className="text-xs font-medium">2</p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function PageThree({ reportData }: { reportData: ReportPreviewProps["reportData"] }) {
+  return (
+    <div className="bg-white dark:bg-gray-900 text-black dark:text-white p-8 min-h-[842px] w-full flex flex-col">
+      {/* Cabeçalho */}
+      <div className="text-center mb-6 pb-4 border-b border-gray-200 dark:border-gray-700">
+        <p className="text-xs mb-1 text-gray-700 dark:text-gray-300">
+          Rua Fernão Albernaz 332 - apto 14 - Vila Nova Savoia – Contato: 11 97413-4386
+        </p>
+      </div>
+
+      {/* Conteúdo */}
+      <div className="mb-8">
+        <h2 className="text-xl font-semibold mb-6 text-gray-900 dark:text-white">Informações técnicas</h2>
+
+        <div className="whitespace-pre-line">
+          {reportData.technicalInfo || "Nenhuma informação técnica disponível."}
+        </div>
+      </div>
+
+      {/* Assinatura */}
+      <div className="mt-auto pt-8 text-center">
+        <p className="font-medium">{reportData.engineer || "Engenheiro Responsável"}</p>
+        <p className="text-sm text-gray-600 dark:text-gray-400">{reportData.registration || "Registro Profissional"}</p>
+      </div>
+
+      {/* Rodapé com número da página */}
+      <div className="mt-6 pt-4 text-center">
+        <div className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300">
+          <p className="text-xs font-medium">3</p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function PhotoPage({
+  pageNumber,
+  photos,
+}: {
+  pageNumber: number
+  photos: { id: string; url: string; caption: string }[]
+}) {
+  return (
+    <div className="bg-white dark:bg-gray-900 text-black dark:text-white p-8 min-h-[842px] w-full flex flex-col">
+      {/* Cabeçalho */}
+      <div className="text-center mb-6 pb-4 border-b border-gray-200 dark:border-gray-700">
+        <p className="text-xs mb-1 text-gray-700 dark:text-gray-300">
+          Rua Fernão Albernaz 332 - apto 14 - Vila Nova Savoia – Contato: 11 97413-4386
+        </p>
+      </div>
+
+      {/* Fotos e legendas */}
+      <div className="flex-grow flex flex-col justify-between">
+        {photos.length > 0 && (
+          <div className="mb-6">
+            {/* Legenda acima da foto */}
+            <p className="mt-2 text-sm mb-3 text-center">{photos[0].caption || "Sem legenda"}</p>
+
+            <div
+              className="aspect-video w-full bg-white dark:bg-gray-800 flex items-center justify-center rounded-lg overflow-hidden"
+              style={{ maxHeight: "280px" }}
+            >
+              {photos[0].url ? (
+                <img
+                  src={photos[0].url || "/placeholder.svg"}
+                  alt="Foto do laudo"
+                  className="max-h-full object-contain"
+                />
+              ) : (
+                <p className="text-gray-500 dark:text-gray-400">Imagem não disponível</p>
+              )}
+            </div>
+          </div>
+        )}
+
+        {photos.length > 1 && (
+          <div>
+            {/* Legenda acima da foto */}
+            <p className="mt-2 text-sm mb-3 text-center">{photos[1].caption || "Sem legenda"}</p>
+
+            <div
+              className="aspect-video w-full bg-white dark:bg-gray-800 flex items-center justify-center rounded-lg overflow-hidden"
+              style={{ maxHeight: "280px" }}
+            >
+              {photos[1].url ? (
+                <img
+                  src={photos[1].url || "/placeholder.svg"}
+                  alt="Foto do laudo"
+                  className="max-h-full object-contain"
+                />
+              ) : (
+                <p className="text-gray-500 dark:text-gray-400">Imagem não disponível</p>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Rodapé com número da página */}
+      <div className="mt-auto pt-6 text-center">
+        <div className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300">
+          <p className="text-xs font-medium">{pageNumber}</p>
+        </div>
+      </div>
+    </div>
   )
 }
