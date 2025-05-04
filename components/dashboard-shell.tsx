@@ -26,7 +26,7 @@ export function DashboardShell({ children, className, ...props }: DashboardShell
 
   const handleLogout = () => {
     logout()
-    router.push("/login")
+    router.push("/")
   }
 
   const navigateToType = (type: string) => {
@@ -111,7 +111,7 @@ export function DashboardShell({ children, className, ...props }: DashboardShell
                   className="w-full justify-start text-red-500 hover:text-red-600 hover:bg-red-100/10"
                   onClick={() => {
                     logout()
-                    router.push("/login")
+                    router.push("/")
                     setSidebarOpen(false)
                   }}
                 >

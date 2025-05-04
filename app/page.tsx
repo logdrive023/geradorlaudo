@@ -31,8 +31,8 @@ export default function Home() {
         <section className="hero-futuristic w-full py-12 md:py-16 lg:py-24">
           <div className="hero-grid"></div>
           <div className="container px-4 md:px-6 hero-content">
-            <div className="grid gap-6 lg:grid-cols-2 lg:gap-12 items-center">
-              <div className="flex flex-col justify-center space-y-4">
+            <div className="grid gap-6 lg:grid-cols-2 lg:gap-12 items-center justify-items-center">
+              <div className="flex flex-col justify-center space-y-4 text-center lg:text-left">
                 <div className="space-y-2">
                   <h1 className="text-3xl font-bold tracking-tighter sm:text-5xl text-white">
                     Crie laudos técnicos <span className="text-gradient">profissionais</span> em minutos
@@ -55,7 +55,7 @@ export default function Home() {
                   </Link>
                 </div>
               </div>
-              <div className="mx-auto w-full max-w-[500px] aspect-video overflow-hidden rounded-xl bg-background/10 shadow-lg border border-white/10 backdrop-blur-sm">
+              <div className="mx-auto w-full max-w-[500px] aspect-video overflow-hidden rounded-xl bg-background/10 shadow-lg border border-white/10 backdrop-blur-sm flex items-center justify-center">
                 <img
                   src="/placeholder.svg?key=igohu"
                   alt="Interface futurista de laudo técnico"

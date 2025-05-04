@@ -1,167 +1,133 @@
 "use client"
 
 import type React from "react"
-
-import { useState } from "react"
+import { Suspense } from "react"
+import { cn } from "@/lib/utils"
+import { useRouter, usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import { Label } from "@/components/ui/label"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Send } from "lucide-react"
+import { FileText, LogOut, Menu, X } from "lucide-react"
+import Link from "next/link"
+import { useState } from "react"
+import { useAuth } from "@/lib/auth-context"
+import { ThemeToggle } from "@/components/theme-toggle"
 
-export function ContactForm() {
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    phone: "",
-    message: "",
-  })
+// Componente separado para usar useSearchParams
+import { DashboardNavigation } from "./dashboard-navigation"
 
-  const [status, setStatus] = useState<{
-    type: "success" | "error" | null
-    message: string
-  }>({
-    type: null,
-    message: "",
-  })
+interface DashboardShellProps extends React.HTMLAttributes<HTMLDivElement> {
+  children: React.ReactNode
+}
 
-  const [isSubmitting, setIsSubmitting] = useState(false)
+export function DashboardShell({ children, className, ...props }: DashboardShellProps) {
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const { user, logout } = useAuth()
+  const router = useRouter()
+  const pathname = usePathname()
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }))
+  const handleLogout = () => {
+    logout()
+    router.push("/")
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsSubmitting(true)
-
-    try {
-      // Simulação de envio - em produção, substituir por uma chamada real à API
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-
-      // Limpar o formulário após envio bem-sucedido
-      setFormData({
-        name: "",
-        email: "",
-        phone: "",
-        message: "",
-      })
-
-      setStatus({
-        type: "success",
-        message: "Mensagem enviada com sucesso! Entraremos em contato em breve.",
-      })
-
-      // Limpar a mensagem de sucesso após 5 segundos
-      setTimeout(() => {
-        setStatus({
-          type: null,
-          message: "",
-        })
-      }, 5000)
-    } catch (error) {
-      setStatus({
-        type: "error",
-        message: "Erro ao enviar mensagem. Por favor, tente novamente.",
-      })
-    } finally {
-      setIsSubmitting(false)
-    }
+  const navigateToType = (type: string) => {
+    router.push(`/dashboard?type=${type}`)
+    setSidebarOpen(false)
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 p-2">
-      <h3 className="text-xl font-bold mb-6 text-white">Envie uma mensagem</h3>
+    <div className="flex min-h-screen flex-col">
+      {/* Header */}
+      <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/60 md:px-6">
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setSidebarOpen(!sidebarOpen)}>
+            {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            <span className="sr-only">Toggle Menu</span>
+          </Button>
+          <Link href="/dashboard" className="flex items-center gap-2 text-xl font-bold text-blue-500">
+            <FileText className="h-5 w-5" />
+            LaudoTech
+          </Link>
+        </div>
+        <div className="flex items-center gap-4">
+          <nav className="hidden md:flex items-center gap-2">
+            <Link href="/dashboard">
+              <Button variant="ghost" size="sm">
+                Dashboard
+              </Button>
+            </Link>
+            <Link href="/settings">
+              <Button variant="ghost" size="sm">
+                Configurações
+              </Button>
+            </Link>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleLogout}
+              className="text-red-500 hover:text-red-600 hover:bg-red-100/10"
+            >
+              <LogOut className="mr-2 h-4 w-4" />
+              Sair
+            </Button>
+          </nav>
+          <ThemeToggle />
+          <div className="hidden md:flex items-center gap-2">
+            <div className="text-sm text-muted-foreground">
+              <span className="font-medium text-foreground">{user?.name || "Engenheiro Demo"}</span>
+            </div>
+          </div>
+        </div>
+      </header>
 
-      {status.type && (
-        <Alert
-          variant={status.type === "error" ? "destructive" : "default"}
-          className="bg-white/10 border-white/20 p-4"
-        >
-          <AlertDescription className="text-white">{status.message}</AlertDescription>
-        </Alert>
+      {/* Sidebar Mobile */}
+      {sidebarOpen && (
+        <div className="fixed inset-0 z-40 md:hidden">
+          <div className="fixed inset-0 bg-background/80 backdrop-blur-sm" onClick={() => setSidebarOpen(false)}></div>
+          <nav className="fixed top-16 left-0 bottom-0 w-3/4 border-r bg-background p-6 shadow-lg">
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <h4 className="text-sm font-medium text-muted-foreground">Navegação</h4>
+                <Link href="/dashboard" onClick={() => setSidebarOpen(false)}>
+                  <Button variant="ghost" size="sm" className="w-full justify-start">
+                    Dashboard
+                  </Button>
+                </Link>
+                <Link href="/settings" onClick={() => setSidebarOpen(false)}>
+                  <Button variant="ghost" size="sm" className="w-full justify-start">
+                    Configurações
+                  </Button>
+                </Link>
+              </div>
+              <div className="space-y-2">
+                <h4 className="text-sm font-medium text-muted-foreground">Tipos de Laudos</h4>
+                <Suspense fallback={null}>
+                  <DashboardNavigation navigateToType={navigateToType} />
+                </Suspense>
+              </div>
+              <div className="pt-4">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="w-full justify-start text-red-500 hover:text-red-600 hover:bg-red-100/10"
+                  onClick={() => {
+                    logout()
+                    router.push("/")
+                    setSidebarOpen(false)
+                  }}
+                >
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Sair
+                </Button>
+              </div>
+            </div>
+          </nav>
+        </div>
       )}
 
-      <div className="grid gap-2">
-        <Label htmlFor="name" className="text-white">
-          Nome completo
-        </Label>
-        <Input
-          id="name"
-          name="name"
-          value={formData.name}
-          onChange={handleChange}
-          placeholder="Seu nome completo"
-          required
-          className="bg-white/10 border-white/20 text-white placeholder:text-white/50"
-        />
-      </div>
-
-      <div className="grid gap-2">
-        <Label htmlFor="email" className="text-white">
-          Email
-        </Label>
-        <Input
-          id="email"
-          name="email"
-          type="email"
-          value={formData.email}
-          onChange={handleChange}
-          placeholder="seu.email@exemplo.com"
-          required
-          className="bg-white/10 border-white/20 text-white placeholder:text-white/50"
-        />
-      </div>
-
-      <div className="grid gap-2">
-        <Label htmlFor="phone" className="text-white">
-          Telefone
-        </Label>
-        <Input
-          id="phone"
-          name="phone"
-          value={formData.phone}
-          onChange={handleChange}
-          placeholder="(00) 00000-0000"
-          className="bg-white/10 border-white/20 text-white placeholder:text-white/50"
-        />
-      </div>
-
-      <div className="grid gap-2">
-        <Label htmlFor="message" className="text-white">
-          Mensagem
-        </Label>
-        <Textarea
-          id="message"
-          name="message"
-          value={formData.message}
-          onChange={handleChange}
-          placeholder="Como podemos ajudar?"
-          rows={4}
-          required
-          className="bg-white/10 border-white/20 text-white placeholder:text-white/50"
-        />
-      </div>
-
-      <Button
-        type="submit"
-        className="w-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white"
-        disabled={isSubmitting}
-      >
-        {isSubmitting ? (
-          "Enviando..."
-        ) : (
-          <>
-            Enviar mensagem
-            <Send className="ml-2 h-4 w-4" />
-          </>
-        )}
-      </Button>
-    </form>
+      {/* Main Content */}
+      <main className={cn("flex-1", className)} {...props}>
+        <div className="container mx-auto p-4 md:p-6 space-y-6">{children}</div>
+      </main>
+    </div>
   )
 }
