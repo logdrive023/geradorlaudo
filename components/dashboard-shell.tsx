@@ -1,15 +1,18 @@
 "use client"
 
 import type React from "react"
-
+import { Suspense } from "react"
 import { cn } from "@/lib/utils"
-import { useRouter, usePathname, useSearchParams } from "next/navigation"
+import { useRouter, usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { FileText, LogOut, Menu, X, FileSpreadsheet, Scale } from "lucide-react"
+import { FileText, LogOut, Menu, X } from "lucide-react"
 import Link from "next/link"
 import { useState } from "react"
 import { useAuth } from "@/lib/auth-context"
 import { ThemeToggle } from "@/components/theme-toggle"
+
+// Componente separado para usar useSearchParams
+import { DashboardNavigation } from "./dashboard-navigation"
 
 interface DashboardShellProps extends React.HTMLAttributes<HTMLDivElement> {
   children: React.ReactNode
@@ -20,8 +23,6 @@ export function DashboardShell({ children, className, ...props }: DashboardShell
   const { user, logout } = useAuth()
   const router = useRouter()
   const pathname = usePathname()
-  const searchParams = useSearchParams()
-  const currentType = searchParams.get("type")
 
   const handleLogout = () => {
     logout()
@@ -99,33 +100,9 @@ export function DashboardShell({ children, className, ...props }: DashboardShell
               </div>
               <div className="space-y-2">
                 <h4 className="text-sm font-medium text-muted-foreground">Tipos de Laudos</h4>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="w-full justify-start"
-                  onClick={() => navigateToType("cautelar")}
-                >
-                  <FileText className="mr-2 h-4 w-4 text-blue-500" />
-                  Laudos Cautelares
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="w-full justify-start"
-                  onClick={() => navigateToType("contabil")}
-                >
-                  <FileSpreadsheet className="mr-2 h-4 w-4 text-purple-500" />
-                  Laudos Contábeis
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="w-full justify-start"
-                  onClick={() => navigateToType("extrajudicial")}
-                >
-                  <Scale className="mr-2 h-4 w-4 text-amber-500" />
-                  Laudos Extra Judiciais
-                </Button>
+                <Suspense fallback={null}>
+                  <DashboardNavigation navigateToType={navigateToType} />
+                </Suspense>
               </div>
               <div className="pt-4">
                 <Button
