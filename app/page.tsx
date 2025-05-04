@@ -28,7 +28,7 @@ export default function Home() {
         </div>
       </header>
       <main className="flex-1">
-        <section className="hero-futuristic w-full py-12 md:py-16 lg:py-24">
+        <section className="hero-futuristic w-full py-12 md:py-16 lg:py-24 justify-items-center">
           <div className="hero-grid"></div>
           <div className="container px-4 md:px-6 hero-content">
             <div className="grid gap-6 lg:grid-cols-2 lg:gap-12 items-center justify-items-center">
@@ -67,7 +67,7 @@ export default function Home() {
             </div>
           </div>
         </section>
-        <section className="w-full py-12 md:py-16 lg:py-24 bg-gradient-to-b from-[#0f172a] to-[#1e1e38]">
+        <section className="w-full py-12 md:py-16 lg:py-24 bg-gradient-to-b from-[#0f172a] to-[#1e1e38] justify-items-center">
           <div className="container px-4 md:px-6">
             <div className="flex flex-col items-center justify-center space-y-4 text-center">
               <div className="space-y-2">
@@ -112,7 +112,7 @@ export default function Home() {
         </section>
 
         {/* Nova seção de contato */}
-        <section className="w-full py-12 md:py-16 lg:py-24 bg-gradient-to-b from-[#1e1e38] to-[#0f172a]">
+        <section className="w-full py-12 md:py-16 lg:py-24 bg-gradient-to-b from-[#1e1e38] to-[#0f172a] justify-items-center">
           <div className="container px-4 md:px-6">
             <div className="flex flex-col items-center justify-center space-y-4 text-center mb-10">
               <div className="space-y-2">

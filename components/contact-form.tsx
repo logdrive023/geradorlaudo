@@ -88,7 +88,7 @@ export function ContactForm() {
       )}
 
       <div className="grid gap-2">
-        <Label htmlFor="name" className="text-white">
+        <Label htmlFor="name" className="text-white" style={{ color: '#f1f1f1' }}>
           Nome completo
         </Label>
         <Input
@@ -103,7 +103,7 @@ export function ContactForm() {
       </div>
 
       <div className="grid gap-2">
-        <Label htmlFor="email" className="text-white">
+        <Label htmlFor="email" className="text-white" style={{ color: '#f1f1f1' }}>
           Email
         </Label>
         <Input
@@ -119,7 +119,7 @@ export function ContactForm() {
       </div>
 
       <div className="grid gap-2">
-        <Label htmlFor="phone" className="text-white">
+        <Label htmlFor="phone" className="text-white" style={{ color: '#f1f1f1' }}>
           Telefone
         </Label>
         <Input
@@ -133,7 +133,7 @@ export function ContactForm() {
       </div>
 
       <div className="grid gap-2">
-        <Label htmlFor="message" className="text-white">
+        <Label htmlFor="message" className="text-white" style={{ color: '#f1f1f1' }}>
           Mensagem
         </Label>
         <Textarea
