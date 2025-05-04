@@ -104,8 +104,19 @@ export function WordPreview({ reportData, photos = [], reportType }: WordPreview
 function PageOne({ reportData }: { reportData: WordPreviewProps["reportData"] }) {
   return (
     <div className="p-8 min-h-[297mm] w-[210mm] flex flex-col word-page">
-      {/* Cabeçalho */}
-      <div className="text-center mb-6 pb-4 border-b border-gray-200 dark:border-gray-700">
+      {/* Cabeçalho com Logo */}
+      <div className="flex items-center justify-between mb-6 pb-4 border-b border-gray-200 dark:border-gray-700">
+        {reportData.logoImage ? (
+          <div className="max-w-[150px] max-h-[60px]">
+            <img
+              src={reportData.logoImage || "/placeholder.svg"}
+              alt="Logo"
+              className="max-h-full max-w-full object-contain"
+            />
+          </div>
+        ) : (
+          <div className="w-[150px]"></div> // Espaço reservado para o logo
+        )}
         <p className="text-xs mb-1 text-gray-700 dark:text-gray-300">
           Rua Fernão Albernaz 332 - apto 14 - Vila Nova Savoia – Contato: 11 97413-4386
         </p>
@@ -152,6 +163,22 @@ function PageOne({ reportData }: { reportData: WordPreviewProps["reportData"] })
 function PageTwo({ reportData }: { reportData: WordPreviewProps["reportData"] }) {
   return (
     <div className="p-8 min-h-[297mm] w-[210mm] flex flex-col word-page">
+      {/* Cabeçalho com Logo */}
+      <div className="flex items-center justify-between mb-6 pb-4 border-b border-gray-200 dark:border-gray-700">
+        {reportData.logoImage ? (
+          <div className="max-w-[150px] max-h-[60px]">
+            <img
+              src={reportData.logoImage || "/placeholder.svg"}
+              alt="Logo"
+              className="max-h-full max-w-full object-contain"
+            />
+          </div>
+        ) : (
+          <div className="w-[150px]"></div> // Espaço reservado para o logo
+        )}
+        <p className="text-xs">Rua Fernão Albernaz 332 - apto 14 - Vila Nova Savoia – Contato: 11 97413-4386</p>
+      </div>
+
       {/* Conteúdo */}
       <div className="mb-8">
         <h2 className="text-lg font-semibold mb-4">Ficha com dados da construção e seus ocupantes:</h2>
@@ -200,6 +227,22 @@ function PageTwo({ reportData }: { reportData: WordPreviewProps["reportData"] })
 function PageThree({ reportData }: { reportData: WordPreviewProps["reportData"] }) {
   return (
     <div className="p-8 min-h-[297mm] w-[210mm] flex flex-col word-page">
+      {/* Cabeçalho com Logo */}
+      <div className="flex items-center justify-between mb-6 pb-4 border-b border-gray-200 dark:border-gray-700">
+        {reportData.logoImage ? (
+          <div className="max-w-[150px] max-h-[60px]">
+            <img
+              src={reportData.logoImage || "/placeholder.svg"}
+              alt="Logo"
+              className="max-h-full max-w-full object-contain"
+            />
+          </div>
+        ) : (
+          <div className="w-[150px]"></div> // Espaço reservado para o logo
+        )}
+        <p className="text-xs">Rua Fernão Albernaz 332 - apto 14 - Vila Nova Savoia – Contato: 11 97413-4386</p>
+      </div>
+
       {/* Conteúdo */}
       <div className="mb-8">
         <h2 className="text-lg font-semibold mb-4">Informações técnicas</h2>
@@ -232,6 +275,12 @@ function PhotoPage({
 }) {
   return (
     <div className="p-8 min-h-[297mm] w-[210mm] flex flex-col word-page">
+      {/* Cabeçalho com Logo */}
+      <div className="flex items-center justify-between mb-6 pb-4 border-b border-gray-200 dark:border-gray-700">
+        <div className="w-[150px]"></div> {/* Espaço reservado para o logo */}
+        <p className="text-xs">Rua Fernão Albernaz 332 - apto 14 - Vila Nova Savoia – Contato: 11 97413-4386</p>
+      </div>
+
       {/* Fotos e legendas */}
       <div className="flex-grow flex flex-col justify-between">
         {photos.length > 0 && (

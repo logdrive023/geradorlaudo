@@ -10,9 +10,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { Progress } from "@/components/ui/progress"
 import { exportToWord, exportToPDF } from "@/lib/export-utils"
 import { FileDown, FileText, FileImage } from "lucide-react"
+import { LoadingSpinner } from "@/components/loading-spinner"
 
 interface ExportDialogProps {
   open: boolean
@@ -128,10 +128,7 @@ export function ExportDialog({ open, onOpenChange, reportData, photos, reportTyp
 
           {isExporting && (
             <div className="space-y-2">
-              <Progress value={progress} className="h-2" />
-              <p className="text-xs text-center text-muted-foreground">
-                {progress < 100 ? "Exportando..." : "Exportação concluída!"}
-              </p>
+              <LoadingSpinner text={progress < 100 ? `Exportando... ${progress}%` : "Exportação concluída!"} />
             </div>
           )}
 

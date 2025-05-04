@@ -855,3 +855,176 @@ body:not(.dark) .flex.items-start.space-x-3 p {
   font-weight: 600;
   text-shadow: 0 0 10px rgba(96, 165, 250, 0.3);
 }
+
+/* Melhorias de responsividade para mobile */
+@media (max-width: 640px) {
+  .hero-content h1 {
+    font-size: 1.75rem;
+    line-height: 2.25rem;
+  }
+
+  .hero-content p {
+    font-size: 1rem;
+    line-height: 1.5rem;
+  }
+
+  .container {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  /* Ajustes para botões em telas pequenas */
+  .hero-content .flex-col.gap-2 {
+    width: 100%;
+  }
+
+  .hero-content .btn-register,
+  .hero-content .btn-login {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* Ajustes adicionais para responsividade */
+@media (max-width: 768px) {
+  .grid.lg\:grid-cols-2 {
+    grid-template-columns: 1fr;
+  }
+
+  .grid.lg\:grid-cols-3 {
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  }
+}
+
+/*
+Add the loading animation keyframes at the end of the file
+*/
+@keyframes progress-loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.animate-progress-loading {
+  animation: progress-loading 2s linear infinite;
+}
+
+@keyframes gradient {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.animate-gradient {
+  background-size: 200% 200%;
+  animation: gradient 2s ease infinite;
+}
+
+@keyframes loading-dash {
+  0% {
+    stroke-dashoffset: 60;
+  }
+  50% {
+    stroke-dashoffset: 30;
+  }
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes loading-progress {
+  0% {
+    transform: translateX(-100%);
+    background-position: 0% 0%;
+  }
+  50% {
+    background-position: 100% 0%;
+  }
+  100% {
+    transform: translateX(0%);
+    background-position: 0% 0%;
+  }
+}
+
+.animate-loading-dash {
+  animation: loading-dash 1.5s ease-in-out infinite alternate;
+}
+
+.animate-loading-progress {
+  animation: loading-progress 2s ease infinite;
+}
+
+/* Animações */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.fade-in {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+.scale-in {
+  animation: scaleIn 0.3s ease-out;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(var(--primary), 0.3);
+  border-radius: 50%;
+  border-top-color: hsl(var(--primary));
+  animation: spin 1s linear infinite;
+}
+
+/* Gradientes para botões */
+.gradient-blue {
+  background: linear-gradient(to right, #4f46e5, #3b82f6);
+  color: white;
+}
+
+.gradient-purple {
+  background: linear-gradient(to right, #8b5cf6, #d946ef);
+  color: white;
+}
+
+/* Estilos para a página Word */
+.word-page {
+  background-color: white;
+  color: black;
+}
+
+.dark .word-page {
+  background-color: white;
+  color: black;
+}

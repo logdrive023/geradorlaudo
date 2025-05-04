@@ -1,5 +1,21 @@
 import FileSaver from "file-saver"
-import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, ImageRun, BorderStyle } from "docx"
+import {
+  Document,
+  Packer,
+  Paragraph,
+  TextRun,
+  AlignmentType,
+  ImageRun,
+  HeadingLevel,
+  BorderStyle,
+  Table,
+  TableRow,
+  TableCell,
+  WidthType,
+  PageNumber,
+  Footer,
+  Header,
+} from "docx"
 import { jsPDF } from "jspdf"
 import "jspdf-autotable"
 import html2canvas from "html2canvas"
@@ -32,7 +48,7 @@ interface Photo {
   caption: string
 }
 
-// Corrigir a função urlToArrayBuffer para lidar melhor com imagens base64
+// Função para converter URL para ArrayBuffer
 async function urlToArrayBuffer(url: string): Promise<ArrayBuffer> {
   try {
     // Verificar se é uma URL base64
@@ -73,7 +89,7 @@ async function urlToArrayBuffer(url: string): Promise<ArrayBuffer> {
   }
 }
 
-// Função melhorada para processar imagens base64
+// Função para processar imagens base64
 async function processBase64Image(base64String: string, maxWidth: number, maxHeight: number): Promise<string> {
   return new Promise((resolve, reject) => {
     try {
@@ -136,6 +152,44 @@ async function processBase64Image(base64String: string, maxWidth: number, maxHei
   })
 }
 
+// Função para criar um placeholder de imagem
+async function createPlaceholderImage(text: string): Promise<ArrayBuffer> {
+  const canvas = document.createElement("canvas")
+  canvas.width = 400
+  canvas.height = 300
+  const ctx = canvas.getContext("2d")
+
+  if (!ctx) {
+    return new ArrayBuffer(0)
+  }
+
+  // Fundo branco
+  ctx.fillStyle = "#ffffff"
+  ctx.fillRect(0, 0, canvas.width, canvas.height)
+
+  // Borda cinza
+  ctx.strokeStyle = "#cccccc"
+  ctx.lineWidth = 2
+  ctx.strokeRect(2, 2, canvas.width - 4, canvas.height - 4)
+
+  // Texto em cinza escuro
+  ctx.fillStyle = "#666666"
+  ctx.font = "20px Arial"
+  ctx.textAlign = "center"
+  ctx.fillText(text, canvas.width / 2, canvas.height / 2)
+
+  const dataUrl = canvas.toDataURL("image/png")
+  const response = await fetch(dataUrl)
+  const blob = await response.blob()
+
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onloadend = () => resolve(reader.result as ArrayBuffer)
+    reader.onerror = reject
+    reader.readAsArrayBuffer(blob)
+  })
+}
+
 // Função melhorada para adicionar a capa do PDF
 async function addCoverPage(doc: jsPDF, reportData: ReportData) {
   try {
@@ -146,7 +200,7 @@ async function addCoverPage(doc: jsPDF, reportData: ReportData) {
         const processedLogo = await processBase64Image(reportData.logoImage, 200, 80)
 
         if (processedLogo) {
-          // Adicionar o logo ao PDF
+          // Adicionar o logo ao PDF - tamanho padronizado
           doc.addImage(processedLogo, "JPEG", 20, 20, 40, 20)
           console.log("Logo adicionado com sucesso")
         }
@@ -218,7 +272,7 @@ async function addLogoToPage(doc: jsPDF, reportData: ReportData) {
       const processedLogo = await processBase64Image(reportData.logoImage, 200, 80)
 
       if (processedLogo) {
-        // Adicionar o logo ao PDF
+        // Adicionar o logo ao PDF - tamanho padronizado
         doc.addImage(processedLogo, "JPEG", 20, 20, 40, 20)
       }
     }
@@ -229,72 +283,60 @@ async function addLogoToPage(doc: jsPDF, reportData: ReportData) {
 
 // Função auxiliar para adicionar a página de dados ao PDF
 async function addDataPage(doc: jsPDF, reportData: ReportData) {
-  // Título da seção
+  // Adicionar o logo no canto superior esquerdo
+  await addLogoToPage(doc, reportData)
+
+  // Título da seção - MOVIDO PARA BAIXO DO LOGO
   doc.setFontSize(14)
   doc.setFont("times", "bold")
-  doc.text("Ficha com dados da construção e seus ocupantes:", 20, 30)
+  doc.text("Ficha com dados da construção e seus ocupantes:", 20, 50)
 
-  // Adicionar o logo no canto superior direito (em vez de esquerdo)
-  try {
-    if (reportData.logoImage && reportData.logoImage.length > 100) {
-      // Processar o logo para garantir que seja exibido corretamente
-      const processedLogo = await processBase64Image(reportData.logoImage, 200, 80)
-
-      if (processedLogo) {
-        // Adicionar o logo ao PDF no canto superior direito
-        doc.addImage(processedLogo, "JPEG", 150, 20, 40, 20)
-      }
-    }
-  } catch (error) {
-    console.error("Erro ao adicionar logo à página:", error)
-  }
-
-  // Dados da construção
+  // Dados da construção - AJUSTADOS PARA COMEÇAR ABAIXO DO TÍTULO
   doc.setFontSize(12)
   doc.setFont("times", "bold")
-  doc.text("Ocupante / telefone:", 20, 50)
+  doc.text("Ocupante / telefone:", 20, 65)
   doc.setFont("times", "normal")
-  doc.text(reportData.occupant, 70, 50)
+  doc.text(reportData.occupant || "N/A", 70, 65)
 
   doc.setFont("times", "bold")
-  doc.text("Vistoriador:", 20, 60)
+  doc.text("Vistoriador:", 20, 75)
   doc.setFont("times", "normal")
-  doc.text(reportData.inspector, 70, 60)
+  doc.text(reportData.inspector || "N/A", 70, 75)
 
   doc.setFont("times", "bold")
-  doc.text("Uso do Imóvel:", 20, 70)
+  doc.text("Uso do Imóvel:", 20, 85)
   doc.setFont("times", "normal")
-  doc.text(reportData.usage, 70, 70)
+  doc.text(reportData.usage || "N/A", 70, 85)
 
   doc.setFont("times", "bold")
-  doc.text("Idade real ou estimada / aparente:", 20, 80)
+  doc.text("Idade real ou estimada / aparente:", 20, 95)
   doc.setFont("times", "normal")
-  doc.text(reportData.age, 100, 80)
+  doc.text(reportData.age || "N/A", 100, 95)
 
   doc.setFont("times", "bold")
-  doc.text("Tipo de edificação:", 20, 90)
+  doc.text("Tipo de edificação:", 20, 105)
   doc.setFont("times", "normal")
-  doc.text(reportData.buildingType, 70, 90)
+  doc.text(reportData.buildingType || "N/A", 70, 105)
 
   doc.setFont("times", "bold")
-  doc.text("Estado de conservação:", 20, 100)
+  doc.text("Estado de conservação:", 20, 115)
   doc.setFont("times", "normal")
-  doc.text(reportData.conservationState, 70, 100)
+  doc.text(reportData.conservationState || "N/A", 70, 115)
 
   doc.setFont("times", "bold")
-  doc.text("Padrão construtivo:", 20, 110)
+  doc.text("Padrão construtivo:", 20, 125)
   doc.setFont("times", "normal")
-  doc.text(reportData.constructionStandard, 70, 110)
+  doc.text(reportData.constructionStandard || "N/A", 70, 125)
 
   doc.setFont("times", "bold")
-  doc.text("Observações gerais:", 20, 130)
+  doc.text("Observações gerais:", 20, 140)
   doc.setFont("times", "normal")
-  doc.text(reportData.observations, 20, 140, { maxWidth: 170 })
+  doc.text(reportData.observations || "N/A", 20, 150, { maxWidth: 170 })
 
   doc.setFont("times", "bold")
-  doc.text("Data da Diligência:", 20, 160)
+  doc.text("Data da Diligência:", 20, 170)
   doc.setFont("times", "normal")
-  doc.text(reportData.date, 70, 160)
+  doc.text(reportData.date || "N/A", 70, 170)
 
   // Rodapé com número da página
   doc.setFontSize(10)
@@ -306,38 +348,26 @@ async function addDataPage(doc: jsPDF, reportData: ReportData) {
 
 // Função auxiliar para adicionar a página de informações técnicas ao PDF
 async function addTechnicalInfoPage(doc: jsPDF, reportData: ReportData) {
-  // Título da seção
+  // Adicionar o logo no canto superior esquerdo
+  await addLogoToPage(doc, reportData)
+
+  // Título da seção - MOVIDO PARA BAIXO DO LOGO
   doc.setFontSize(14)
   doc.setFont("times", "bold")
-  doc.text("Informações técnicas", 20, 30)
+  doc.text("Informações técnicas", 20, 50)
 
-  // Adicionar o logo no canto superior direito (em vez de esquerdo)
-  try {
-    if (reportData.logoImage && reportData.logoImage.length > 100) {
-      // Processar o logo para garantir que seja exibido corretamente
-      const processedLogo = await processBase64Image(reportData.logoImage, 200, 80)
-
-      if (processedLogo) {
-        // Adicionar o logo ao PDF no canto superior direito
-        doc.addImage(processedLogo, "JPEG", 150, 20, 40, 20)
-      }
-    }
-  } catch (error) {
-    console.error("Erro ao adicionar logo à página:", error)
-  }
-
-  // Informações técnicas
+  // Informações técnicas - AJUSTADAS PARA COMEÇAR ABAIXO DO TÍTULO
   doc.setFontSize(12)
   doc.setFont("times", "normal")
 
   // Dividir o texto em linhas para melhor formatação
-  const textLines = doc.splitTextToSize(reportData.technicalInfo, 170)
-  doc.text(textLines, 20, 50)
+  const textLines = doc.splitTextToSize(reportData.technicalInfo || "Nenhuma informação técnica disponível.", 170)
+  doc.text(textLines, 20, 65)
 
   // Assinatura
   doc.setFontSize(12)
-  doc.text(reportData.engineer, 105, 240, { align: "center" })
-  doc.text(reportData.registration, 105, 250, { align: "center" })
+  doc.text(reportData.engineer || "Engenheiro Responsável", 105, 240, { align: "center" })
+  doc.text(reportData.registration || "Registro Profissional", 105, 250, { align: "center" })
 
   // Rodapé com número da página
   doc.setFontSize(10)
@@ -349,30 +379,17 @@ async function addTechnicalInfoPage(doc: jsPDF, reportData: ReportData) {
 
 // Função auxiliar para adicionar a página de fotos ao PDF
 async function addPhotoPage(doc: jsPDF, photos: Photo[], pageNumber: number, reportData: any) {
-  // Adicionar o logo no canto superior direito (em vez de esquerdo)
-  try {
-    if (reportData.logoImage && reportData.logoImage.length > 100) {
-      // Processar o logo para garantir que seja exibido corretamente
-      const processedLogo = await processBase64Image(reportData.logoImage, 200, 80)
+  // Adicionar o logo no canto superior esquerdo
+  await addLogoToPage(doc, reportData)
 
-      if (processedLogo) {
-        // Adicionar o logo ao PDF no canto superior direito
-        doc.addImage(processedLogo, "JPEG", 150, 20, 40, 20)
-      }
-    }
-  } catch (error) {
-    console.error("Erro ao adicionar logo à página:", error)
-  }
-
-  // Primeira foto (se existir)
+  // Primeira foto (se existir) - AJUSTADA PARA COMEÇAR ABAIXO DO LOGO
   if (photos.length > 0) {
     try {
-      // Adicionar a legenda ANTES
-      // da foto (sem retângulo)
+      // Adicionar a legenda ANTES da foto (sem retângulo)
       doc.setFontSize(11)
       doc.setFont("times", "normal")
-      // Remover o retângulo para a legenda
-      doc.text(photos[0].caption || "Sem legenda", 105, 46, { align: "center", maxWidth: 150 })
+      // Remover o retângulo para a legenda - AJUSTADA PARA COMEÇAR ABAIXO DO LOGO
+      doc.text(photos[0].caption || "Sem legenda", 105, 50, { align: "center", maxWidth: 150 })
 
       // Criar um canvas para a foto
       const canvas = document.createElement("canvas")
@@ -417,11 +434,11 @@ async function addPhotoPage(doc: jsPDF, photos: Photo[], pageNumber: number, rep
 
         // Adicionar a imagem do canvas ao PDF - altura reduzida para não ultrapassar o rodapé
         const imgData = canvas.toDataURL("image/png")
-        doc.addImage(imgData, "PNG", 30, 55, 150, 90)
+        doc.addImage(imgData, "PNG", 30, 60, 150, 90)
       } else {
         // Fallback se o contexto do canvas não estiver disponível
         doc.setFillColor(240, 240, 240)
-        doc.rect(30, 55, 150, 90, "F")
+        doc.rect(30, 60, 150, 90, "F")
         doc.setFontSize(12)
         doc.text("Imagem não disponível", 105, 105, { align: "center" })
       }
@@ -430,7 +447,7 @@ async function addPhotoPage(doc: jsPDF, photos: Photo[], pageNumber: number, rep
 
       // Adicionar um placeholder se a imagem falhar
       doc.setFillColor(240, 240, 240)
-      doc.rect(30, 55, 150, 90, "F")
+      doc.rect(30, 60, 150, 90, "F")
       doc.setFontSize(12)
       doc.text("Imagem não disponível", 105, 105, { align: "center" })
     }
@@ -443,7 +460,7 @@ async function addPhotoPage(doc: jsPDF, photos: Photo[], pageNumber: number, rep
       doc.setFontSize(11)
       doc.setFont("times", "normal")
       // Remover o retângulo para a legenda
-      doc.text(photos[1].caption || "Sem legenda", 105, 176, { align: "center", maxWidth: 150 })
+      doc.text(photos[1].caption || "Sem legenda", 105, 170, { align: "center", maxWidth: 150 })
 
       // Criar um canvas para a foto
       const canvas = document.createElement("canvas")
@@ -488,11 +505,11 @@ async function addPhotoPage(doc: jsPDF, photos: Photo[], pageNumber: number, rep
 
         // Adicionar a imagem do canvas ao PDF - altura reduzida para não ultrapassar o rodapé
         const imgData = canvas.toDataURL("image/png")
-        doc.addImage(imgData, "PNG", 30, 185, 150, 90)
+        doc.addImage(imgData, "PNG", 30, 180, 150, 90)
       } else {
         // Fallback se o contexto do canvas não estiver disponível
         doc.setFillColor(240, 240, 240)
-        doc.rect(30, 185, 150, 90, "F")
+        doc.rect(30, 180, 150, 90, "F")
         doc.setFontSize(12)
         doc.text("Imagem não disponível", 105, 235, { align: "center" })
       }
@@ -501,7 +518,7 @@ async function addPhotoPage(doc: jsPDF, photos: Photo[], pageNumber: number, rep
 
       // Adicionar um placeholder se a imagem falhar
       doc.setFillColor(240, 240, 240)
-      doc.rect(30, 185, 150, 90, "F")
+      doc.rect(30, 180, 150, 90, "F")
       doc.setFontSize(12)
       doc.text("Imagem não disponível", 105, 235, { align: "center" })
     }
@@ -640,420 +657,6 @@ export async function exportToPDF(reportData: ReportData, photos: Photo[], onPro
   }
 }
 
-// Função para exportar para Word
-export async function exportToWord(reportData: ReportData, photos: Photo[], onProgress?: (progress: number) => void) {
-  try {
-    if (onProgress) onProgress(10)
-
-    console.log("Iniciando exportação para Word")
-    console.log("Imagem de localização:", reportData.locationImage ? "Presente" : "Ausente")
-    console.log("Logo personalizado:", reportData.logoImage ? "Presente" : "Ausente")
-
-    // Carregar o logo
-    let logoBuffer: ArrayBuffer
-    try {
-      if (reportData.logoImage && reportData.logoImage.length > 100) {
-        // Processar o logo para garantir que seja exibido corretamente
-        const processedLogo = await processBase64Image(reportData.logoImage, 200, 80)
-        logoBuffer = await urlToArrayBuffer(processedLogo)
-      } else {
-        // Usar o logo padrão
-        logoBuffer = await urlToArrayBuffer("/images/logo.png")
-      }
-    } catch (error) {
-      console.error("Erro ao carregar o logo:", error)
-      // Usar um placeholder se o logo não puder ser carregado
-      logoBuffer = new ArrayBuffer(0)
-    }
-
-    // Carregar a imagem de localização
-    let locationImageBuffer: ArrayBuffer
-    try {
-      if (reportData.locationImage && reportData.locationImage.length > 100) {
-        // Processar a imagem para garantir que seja exibido corretamente
-        const processedImage = await processBase64Image(reportData.locationImage, 800, 600)
-        locationImageBuffer = await urlToArrayBuffer(processedImage)
-      } else {
-        // Usar um placeholder
-        locationImageBuffer = await urlToArrayBuffer("/placeholder.svg?key=9wn41")
-      }
-    } catch (error) {
-      console.error("Erro ao processar imagem de localização:", error)
-      // Usar um placeholder se a imagem não puder ser carregada
-      locationImageBuffer = await urlToArrayBuffer("/placeholder.svg?key=9wn41")
-    }
-
-    // Criar um novo documento
-    const doc = new Document({
-      styles: {
-        default: {
-          document: {
-            run: {
-              font: "Times New Roman",
-            },
-            paragraph: {
-              spacing: {
-                line: 276, // 1.15 espaçamento de linha
-              },
-            },
-          },
-        },
-      },
-      sections: [
-        {
-          properties: {},
-          footers: {
-            default: {
-              children: [
-                new Paragraph({
-                  children: [
-                    new TextRun({
-                      text: "Rua Fernão Albernaz 332 - apto 14 - Vila Nova Savoia – Contato: 11 97413-4386",
-                      size: 16, // 8pt
-                      font: "Times New Roman",
-                    }),
-                  ],
-                  alignment: AlignmentType.LEFT,
-                  border: {
-                    top: {
-                      style: BorderStyle.SINGLE,
-                      size: 1,
-                      color: "888888",
-                    },
-                  },
-                  spacing: {
-                    before: 200,
-                  },
-                }),
-              ],
-            },
-          },
-          children: [
-            // Logo (se disponível)
-            new Paragraph({
-              alignment: AlignmentType.LEFT,
-              children: [
-                new ImageRun({
-                  data: logoBuffer,
-                  transformation: {
-                    width: 100,
-                    height: 50,
-                  },
-                }),
-              ],
-              spacing: {
-                after: 200,
-              },
-            }),
-            // Título
-            new Paragraph({
-              alignment: AlignmentType.CENTER,
-              children: [
-                new TextRun({
-                  text: reportData.title || "VISTORIA 3: RUA BENEDITO DOS SANTOS, 44 – PARQUE SÃO JORGE – SP",
-                  bold: true,
-                  size: 24, // 12pt
-                  font: "Times New Roman",
-                }),
-              ],
-              spacing: {
-                after: 400,
-              },
-            }),
-
-            // Imagem de localização
-            new Paragraph({
-              alignment: AlignmentType.CENTER,
-              children: [
-                new ImageRun({
-                  data: locationImageBuffer,
-                  transformation: {
-                    width: 400,
-                    height: 300,
-                  },
-                }),
-              ],
-              spacing: {
-                after: 200,
-              },
-            }),
-
-            // Legenda da imagem
-            new Paragraph({
-              alignment: AlignmentType.CENTER,
-              children: [
-                new TextRun({
-                  text: "Localização esquemática do imóvel",
-                  size: 20, // 10pt
-                  font: "Times New Roman",
-                }),
-              ],
-              spacing: {
-                after: 200,
-              },
-              // Removidas as bordas da legenda
-            }),
-
-            // Quebra de página
-            new Paragraph({
-              pageBreakBefore: true,
-            }),
-
-            // Página 2 - Dados da construção
-            new Paragraph({
-              heading: HeadingLevel.HEADING_2,
-              children: [
-                new TextRun({
-                  text: "Ficha com dados da construção e seus ocupantes:",
-                  bold: true,
-                  size: 24, // 12pt
-                  font: "Times New Roman",
-                }),
-              ],
-              spacing: {
-                after: 300,
-              },
-            }),
-
-            // Dados da construção
-            ...createDataParagraphs(reportData),
-
-            // Quebra de página
-            new Paragraph({
-              pageBreakBefore: true,
-            }),
-
-            // Página 3 - Informações técnicas
-            new Paragraph({
-              heading: HeadingLevel.HEADING_2,
-              children: [
-                new TextRun({
-                  text: "Informações técnicas",
-                  bold: true,
-                  size: 24, // 12pt
-                  font: "Times New Roman",
-                }),
-              ],
-              spacing: {
-                after: 300,
-              },
-            }),
-
-            // Informações técnicas
-            new Paragraph({
-              children: [
-                new TextRun({
-                  text: reportData.technicalInfo,
-                  size: 24, // 12pt
-                  font: "Times New Roman",
-                }),
-              ],
-              spacing: {
-                after: 400,
-              },
-            }),
-
-            // Assinatura
-            new Paragraph({
-              alignment: AlignmentType.CENTER,
-              children: [
-                new TextRun({
-                  text: reportData.engineer,
-                  size: 24, // 12pt
-                  font: "Times New Roman",
-                }),
-              ],
-              spacing: {
-                before: 800,
-                after: 200,
-              },
-            }),
-
-            new Paragraph({
-              alignment: AlignmentType.CENTER,
-              children: [
-                new TextRun({
-                  text: reportData.registration,
-                  size: 24, // 12pt
-                  font: "Times New Roman",
-                }),
-              ],
-            }),
-          ],
-        },
-      ],
-    })
-
-    if (onProgress) onProgress(50)
-
-    // Adicionar páginas de fotos
-    if (photos.length > 0) {
-      // Processar fotos em pares
-      for (let i = 0; i < photos.length; i += 2) {
-        const photoSection = {
-          properties: {},
-          footers: {
-            default: {
-              children: [
-                new Paragraph({
-                  children: [
-                    new TextRun({
-                      text: "Rua Fernão Albernaz 332 - apto 14 - Vila Nova Savoia – Contato: 11 97413-4386",
-                      size: 16, // 8pt
-                      font: "Times New Roman",
-                    }),
-                  ],
-                  alignment: AlignmentType.LEFT,
-                  border: {
-                    top: {
-                      style: BorderStyle.SINGLE,
-                      size: 1,
-                      color: "888888",
-                    },
-                  },
-                  spacing: {
-                    before: 200,
-                  },
-                }),
-              ],
-            },
-          },
-          children: [
-            // Primeira foto e legenda
-            ...(await createPhotoSection(photos[i], 1)),
-
-            // Segunda foto e legenda (se existir)
-            ...(i + 1 < photos.length ? await createPhotoSection(photos[i + 1], 2) : []),
-
-            // Quebra de página (exceto na última página)
-            ...(i + 2 < photos.length ? [new Paragraph({ pageBreakBefore: true })] : []),
-          ],
-        }
-
-        doc.addSection(photoSection)
-
-        if (onProgress) onProgress(50 + Math.floor(((i + 2) / photos.length) * 40))
-      }
-    }
-
-    // Gerar o documento
-    const buffer = await Packer.toBuffer(doc)
-
-    // Criar um Blob e fazer o download
-    const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" })
-    FileSaver.saveAs(blob, `VISTORIA 3 - RUA BENEDITO DOS SANTOS.docx`)
-
-    if (onProgress) onProgress(100)
-
-    return true
-  } catch (error) {
-    console.error("Erro ao exportar para Word:", error)
-    throw error
-  }
-}
-
-// Função auxiliar para criar parágrafos de dados
-function createDataParagraphs(reportData: ReportData) {
-  return [
-    createLabeledParagraph("Ocupante / telefone:", reportData.occupant),
-    createLabeledParagraph("Vistoriador:", reportData.inspector),
-    createLabeledParagraph("Uso do Imóvel:", reportData.usage),
-    createLabeledParagraph("Idade real ou estimada / aparente:", reportData.age),
-    createLabeledParagraph("Tipo de edificação:", reportData.buildingType),
-    createLabeledParagraph("Estado de conservação:", reportData.conservationState),
-    createLabeledParagraph("Padrão construtivo:", reportData.constructionStandard),
-    createLabeledParagraph("Observações gerais:", reportData.observations),
-    createLabeledParagraph("Data da Diligência:", reportData.date),
-  ]
-}
-
-// Função auxiliar para criar um parágrafo com label e valor
-function createLabeledParagraph(label: string, value: string) {
-  return new Paragraph({
-    children: [
-      new TextRun({
-        text: label + " ",
-        bold: true,
-        size: 24, // 12pt
-        font: "Times New Roman",
-      }),
-      new TextRun({
-        text: value,
-        size: 24, // 12pt
-        font: "Times New Roman",
-      }),
-    ],
-    spacing: {
-      after: 200,
-    },
-  })
-}
-
-// Função melhorada para criar seções de foto com melhor tratamento de erros
-async function createPhotoSection(photo: Photo, position: number) {
-  // Legenda da imagem (acima da foto, sem bordas)
-  const captionParagraph = new Paragraph({
-    alignment: AlignmentType.CENTER,
-    children: [
-      new TextRun({
-        text: photo.caption || "Sem legenda",
-        size: 20, // 10pt
-        font: "Times New Roman",
-      }),
-    ],
-    spacing: {
-      before: position === 1 ? 200 : 400,
-      after: 100,
-    },
-  })
-
-  // Tentar carregar a imagem com melhor tratamento de erros
-  let imageParagraph: Paragraph
-  try {
-    // Converter a URL da imagem para um formato que o docx possa usar
-    const imageBuffer = await fetchImageAsArrayBuffer(photo.url)
-
-    // Se conseguimos obter a imagem, criar um parágrafo com a imagem
-    imageParagraph = new Paragraph({
-      alignment: AlignmentType.CENTER,
-      children: [
-        new ImageRun({
-          data: imageBuffer,
-          transformation: {
-            width: 450,
-            height: 280,
-          },
-        }),
-      ],
-      spacing: {
-        before: 100,
-        after: 200,
-      },
-    })
-  } catch (error) {
-    console.error("Erro ao processar imagem:", error)
-
-    // Se falhar, criar um parágrafo de texto como fallback
-    imageParagraph = new Paragraph({
-      alignment: AlignmentType.CENTER,
-      children: [
-        new TextRun({
-          text: "[Imagem não disponível]",
-          bold: true,
-          size: 24, // 12pt
-          font: "Times New Roman",
-        }),
-      ],
-      spacing: {
-        before: 100,
-        after: 200,
-      },
-    })
-  }
-
-  return [captionParagraph, imageParagraph]
-}
-
 // Função melhorada para buscar imagens com melhor tratamento de erros
 async function fetchImageAsArrayBuffer(url: string): Promise<ArrayBuffer> {
   try {
@@ -1099,15 +702,20 @@ async function fetchImageAsArrayBuffer(url: string): Promise<ArrayBuffer> {
   } catch (error) {
     console.error("Erro ao buscar imagem:", error)
 
-    // Criar um ArrayBuffer vazio como fallback
-    // Isso permitirá que o documento seja gerado mesmo sem a imagem
+    // Criar um ArrayBuffer com uma imagem placeholder com fundo branco
     const canvas = document.createElement("canvas")
     canvas.width = 400
     canvas.height = 300
     const ctx = canvas.getContext("2d")
     if (ctx) {
-      ctx.fillStyle = "#f0f0f0"
+      // Fundo branco
+      ctx.fillStyle = "#ffffff"
       ctx.fillRect(0, 0, canvas.width, canvas.height)
+      // Borda cinza
+      ctx.strokeStyle = "#cccccc"
+      ctx.lineWidth = 2
+      ctx.strokeRect(2, 2, canvas.width - 4, canvas.height - 4)
+      // Texto em cinza escuro
       ctx.fillStyle = "#666666"
       ctx.font = "20px Times New Roman"
       ctx.textAlign = "center"
@@ -1124,7 +732,445 @@ async function fetchImageAsArrayBuffer(url: string): Promise<ArrayBuffer> {
         reader.readAsArrayBuffer(blob)
       })
     } else {
-      throw new Error("Não foi possível criar um canvas para a imagem de fallback")
+      // Retornar um buffer vazio se não conseguir criar o canvas
+      return new ArrayBuffer(0)
     }
+  }
+}
+
+// Função para exportar para Word diretamente
+export async function exportToWord(reportData: ReportData, photos: Photo[], onProgress?: (progress: number) => void) {
+  try {
+    if (onProgress) onProgress(10)
+
+    console.log("Iniciando exportação direta para Word")
+
+    // Criar um rodapé padrão
+    const footer = new Footer({
+      children: [
+        new Paragraph({
+          children: [
+            new TextRun("Rua Fernão Albernaz 332 - apto 14 - Vila Nova Savoia – Contato: 11 97413-4386"),
+            new TextRun({
+              children: ["Página ", PageNumber.CURRENT],
+              alignment: AlignmentType.RIGHT,
+            }),
+          ],
+          border: {
+            top: {
+              style: BorderStyle.SINGLE,
+              size: 1,
+              color: "000000",
+            },
+          },
+        }),
+      ],
+    })
+
+    // Preparar o logo para o cabeçalho (se disponível)
+    let logoImageRun = null
+    if (reportData.logoImage && reportData.logoImage.length > 100) {
+      try {
+        // Processar o logo para garantir que seja exibido corretamente
+        const processedLogo = await processBase64Image(reportData.logoImage, 200, 80)
+
+        if (processedLogo) {
+          const logoBuffer = await urlToArrayBuffer(processedLogo)
+          const logoBlob = new Blob([logoBuffer], { type: "image/jpeg" })
+          const logoUrl = URL.createObjectURL(logoBlob)
+
+          logoImageRun = new ImageRun({
+            data: logoBuffer,
+            transformation: {
+              width: 100,
+              height: 50,
+            },
+          })
+        }
+      } catch (error) {
+        console.error("Erro ao processar logo para Word:", error)
+      }
+    }
+
+    // Criar um cabeçalho com o logo
+    const header = new Header({
+      children: [
+        new Paragraph({
+          children: logoImageRun ? [logoImageRun] : [new TextRun("")],
+          alignment: AlignmentType.LEFT,
+        }),
+      ],
+    })
+
+    // Criar um documento Word
+    const doc = new Document({
+      sections: [
+        {
+          properties: {},
+          headers: {
+            default: header,
+          },
+          footers: {
+            default: footer,
+          },
+          children: [],
+        },
+      ],
+    })
+
+    // Preparar os elementos do documento
+    const docElements = []
+
+    // Título
+    docElements.push(
+      new Paragraph({
+        text: reportData.title || "VISTORIA 3: RUA BENEDITO DOS SANTOS, 44 – PARQUE SÃO JORGE – SP",
+        heading: HeadingLevel.HEADING_1,
+        alignment: AlignmentType.CENTER,
+        spacing: {
+          after: 400,
+        },
+      }),
+    )
+
+    // Adicionar imagem de localização se disponível
+    if (reportData.locationImage && reportData.locationImage.length > 100) {
+      try {
+        const processedImage = await processBase64Image(reportData.locationImage, 800, 600)
+        if (processedImage) {
+          const imageBuffer = await urlToArrayBuffer(processedImage)
+          docElements.push(
+            new Paragraph({
+              children: [
+                new ImageRun({
+                  data: imageBuffer,
+                  transformation: {
+                    width: 400,
+                    height: 250,
+                  },
+                }),
+              ],
+              alignment: AlignmentType.CENTER,
+              spacing: {
+                after: 200,
+              },
+            }),
+          )
+          docElements.push(
+            new Paragraph({
+              text: "Localização esquemática do imóvel",
+              alignment: AlignmentType.CENTER,
+              spacing: {
+                after: 400,
+              },
+            }),
+          )
+        }
+      } catch (error) {
+        console.error("Erro ao adicionar imagem de localização ao Word:", error)
+      }
+    }
+
+    // Dados da construção
+    docElements.push(
+      new Paragraph({
+        text: "Ficha com dados da construção e seus ocupantes:",
+        heading: HeadingLevel.HEADING_2,
+        spacing: {
+          after: 200,
+        },
+      }),
+    )
+
+    // Tabela de dados
+    docElements.push(
+      new Table({
+        width: {
+          size: 100,
+          type: WidthType.PERCENTAGE,
+        },
+        rows: [
+          new TableRow({
+            children: [
+              new TableCell({
+                children: [new Paragraph("Ocupante / telefone:")],
+                width: {
+                  size: 30,
+                  type: WidthType.PERCENTAGE,
+                },
+              }),
+              new TableCell({
+                children: [new Paragraph(reportData.occupant || "N/A")],
+              }),
+            ],
+          }),
+          new TableRow({
+            children: [
+              new TableCell({
+                children: [new Paragraph("Vistoriador:")],
+              }),
+              new TableCell({
+                children: [new Paragraph(reportData.inspector || "N/A")],
+              }),
+            ],
+          }),
+          new TableRow({
+            children: [
+              new TableCell({
+                children: [new Paragraph("Uso do Imóvel:")],
+              }),
+              new TableCell({
+                children: [new Paragraph(reportData.usage || "N/A")],
+              }),
+            ],
+          }),
+          new TableRow({
+            children: [
+              new TableCell({
+                children: [new Paragraph("Idade real ou estimada / aparente:")],
+              }),
+              new TableCell({
+                children: [new Paragraph(reportData.age || "N/A")],
+              }),
+            ],
+          }),
+          new TableRow({
+            children: [
+              new TableCell({
+                children: [new Paragraph("Tipo de edificação:")],
+              }),
+              new TableCell({
+                children: [new Paragraph(reportData.buildingType || "N/A")],
+              }),
+            ],
+          }),
+          new TableRow({
+            children: [
+              new TableCell({
+                children: [new Paragraph("Estado de conservação:")],
+              }),
+              new TableCell({
+                children: [new Paragraph(reportData.conservationState || "N/A")],
+              }),
+            ],
+          }),
+          new TableRow({
+            children: [
+              new TableCell({
+                children: [new Paragraph("Padrão construtivo:")],
+              }),
+              new TableCell({
+                children: [new Paragraph(reportData.constructionStandard || "N/A")],
+              }),
+            ],
+          }),
+          new TableRow({
+            children: [
+              new TableCell({
+                children: [new Paragraph("Observações gerais:")],
+              }),
+              new TableCell({
+                children: [new Paragraph(reportData.observations || "N/A")],
+              }),
+            ],
+          }),
+          new TableRow({
+            children: [
+              new TableCell({
+                children: [new Paragraph("Data da Diligência:")],
+              }),
+              new TableCell({
+                children: [new Paragraph(reportData.date || "N/A")],
+              }),
+            ],
+          }),
+        ],
+      }),
+    )
+
+    // Informações técnicas (em nova página)
+    docElements.push(
+      new Paragraph({
+        text: "Informações técnicas",
+        heading: HeadingLevel.HEADING_2,
+        pageBreakBefore: true,
+        spacing: {
+          after: 200,
+        },
+      }),
+    )
+
+    docElements.push(
+      new Paragraph({
+        text: reportData.technicalInfo || "Nenhuma informação técnica disponível.",
+        spacing: {
+          after: 400,
+        },
+      }),
+    )
+
+    // Assinatura
+    docElements.push(
+      new Paragraph({
+        text: reportData.engineer || "Engenheiro Responsável",
+        alignment: AlignmentType.CENTER,
+        spacing: {
+          before: 400,
+          after: 100,
+        },
+      }),
+    )
+
+    docElements.push(
+      new Paragraph({
+        text: reportData.registration || "Registro Profissional",
+        alignment: AlignmentType.CENTER,
+        spacing: {
+          after: 400,
+        },
+      }),
+    )
+
+    // Adicionar fotos (se houver)
+    if (photos && photos.length > 0) {
+      // Título da seção de fotos (em nova página)
+      docElements.push(
+        new Paragraph({
+          text: "Fotos do Imóvel",
+          heading: HeadingLevel.HEADING_2,
+          pageBreakBefore: true,
+          spacing: {
+            after: 400,
+          },
+        }),
+      )
+
+      // Processar cada foto individualmente
+      for (let i = 0; i < photos.length; i++) {
+        const photo = photos[i]
+
+        // Adicionar legenda da foto
+        docElements.push(
+          new Paragraph({
+            text: photo.caption || "Sem legenda",
+            alignment: AlignmentType.CENTER,
+            spacing: {
+              before: 200,
+              after: 100,
+            },
+          }),
+        )
+
+        // Tentar adicionar a imagem
+        try {
+          if (photo.url && photo.url.length > 10) {
+            const imageBuffer = await fetchImageAsArrayBuffer(photo.url)
+
+            docElements.push(
+              new Paragraph({
+                children: [
+                  new ImageRun({
+                    data: imageBuffer,
+                    transformation: {
+                      width: 400,
+                      height: 250,
+                    },
+                  }),
+                ],
+                alignment: AlignmentType.CENTER,
+                spacing: {
+                  after: 200,
+                },
+              }),
+            )
+          }
+        } catch (error) {
+          console.error(`Erro ao adicionar foto ${i + 1} ao Word:`, error)
+
+          // Adicionar mensagem de erro se a imagem falhar
+          docElements.push(
+            new Paragraph({
+              text: "[Imagem não disponível]",
+              alignment: AlignmentType.CENTER,
+              spacing: {
+                after: 200,
+              },
+            }),
+          )
+        }
+
+        // Adicionar quebra de página a cada duas fotos
+        if (i % 2 === 1 && i < photos.length - 1) {
+          docElements.push(
+            new Paragraph({
+              text: "",
+              pageBreakAfter: true,
+            }),
+          )
+        }
+      }
+    }
+
+    // Adicionar todos os elementos ao documento
+    doc.sections[0].children = docElements
+
+    if (onProgress) onProgress(80)
+
+    // Gerar o documento
+    const buffer = await Packer.toBuffer(doc)
+
+    // Criar um Blob e fazer o download
+    const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" })
+    FileSaver.saveAs(blob, `VISTORIA 3 - RUA BENEDITO DOS SANTOS.docx`)
+
+    if (onProgress) onProgress(100)
+
+    return true
+  } catch (error) {
+    console.error("Erro ao exportar para Word:", error)
+    throw error
+  }
+}
+
+// Função auxiliar para preparar o buffer de uma foto
+async function preparePhotoBuffer(photo: Photo): Promise<ArrayBuffer> {
+  try {
+    if (!photo || !photo.url) {
+      throw new Error("Foto inválida ou URL ausente")
+    }
+
+    return await fetchImageAsArrayBuffer(photo.url)
+  } catch (error) {
+    console.error("Erro ao preparar buffer de foto:", error)
+
+    // Criar um placeholder para a foto com fundo branco
+    const canvas = document.createElement("canvas")
+    canvas.width = 400
+    canvas.height = 300
+    const ctx = canvas.getContext("2d")
+    if (ctx) {
+      // Fundo branco
+      ctx.fillStyle = "#ffffff"
+      ctx.fillRect(0, 0, canvas.width, canvas.height)
+      // Borda cinza
+      ctx.strokeStyle = "#cccccc"
+      ctx.lineWidth = 2
+      ctx.strokeRect(2, 2, canvas.width - 4, canvas.height - 4)
+      // Texto em cinza escuro
+      ctx.fillStyle = "#666666"
+      ctx.font = "20px Arial"
+      ctx.textAlign = "center"
+      ctx.fillText("Imagem não disponível", canvas.width / 2, canvas.height / 2)
+      const dataUrl = canvas.toDataURL("image/png")
+      const response = await fetch(dataUrl)
+      const blob = await response.blob()
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onloadend = () => resolve(reader.result as ArrayBuffer)
+        reader.onerror = reject
+        reader.readAsArrayBuffer(blob)
+      })
+    }
+    return new ArrayBuffer(0)
   }
 }

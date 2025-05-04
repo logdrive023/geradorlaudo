@@ -75,7 +75,9 @@ export default function ForgotPasswordPage() {
             </Alert>
           )}
 
-          <div className="rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm p-6">
+          <div className="rounded-lg border border-white/10 bg-[#131b2e] p-6">
+            <h3 className="text-xl font-bold mb-4 text-white">Recuperar senha</h3>
+
             {isSubmitted ? (
               <div className="text-center space-y-4">
                 <div className="flex justify-center">
@@ -87,15 +89,15 @@ export default function ForgotPasswordPage() {
                 </p>
                 <Button
                   asChild
-                  className="bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white mt-4"
+                  className="w-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white mt-4"
                 >
                   <Link href="/login">Voltar para login</Link>
                 </Button>
               </div>
             ) : (
-              <form onSubmit={handleSubmit} className="grid gap-4">
+              <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid gap-2">
-                  <Label htmlFor="email" className="text-white auth-label">
+                  <Label htmlFor="email" className="text-white">
                     Email
                   </Label>
                   <Input
@@ -114,7 +116,7 @@ export default function ForgotPasswordPage() {
                 <Button
                   type="submit"
                   disabled={isSubmitting || !email}
-                  className="bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white"
+                  className="w-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white"
                 >
                   {isSubmitting ? "Enviando..." : "Enviar instruções"}
                 </Button>
@@ -126,7 +128,7 @@ export default function ForgotPasswordPage() {
             <span className="text-blue-100/70">Lembrou sua senha?</span>{" "}
             <Link
               href="/login"
-              className="font-medium text-indigo-400 hover:text-indigo-300 underline-offset-4 hover:underline auth-link"
+              className="font-medium text-indigo-400 hover:text-indigo-300 underline-offset-4 hover:underline"
             >
               Voltar para login
             </Link>

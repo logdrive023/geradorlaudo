@@ -19,6 +19,8 @@ import { ExtraJudicialReportEditor } from "@/components/extrajudicial-report-edi
 import { Badge } from "@/components/ui/badge"
 import { motion } from "framer-motion"
 import { useToast } from "@/components/ui/use-toast"
+// Import the LoadingSpinner component
+import { LoadingSpinner } from "@/components/loading-spinner"
 
 export default function EditorPage({ params }: { params: { id: string } }) {
   const router = useRouter()
@@ -64,6 +66,8 @@ export default function EditorPage({ params }: { params: { id: string } }) {
 
   const [showExportDialog, setShowExportDialog] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  // Add isSaving state
+  const [isSaving, setIsSaving] = useState(false)
 
   // Verificar autenticação
   const checkAuthentication = useCallback(() => {
@@ -125,64 +129,81 @@ export default function EditorPage({ params }: { params: { id: string } }) {
   const isNewReport = params.id === "new"
   const reportId = isNewReport ? "novo" : params.id
 
-  const handleSave = () => {
+  // Update the handleSave function to show loading
+  const handleSave = async () => {
     // Log para debug
     console.log("Salvando relatório com dados:", reportData)
     console.log("Imagem de localização:", reportData.locationImage ? "Presente" : "Ausente")
     console.log("Logo personalizado:", reportData.logoImage ? "Presente" : "Ausente")
     console.log("Fotos:", photos.length)
 
-    // Verificar se as imagens estão presentes
-    if (!reportData.locationImage) {
-      console.warn("Imagem de localização não encontrada ao salvar")
-    }
+    setIsSaving(true)
 
-    if (!reportData.logoImage) {
-      console.warn("Logo personalizado não encontrado ao salvar")
-    }
-
-    // Salvar no localStorage para demonstração
-    const report = {
-      id: reportId === "novo" ? Date.now().toString() : reportId,
-      title: reportData.title || reportTitle,
-      date: reportData.date || new Date().toLocaleDateString("pt-BR"),
-      reportData: {
-        ...reportData,
-        // Garantir que as imagens sejam incluídas explicitamente
-        locationImage: reportData.locationImage || "",
-        logoImage: reportData.logoImage || "",
-      },
-      photos,
-      type: reportType,
-      status: "Rascunho",
-    }
-
-    // Obter relatórios existentes ou inicializar array vazio
-    const existingReports = JSON.parse(localStorage.getItem("reports") || "[]")
-
-    // Verificar se é um novo relatório ou atualização
-    if (reportId === "novo") {
-      existingReports.push(report)
-    } else {
-      const index = existingReports.findIndex((r: any) => r.id === reportId)
-      if (index !== -1) {
-        existingReports[index] = report
-      } else {
-        existingReports.push(report)
+    try {
+      // Verificar se as imagens estão presentes
+      if (!reportData.locationImage) {
+        console.warn("Imagem de localização não encontrada ao salvar")
       }
+
+      if (!reportData.logoImage) {
+        console.warn("Logo personalizado não encontrado ao salvar")
+      }
+
+      // Simular um atraso de rede
+      await new Promise((resolve) => setTimeout(resolve, 1500))
+
+      // Salvar no localStorage para demonstração
+      const report = {
+        id: reportId === "novo" ? Date.now().toString() : reportId,
+        title: reportData.title || reportTitle,
+        date: reportData.date || new Date().toLocaleDateString("pt-BR"),
+        reportData: {
+          ...reportData,
+          // Garantir que as imagens sejam incluídas explicitamente
+          locationImage: reportData.locationImage || "",
+          logoImage: reportData.logoImage || "",
+        },
+        photos,
+        type: reportType,
+        status: "Rascunho",
+      }
+
+      // Obter relatórios existentes ou inicializar array vazio
+      const existingReports = JSON.parse(localStorage.getItem("reports") || "[]")
+
+      // Verificar se é um novo relatório ou atualização
+      if (reportId === "novo") {
+        existingReports.push(report)
+      } else {
+        const index = existingReports.findIndex((r: any) => r.id === reportId)
+        if (index !== -1) {
+          existingReports[index] = report
+        } else {
+          existingReports.push(report)
+        }
+      }
+
+      // Salvar de volta no localStorage
+      localStorage.setItem("reports", JSON.stringify(existingReports))
+
+      // Mostrar toast de sucesso
+      toast({
+        title: "Laudo salvo com sucesso",
+        description: "Todas as informações foram salvas corretamente.",
+      })
+
+      // Redirecionar para o dashboard
+      router.push("/dashboard")
+    } catch (error) {
+      console.error("Erro ao salvar:", error)
+      toast({
+        title: "Erro ao salvar",
+        description: "Ocorreu um erro ao salvar o laudo. Tente novamente.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsSaving(false)
     }
-
-    // Salvar de volta no localStorage
-    localStorage.setItem("reports", JSON.stringify(existingReports))
-
-    // Mostrar toast de sucesso
-    toast({
-      title: "Laudo salvo com sucesso",
-      description: "Todas as informações foram salvas corretamente.",
-    })
-
-    // Redirecionar para o dashboard
-    router.push("/dashboard")
   }
 
   const handlePhotoUpload = (newPhotos: { id: string; url: string; caption: string }[]) => {
@@ -294,6 +315,7 @@ export default function EditorPage({ params }: { params: { id: string } }) {
   // Modificar o JSX para exibir o badge com o tipo correto
   return (
     <DashboardShell>
+      {isSaving && <LoadingSpinner fullScreen text="Salvando laudo..." />}
       <motion.div initial="initial" animate="animate" variants={pageVariants}>
         <DashboardHeader heading={reportTitle || "Novo Laudo"} text={`ID: ${reportId}`}>
           <div className="flex items-center gap-2">

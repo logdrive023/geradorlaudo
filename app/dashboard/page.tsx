@@ -38,6 +38,15 @@ export default function DashboardPage() {
   const { user, isLoading } = useAuth()
   const router = useRouter()
 
+  // Verificar se há um tipo de laudo na URL
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const typeParam = params.get("type")
+    if (typeParam && ["cautelar", "contabil", "extrajudicial", "todos"].includes(typeParam)) {
+      setActiveTab(typeParam)
+    }
+  }, [])
+
   useEffect(() => {
     // Redirecionar para login se não estiver autenticado
     if (!isLoading && !user) {

@@ -28,7 +28,7 @@ export default function Home() {
         </div>
       </header>
       <main className="flex-1">
-        <section className="hero-futuristic w-full py-16 md:py-24 lg:py-32">
+        <section className="hero-futuristic w-full py-12 md:py-16 lg:py-24">
           <div className="hero-grid"></div>
           <div className="container px-4 md:px-6 hero-content">
             <div className="grid gap-6 lg:grid-cols-2 lg:gap-12 items-center">
@@ -41,15 +41,15 @@ export default function Home() {
                     Plataforma completa para engenheiros criarem, editarem e exportarem laudos técnicos com facilidade.
                   </p>
                 </div>
-                <div className="flex flex-col gap-2 min-[400px]:flex-row">
+                <div className="flex flex-col gap-2 sm:flex-row">
                   <Link href="/register">
-                    <Button size="lg" className="btn-register gap-1.5">
+                    <Button size="lg" className="btn-register gap-1.5 w-full sm:w-auto">
                       Começar agora
                       <ArrowRight className="h-4 w-4" />
                     </Button>
                   </Link>
                   <Link href="/demo">
-                    <Button size="lg" variant="outline" className="btn-login">
+                    <Button size="lg" variant="outline" className="btn-login w-full sm:w-auto">
                       Ver demonstração
                     </Button>
                   </Link>
@@ -67,7 +67,7 @@ export default function Home() {
             </div>
           </div>
         </section>
-        <section className="w-full py-12 md:py-24 lg:py-32 bg-gradient-to-b from-[#0f172a] to-[#1e1e38]">
+        <section className="w-full py-12 md:py-16 lg:py-24 bg-gradient-to-b from-[#0f172a] to-[#1e1e38]">
           <div className="container px-4 md:px-6">
             <div className="flex flex-col items-center justify-center space-y-4 text-center">
               <div className="space-y-2">
@@ -79,7 +79,7 @@ export default function Home() {
                 </p>
               </div>
             </div>
-            <div className="mx-auto grid max-w-5xl gap-6 py-12 lg:grid-cols-3">
+            <div className="mx-auto grid max-w-5xl gap-6 py-12 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
               <div className="flex flex-col items-center space-y-2 rounded-lg border border-white/10 bg-white/5 p-6 backdrop-blur-sm">
                 <div className="rounded-full bg-indigo-500/20 p-3">
                   <Upload className="h-6 w-6 text-indigo-400" />
@@ -98,7 +98,7 @@ export default function Home() {
                   Organize suas fotos automaticamente com 2 por página
                 </p>
               </div>
-              <div className="flex flex-col items-center space-y-2 rounded-lg border border-white/10 bg-white/5 p-6 backdrop-blur-sm">
+              <div className="flex flex-col items-center space-y-2 rounded-lg border border-white/10 bg-white/5 p-6 backdrop-blur-sm sm:col-span-2 lg:col-span-1">
                 <div className="rounded-full bg-indigo-500/20 p-3">
                   <Download className="h-6 w-6 text-indigo-400" />
                 </div>
@@ -112,7 +112,7 @@ export default function Home() {
         </section>
 
         {/* Nova seção de contato */}
-        <section className="w-full py-12 md:py-24 lg:py-32 bg-gradient-to-b from-[#1e1e38] to-[#0f172a]">
+        <section className="w-full py-12 md:py-16 lg:py-24 bg-gradient-to-b from-[#1e1e38] to-[#0f172a]">
           <div className="container px-4 md:px-6">
             <div className="flex flex-col items-center justify-center space-y-4 text-center mb-10">
               <div className="space-y-2">
@@ -159,7 +159,7 @@ export default function Home() {
                 </div>
               </div>
 
-              <div className="rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm text-white shadow-lg">
+              <div className="rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm text-white shadow-lg p-8">
                 <div className="p-6">
                   <ContactForm />
                 </div>

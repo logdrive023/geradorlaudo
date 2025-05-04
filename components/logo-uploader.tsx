@@ -4,105 +4,107 @@ import type React from "react"
 
 import { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { Upload, X } from "lucide-react"
-import Image from "next/image"
+import { LoadingSpinner } from "@/components/loading-spinner"
 
 interface LogoUploaderProps {
-  onLogoUpload: (logoUrl: string) => void
   currentLogo?: string
+  onLogoUpload: (logoUrl: string) => void
 }
 
-export function LogoUploader({ onLogoUpload, currentLogo }: LogoUploaderProps) {
-  const [logo, setLogo] = useState<string | null>(currentLogo || null)
-  const [isUploading, setIsUploading] = useState(false)
+export function LogoUploader({ currentLogo, onLogoUpload }: LogoUploaderProps) {
+  const [logoUrl, setLogoUrl] = useState<string>(currentLogo || "")
+  const [isLoading, setIsLoading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  // Sincronizar com props quando elas mudarem
+  // Sincronizar com props externas
   useEffect(() => {
     if (currentLogo) {
-      setLogo(currentLogo)
+      setLogoUrl(currentLogo)
     }
   }, [currentLogo])
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
+  function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0]
     if (!file) return
 
-    setIsUploading(true)
+    setIsLoading(true)
 
+    // Usar FileReader para ler o arquivo como URL de dados
     const reader = new FileReader()
-    reader.onload = (event) => {
-      const logoUrl = event.target?.result as string
-      setLogo(logoUrl)
-      onLogoUpload(logoUrl)
-      setIsUploading(false)
+
+    reader.onload = () => {
+      // Verificar se o resultado é uma string
+      if (typeof reader.result === "string") {
+        const base64Url = reader.result
+        console.log("Logo carregado com sucesso, tamanho:", base64Url.length)
+        setLogoUrl(base64Url)
+
+        // Garantir que o callback seja chamado com o URL correto
+        onLogoUpload(base64Url)
+
+        // Simular um pequeno atraso para mostrar o loading
+        setTimeout(() => {
+          setIsLoading(false)
+        }, 500)
+      }
     }
+
     reader.onerror = () => {
       console.error("Erro ao ler o arquivo")
-      setIsUploading(false)
+      setIsLoading(false)
     }
+
     reader.readAsDataURL(file)
-  }
-
-  const handleRemoveLogo = () => {
-    setLogo(null)
-    onLogoUpload("")
-    if (fileInputRef.current) {
-      fileInputRef.current.value = ""
-    }
-  }
-
-  const handleButtonClick = () => {
-    fileInputRef.current?.click()
   }
 
   return (
     <div className="space-y-4">
-      <input
-        type="file"
-        ref={fileInputRef}
-        onChange={handleFileChange}
-        accept="image/*"
-        className="hidden"
-        aria-label="Upload de logo personalizada"
-      />
+      <div className="flex flex-col items-center gap-2">
+        <label className="text-sm font-medium">Logo Personalizada</label>
 
-      {logo ? (
-        <div className="relative rounded-md overflow-hidden border border-border">
-          <div className="relative aspect-video w-full">
-            <Image
-              src={logo || "/placeholder.svg"}
-              alt="Logo personalizada"
-              fill
-              className="object-contain"
-              sizes="(max-width: 768px) 100vw, 50vw"
-            />
-          </div>
-          <Button
-            type="button"
-            variant="destructive"
-            size="icon"
-            className="absolute top-2 right-2 h-8 w-8 rounded-full"
-            onClick={handleRemoveLogo}
-          >
-            <X className="h-4 w-4" />
-            <span className="sr-only">Remover logo</span>
-          </Button>
+        <div className="border rounded-md p-4 w-full max-w-xs bg-muted/20">
+          {isLoading ? (
+            <div className="flex flex-col items-center justify-center py-8">
+              <LoadingSpinner size="md" text="Carregando logo..." />
+            </div>
+          ) : logoUrl ? (
+            <div className="flex flex-col items-center gap-2">
+              <img src={logoUrl || "/placeholder.svg"} alt="Logo" className="max-h-[150px] max-w-full object-contain" />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setLogoUrl("")
+                  onLogoUpload("")
+                }}
+              >
+                Remover Logo
+              </Button>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center gap-2 py-4">
+              <p className="text-sm text-muted-foreground">Nenhuma logo adicionada</p>
+              <label className="cursor-pointer">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="cursor-pointer"
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault()
+                    if (fileInputRef.current) {
+                      fileInputRef.current.click()
+                    }
+                  }}
+                >
+                  Selecionar Logo
+                </Button>
+                <input type="file" ref={fileInputRef} accept="image/*" className="hidden" onChange={handleFileChange} />
+              </label>
+            </div>
+          )}
         </div>
-      ) : (
-        <div
-          className="border-2 border-dashed border-border rounded-md p-8 text-center cursor-pointer hover:bg-secondary/10 transition-colors"
-          onClick={handleButtonClick}
-        >
-          <div className="flex flex-col items-center justify-center gap-2">
-            <Upload className="h-8 w-8 text-muted-foreground" />
-            <p className="text-sm font-medium">Clique para fazer upload da logo personalizada</p>
-            <p className="text-xs text-muted-foreground">Suporta JPG, PNG, GIF até 10MB</p>
-          </div>
-        </div>
-      )}
-
-      {isUploading && <p className="text-sm text-muted-foreground">Carregando logo...</p>}
+      </div>
     </div>
   )
 }

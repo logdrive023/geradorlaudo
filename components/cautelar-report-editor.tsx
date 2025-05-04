@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -16,6 +16,7 @@ import { useRouter } from "next/navigation"
 import { useToast } from "@/components/ui/use-toast"
 import { ArrowLeft, Save } from "lucide-react"
 import Link from "next/link"
+import { LoadingSpinner } from "@/components/loading-spinner"
 
 interface CautelarReportEditorProps {
   initialData?: any
@@ -25,6 +26,7 @@ interface CautelarReportEditorProps {
 
 export function CautelarReportEditor({ initialData, reportId, onReportDataChange }: CautelarReportEditorProps) {
   const [activeTab, setActiveTab] = useState("general")
+  const [isSaving, setIsSaving] = useState(false)
   const [reportData, setReportData] = useState(
     initialData || {
       reference: "",
@@ -45,6 +47,14 @@ export function CautelarReportEditor({ initialData, reportId, onReportDataChange
   )
   const router = useRouter()
   const { toast } = useToast()
+
+  // Efeito para garantir que os dados iniciais sejam carregados corretamente
+  useEffect(() => {
+    if (initialData) {
+      console.log("Dados iniciais carregados:", initialData)
+      setReportData(initialData)
+    }
+  }, [initialData])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
@@ -75,7 +85,10 @@ export function CautelarReportEditor({ initialData, reportId, onReportDataChange
   }
 
   const handleLogoUpload = (logoUrl: string) => {
-    console.log("Logo personalizado recebido no editor cautelar:", logoUrl.substring(0, 100) + "...")
+    console.log(
+      "Logo personalizado recebido no editor cautelar:",
+      logoUrl ? "Logo recebido (tamanho: " + logoUrl.length + ")" : "Logo removido",
+    )
     const updatedData = {
       ...reportData,
       logoImage: logoUrl,
@@ -88,52 +101,76 @@ export function CautelarReportEditor({ initialData, reportId, onReportDataChange
     }
   }
 
-  const handleSave = () => {
-    // Obter relatórios existentes do localStorage
-    const existingReports = localStorage.getItem("reports")
-    let reports = existingReports ? JSON.parse(existingReports) : []
+  const handleSave = async () => {
+    setIsSaving(true)
 
-    // Se estiver editando um relatório existente
-    if (reportId) {
-      reports = reports.map((report: any) => {
-        if (report.id === reportId) {
-          return {
-            ...report,
-            reportData,
-          }
-        }
-        return report
-      })
-    } else {
-      // Criar um novo relatório
-      const newReport = {
-        id: Date.now().toString(),
-        title: `Vistoria: ${reportData.address || "Novo Laudo"}`,
-        date: new Date().toLocaleDateString("pt-BR"),
-        status: "Rascunho",
-        type: "cautelar",
-        reportData,
+    try {
+      // Simular um atraso de rede
+      await new Promise((resolve) => setTimeout(resolve, 1000))
+
+      // Obter relatórios existentes do localStorage
+      const existingReports = localStorage.getItem("reports")
+      let reports = existingReports ? JSON.parse(existingReports) : []
+
+      // Verificar se o logo está presente
+      if (!reportData.logoImage) {
+        console.warn("Logo não encontrado ao salvar")
+      } else {
+        console.log("Logo encontrado ao salvar, tamanho:", reportData.logoImage.length)
       }
-      reports.push(newReport)
+
+      // Se estiver editando um relatório existente
+      if (reportId) {
+        reports = reports.map((report: any) => {
+          if (report.id === reportId) {
+            return {
+              ...report,
+              reportData,
+            }
+          }
+          return report
+        })
+      } else {
+        // Criar um novo relatório
+        const newReport = {
+          id: Date.now().toString(),
+          title: `Vistoria: ${reportData.address || "Novo Laudo"}`,
+          date: new Date().toLocaleDateString("pt-BR"),
+          status: "Rascunho",
+          type: "cautelar",
+          reportData,
+        }
+        reports.push(newReport)
+      }
+
+      // Salvar no localStorage
+      localStorage.setItem("reports", JSON.stringify(reports))
+
+      // Mostrar toast de sucesso
+      toast({
+        title: reportId ? "Laudo atualizado" : "Laudo criado",
+        description: reportId
+          ? "O laudo foi atualizado com sucesso."
+          : "O laudo foi criado com sucesso e salvo como rascunho.",
+      })
+
+      // Redirecionar para o dashboard
+      router.push("/dashboard")
+    } catch (error) {
+      console.error("Erro ao salvar:", error)
+      toast({
+        title: "Erro ao salvar",
+        description: "Ocorreu um erro ao salvar o laudo. Tente novamente.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsSaving(false)
     }
-
-    // Salvar no localStorage
-    localStorage.setItem("reports", JSON.stringify(reports))
-
-    // Mostrar toast de sucesso
-    toast({
-      title: reportId ? "Laudo atualizado" : "Laudo criado",
-      description: reportId
-        ? "O laudo foi atualizado com sucesso."
-        : "O laudo foi criado com sucesso e salvo como rascunho.",
-    })
-
-    // Redirecionar para o dashboard
-    router.push("/dashboard")
   }
 
   return (
     <div className="space-y-6">
+      {isSaving && <LoadingSpinner fullScreen text="Salvando laudo..." />}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-2">
           <Link href="/dashboard">

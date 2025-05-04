@@ -75,11 +75,14 @@ export function ContactForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <h3 className="text-xl font-bold mb-4 text-white">Envie uma mensagem</h3>
+    <form onSubmit={handleSubmit} className="space-y-6 p-2">
+      <h3 className="text-xl font-bold mb-6 text-white">Envie uma mensagem</h3>
 
       {status.type && (
-        <Alert variant={status.type === "error" ? "destructive" : "default"} className="bg-white/10 border-white/20">
+        <Alert
+          variant={status.type === "error" ? "destructive" : "default"}
+          className="bg-white/10 border-white/20 p-4"
+        >
           <AlertDescription className="text-white">{status.message}</AlertDescription>
         </Alert>
       )}

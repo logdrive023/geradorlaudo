@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -16,6 +16,7 @@ import { useRouter } from "next/navigation"
 import { useToast } from "@/components/ui/use-toast"
 import { ArrowLeft, Save } from "lucide-react"
 import Link from "next/link"
+import { ProfessionalLoading } from "@/components/professional-loading"
 
 interface ContabilReportEditorProps {
   initialData?: any
@@ -25,6 +26,8 @@ interface ContabilReportEditorProps {
 
 export function ContabilReportEditor({ initialData, reportId, onReportDataChange }: ContabilReportEditorProps) {
   const [activeTab, setActiveTab] = useState("general")
+  const [isSaving, setIsSaving] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
   const [reportData, setReportData] = useState(
     initialData || {
       reference: "",
@@ -46,6 +49,23 @@ export function ContabilReportEditor({ initialData, reportId, onReportDataChange
   const router = useRouter()
   const { toast } = useToast()
 
+  // Efeito para garantir que os dados iniciais sejam carregados corretamente
+  useEffect(() => {
+    if (initialData) {
+      console.log("Dados iniciais carregados:", initialData)
+      setReportData(initialData)
+    }
+  }, [initialData])
+
+  const handleTabChange = (value: string) => {
+    setIsLoading(true)
+    // Simular um pequeno atraso para mostrar o loading
+    setTimeout(() => {
+      setActiveTab(value)
+      setIsLoading(false)
+    }, 500)
+  }
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
     const updatedData = {
@@ -61,6 +81,7 @@ export function ContabilReportEditor({ initialData, reportId, onReportDataChange
   }
 
   const handleLocationImageUpload = (imageUrl: string) => {
+    console.log("Imagem de localização recebida no editor contábil:", imageUrl.substring(0, 100) + "...")
     const updatedData = {
       ...reportData,
       locationImage: imageUrl,
@@ -74,6 +95,10 @@ export function ContabilReportEditor({ initialData, reportId, onReportDataChange
   }
 
   const handleLogoUpload = (logoUrl: string) => {
+    console.log(
+      "Logo personalizado recebido no editor contábil:",
+      logoUrl ? "Logo recebido (tamanho: " + logoUrl.length + ")" : "Logo removido",
+    )
     const updatedData = {
       ...reportData,
       logoImage: logoUrl,
@@ -86,52 +111,76 @@ export function ContabilReportEditor({ initialData, reportId, onReportDataChange
     }
   }
 
-  const handleSave = () => {
-    // Obter relatórios existentes do localStorage
-    const existingReports = localStorage.getItem("reports")
-    let reports = existingReports ? JSON.parse(existingReports) : []
+  const handleSave = async () => {
+    setIsSaving(true)
 
-    // Se estiver editando um relatório existente
-    if (reportId) {
-      reports = reports.map((report: any) => {
-        if (report.id === reportId) {
-          return {
-            ...report,
-            reportData,
-          }
-        }
-        return report
-      })
-    } else {
-      // Criar um novo relatório
-      const newReport = {
-        id: Date.now().toString(),
-        title: `Análise Contábil: ${reportData.company || "Nova Análise"}`,
-        date: new Date().toLocaleDateString("pt-BR"),
-        status: "Rascunho",
-        type: "contabil",
-        reportData,
+    try {
+      // Simular um atraso de rede
+      await new Promise((resolve) => setTimeout(resolve, 1000))
+
+      // Obter relatórios existentes do localStorage
+      const existingReports = localStorage.getItem("reports")
+      let reports = existingReports ? JSON.parse(existingReports) : []
+
+      // Verificar se o logo está presente
+      if (!reportData.logoImage) {
+        console.warn("Logo não encontrado ao salvar")
+      } else {
+        console.log("Logo encontrado ao salvar, tamanho:", reportData.logoImage.length)
       }
-      reports.push(newReport)
+
+      // Se estiver editando um relatório existente
+      if (reportId) {
+        reports = reports.map((report: any) => {
+          if (report.id === reportId) {
+            return {
+              ...report,
+              reportData,
+            }
+          }
+          return report
+        })
+      } else {
+        // Criar um novo relatório
+        const newReport = {
+          id: Date.now().toString(),
+          title: `Análise Contábil: ${reportData.company || "Nova Análise"}`,
+          date: new Date().toLocaleDateString("pt-BR"),
+          status: "Rascunho",
+          type: "contabil",
+          reportData,
+        }
+        reports.push(newReport)
+      }
+
+      // Salvar no localStorage
+      localStorage.setItem("reports", JSON.stringify(reports))
+
+      // Mostrar toast de sucesso
+      toast({
+        title: reportId ? "Laudo atualizado" : "Laudo criado",
+        description: reportId
+          ? "O laudo foi atualizado com sucesso."
+          : "O laudo foi criado com sucesso e salvo como rascunho.",
+      })
+
+      // Redirecionar para o dashboard
+      router.push("/dashboard")
+    } catch (error) {
+      console.error("Erro ao salvar:", error)
+      toast({
+        title: "Erro ao salvar",
+        description: "Ocorreu um erro ao salvar o laudo. Tente novamente.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsSaving(false)
     }
-
-    // Salvar no localStorage
-    localStorage.setItem("reports", JSON.stringify(reports))
-
-    // Mostrar toast de sucesso
-    toast({
-      title: reportId ? "Laudo atualizado" : "Laudo criado",
-      description: reportId
-        ? "O laudo foi atualizado com sucesso."
-        : "O laudo foi criado com sucesso e salvo como rascunho.",
-    })
-
-    // Redirecionar para o dashboard
-    router.push("/dashboard")
   }
 
   return (
     <div className="space-y-6">
+      {isSaving && <ProfessionalLoading fullScreen text="Salvando laudo..." />}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-2">
           <Link href="/dashboard">
@@ -155,7 +204,7 @@ export function ContabilReportEditor({ initialData, reportId, onReportDataChange
               <CardDescription>Preencha os dados do laudo contábil</CardDescription>
             </CardHeader>
             <CardContent>
-              <Tabs defaultValue={activeTab} onValueChange={setActiveTab}>
+              <Tabs defaultValue={activeTab} value={activeTab} onValueChange={handleTabChange}>
                 <TabsList className="glass tabs-list backdrop-blur-md border border-white/10">
                   <TabsTrigger value="general" className="tab-trigger">
                     Geral
@@ -171,161 +220,169 @@ export function ContabilReportEditor({ initialData, reportId, onReportDataChange
                   </TabsTrigger>
                 </TabsList>
 
-                <TabsContent value="general" className="space-y-4 mt-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="reference">Referência</Label>
-                      <Input
-                        id="reference"
-                        name="reference"
-                        placeholder="Ex: LC-2024-001"
-                        value={reportData.reference}
-                        onChange={handleInputChange}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="cnpj">CNPJ</Label>
-                      <Input
-                        id="cnpj"
-                        name="cnpj"
-                        placeholder="Ex: 00.000.000/0001-00"
-                        value={reportData.cnpj}
-                        onChange={handleInputChange}
-                      />
-                    </div>
+                {isLoading ? (
+                  <div className="py-8">
+                    <ProfessionalLoading text="Carregando conteúdo..." />
                   </div>
+                ) : (
+                  <>
+                    <TabsContent value="general" className="space-y-4 mt-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="reference">Referência</Label>
+                          <Input
+                            id="reference"
+                            name="reference"
+                            placeholder="Ex: LC-2024-001"
+                            value={reportData.reference}
+                            onChange={handleInputChange}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="cnpj">CNPJ</Label>
+                          <Input
+                            id="cnpj"
+                            name="cnpj"
+                            placeholder="Ex: 00.000.000/0001-00"
+                            value={reportData.cnpj}
+                            onChange={handleInputChange}
+                          />
+                        </div>
+                      </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="company">Empresa</Label>
-                    <Input
-                      id="company"
-                      name="company"
-                      placeholder="Nome da empresa"
-                      value={reportData.company}
-                      onChange={handleInputChange}
-                    />
-                  </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="company">Empresa</Label>
+                        <Input
+                          id="company"
+                          name="company"
+                          placeholder="Nome da empresa"
+                          value={reportData.company}
+                          onChange={handleInputChange}
+                        />
+                      </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="address">Endereço</Label>
-                    <Input
-                      id="address"
-                      name="address"
-                      placeholder="Endereço da empresa"
-                      value={reportData.address}
-                      onChange={handleInputChange}
-                    />
-                  </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="address">Endereço</Label>
+                        <Input
+                          id="address"
+                          name="address"
+                          placeholder="Endereço da empresa"
+                          value={reportData.address}
+                          onChange={handleInputChange}
+                        />
+                      </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="objective">Objetivo</Label>
-                    <Textarea
-                      id="objective"
-                      name="objective"
-                      placeholder="Descreva o objetivo da análise contábil"
-                      value={reportData.objective}
-                      onChange={handleInputChange}
-                      rows={3}
-                    />
-                  </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="objective">Objetivo</Label>
+                        <Textarea
+                          id="objective"
+                          name="objective"
+                          placeholder="Descreva o objetivo da análise contábil"
+                          value={reportData.objective}
+                          onChange={handleInputChange}
+                          rows={3}
+                        />
+                      </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="methodology">Metodologia</Label>
-                    <Textarea
-                      id="methodology"
-                      name="methodology"
-                      placeholder="Descreva a metodologia utilizada"
-                      value={reportData.methodology}
-                      onChange={handleInputChange}
-                      rows={3}
-                    />
-                  </div>
-                </TabsContent>
+                      <div className="space-y-2">
+                        <Label htmlFor="methodology">Metodologia</Label>
+                        <Textarea
+                          id="methodology"
+                          name="methodology"
+                          placeholder="Descreva a metodologia utilizada"
+                          value={reportData.methodology}
+                          onChange={handleInputChange}
+                          rows={3}
+                        />
+                      </div>
+                    </TabsContent>
 
-                <TabsContent value="analysis" className="space-y-4 mt-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="patrimony">Situação Patrimonial</Label>
-                    <Textarea
-                      id="patrimony"
-                      name="patrimony"
-                      placeholder="Descreva a situação patrimonial da empresa"
-                      value={reportData.patrimony}
-                      onChange={handleInputChange}
-                      rows={4}
-                    />
-                  </div>
+                    <TabsContent value="analysis" className="space-y-4 mt-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="patrimony">Situação Patrimonial</Label>
+                        <Textarea
+                          id="patrimony"
+                          name="patrimony"
+                          placeholder="Descreva a situação patrimonial da empresa"
+                          value={reportData.patrimony}
+                          onChange={handleInputChange}
+                          rows={4}
+                        />
+                      </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="results">Análise de Resultados</Label>
-                    <Textarea
-                      id="results"
-                      name="results"
-                      placeholder="Descreva a análise dos resultados"
-                      value={reportData.results}
-                      onChange={handleInputChange}
-                      rows={4}
-                    />
-                  </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="results">Análise de Resultados</Label>
+                        <Textarea
+                          id="results"
+                          name="results"
+                          placeholder="Descreva a análise dos resultados"
+                          value={reportData.results}
+                          onChange={handleInputChange}
+                          rows={4}
+                        />
+                      </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="indicators">Indicadores Financeiros</Label>
-                    <Textarea
-                      id="indicators"
-                      name="indicators"
-                      placeholder="Descreva os indicadores financeiros"
-                      value={reportData.indicators}
-                      onChange={handleInputChange}
-                      rows={4}
-                    />
-                  </div>
-                </TabsContent>
+                      <div className="space-y-2">
+                        <Label htmlFor="indicators">Indicadores Financeiros</Label>
+                        <Textarea
+                          id="indicators"
+                          name="indicators"
+                          placeholder="Descreva os indicadores financeiros"
+                          value={reportData.indicators}
+                          onChange={handleInputChange}
+                          rows={4}
+                        />
+                      </div>
+                    </TabsContent>
 
-                <TabsContent value="conclusion" className="space-y-4 mt-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="conclusion">Conclusão</Label>
-                    <Textarea
-                      id="conclusion"
-                      name="conclusion"
-                      placeholder="Descreva a conclusão da análise contábil"
-                      value={reportData.conclusion}
-                      onChange={handleInputChange}
-                      rows={6}
-                    />
-                  </div>
+                    <TabsContent value="conclusion" className="space-y-4 mt-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="conclusion">Conclusão</Label>
+                        <Textarea
+                          id="conclusion"
+                          name="conclusion"
+                          placeholder="Descreva a conclusão da análise contábil"
+                          value={reportData.conclusion}
+                          onChange={handleInputChange}
+                          rows={6}
+                        />
+                      </div>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="accountant">Contador Responsável</Label>
-                      <Input
-                        id="accountant"
-                        name="accountant"
-                        placeholder="Nome do contador"
-                        value={reportData.accountant}
-                        onChange={handleInputChange}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="crc">CRC</Label>
-                      <Input
-                        id="crc"
-                        name="crc"
-                        placeholder="Número do CRC"
-                        value={reportData.crc}
-                        onChange={handleInputChange}
-                      />
-                    </div>
-                  </div>
-                </TabsContent>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="accountant">Contador Responsável</Label>
+                          <Input
+                            id="accountant"
+                            name="accountant"
+                            placeholder="Nome do contador"
+                            value={reportData.accountant}
+                            onChange={handleInputChange}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="crc">CRC</Label>
+                          <Input
+                            id="crc"
+                            name="crc"
+                            placeholder="Número do CRC"
+                            value={reportData.crc}
+                            onChange={handleInputChange}
+                          />
+                        </div>
+                      </div>
+                    </TabsContent>
 
-                <TabsContent value="media" className="space-y-4 mt-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <LocationImageUploader
-                      onImageUpload={handleLocationImageUpload}
-                      currentImage={reportData.locationImage}
-                    />
-                    <LogoUploader onLogoUpload={handleLogoUpload} currentLogo={reportData.logoImage} />
-                  </div>
-                </TabsContent>
+                    <TabsContent value="media" className="space-y-4 mt-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <LocationImageUploader
+                          onImageUpload={handleLocationImageUpload}
+                          currentImage={reportData.locationImage}
+                        />
+                        <LogoUploader onLogoUpload={handleLogoUpload} currentLogo={reportData.logoImage} />
+                      </div>
+                    </TabsContent>
+                  </>
+                )}
               </Tabs>
             </CardContent>
           </Card>

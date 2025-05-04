@@ -89,10 +89,12 @@ export default function LoginPage() {
             </Alert>
           )}
 
-          <div className="rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm p-6">
-            <form onSubmit={handleSubmit} className="grid gap-4">
+          <div className="rounded-lg border border-white/10 bg-[#131b2e] p-6">
+            <h3 className="text-xl font-bold mb-4 text-white">Entrar na sua conta</h3>
+
+            <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid gap-2">
-                <Label htmlFor="email" className="text-white auth-label">
+                <Label htmlFor="email" className="text-white">
                   Email
                 </Label>
                 <Input
@@ -109,12 +111,12 @@ export default function LoginPage() {
               </div>
               <div className="grid gap-2">
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="password" className="text-white auth-label">
+                  <Label htmlFor="password" className="text-white">
                     Senha
                   </Label>
                   <button
                     onClick={handleForgotPassword}
-                    className="text-sm font-medium text-indigo-400 hover:text-indigo-300 underline-offset-4 hover:underline auth-link"
+                    className="text-sm font-medium text-indigo-400 hover:text-indigo-300 underline-offset-4 hover:underline"
                   >
                     Esqueceu a senha?
                   </button>
@@ -127,11 +129,10 @@ export default function LoginPage() {
                   className="bg-white/10 border-white/20 text-white placeholder:text-white/50"
                 />
               </div>
-              {/* Atualizar o botão de login para mostrar o estado correto */}
               <Button
                 type="submit"
                 disabled={isLoading || isSubmitting}
-                className="bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white"
+                className="w-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white"
               >
                 {isLoading || isSubmitting ? "Entrando..." : "Entrar"}
               </Button>
@@ -142,21 +143,19 @@ export default function LoginPage() {
             <span className="text-blue-100/70">Não tem uma conta?</span>{" "}
             <Link
               href="/register"
-              className="font-medium text-indigo-400 hover:text-indigo-300 underline-offset-4 hover:underline auth-link"
+              className="font-medium text-indigo-400 hover:text-indigo-300 underline-offset-4 hover:underline"
             >
               Cadastre-se
             </Link>
           </div>
 
-          <div className="rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm p-4 credentials-box">
-            <h3 className="font-medium mb-2 text-white credentials-title">Credenciais de Acesso Padrão</h3>
-            <p className="text-sm mb-1 text-blue-100/70 credentials-text">
-              <strong className="text-white">Email:</strong>{" "}
-              <span className="credentials-value">{DEFAULT_USER.email}</span>
+          <div className="rounded-lg border border-white/10 bg-[#131b2e] p-6">
+            <h3 className="font-medium mb-2 text-white">Credenciais de Acesso Padrão</h3>
+            <p className="text-sm mb-1 text-blue-100/70">
+              <strong className="text-white">Email:</strong> <span>{DEFAULT_USER.email}</span>
             </p>
-            <p className="text-sm text-blue-100/70 credentials-text">
-              <strong className="text-white">Senha:</strong>{" "}
-              <span className="credentials-value">{DEFAULT_USER.password}</span>
+            <p className="text-sm text-blue-100/70">
+              <strong className="text-white">Senha:</strong> <span>{DEFAULT_USER.password}</span>
             </p>
           </div>
         </div>

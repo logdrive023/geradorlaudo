@@ -8,6 +8,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Upload, X } from "lucide-react"
 import { v4 as uuidv4 } from "uuid"
 
+// Import the LoadingSpinner component
+import { LoadingSpinner } from "@/components/loading-spinner"
+
 interface PhotoUploaderProps {
   onUpload: (photos: { id: string; url: string; caption: string }[]) => void
 }
@@ -16,6 +19,9 @@ export function PhotoUploader({ onUpload }: PhotoUploaderProps) {
   const [isDragging, setIsDragging] = useState(false)
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // Add isUploading state
+  const [isUploading, setIsUploading] = useState(false)
 
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault()
@@ -51,17 +57,29 @@ export function PhotoUploader({ onUpload }: PhotoUploaderProps) {
     fileInputRef.current?.click()
   }
 
-  const handleUpload = () => {
+  // Update the handleUpload function to show loading
+  const handleUpload = async () => {
     // Em uma aplicação real, você enviaria esses arquivos para seu serviço de armazenamento
     // Para este exemplo, criaremos URLs de objeto
-    const uploadedPhotos = selectedFiles.map((file) => ({
-      id: uuidv4(),
-      url: URL.createObjectURL(file),
-      caption: file.name.split(".")[0], // Usar o nome do arquivo como legenda inicial
-    }))
+    setIsUploading(true)
 
-    onUpload(uploadedPhotos)
-    setSelectedFiles([])
+    try {
+      // Simular um atraso de rede
+      await new Promise((resolve) => setTimeout(resolve, 1500))
+
+      const uploadedPhotos = selectedFiles.map((file) => ({
+        id: uuidv4(),
+        url: URL.createObjectURL(file),
+        caption: file.name.split(".")[0], // Usar o nome do arquivo como legenda inicial
+      }))
+
+      onUpload(uploadedPhotos)
+      setSelectedFiles([])
+    } catch (error) {
+      console.error("Erro ao fazer upload:", error)
+    } finally {
+      setIsUploading(false)
+    }
   }
 
   return (
@@ -125,6 +143,11 @@ export function PhotoUploader({ onUpload }: PhotoUploaderProps) {
                 </div>
               ))}
             </div>
+          </div>
+        )}
+        {isUploading && (
+          <div className="py-4">
+            <LoadingSpinner text="Fazendo upload das imagens..." />
           </div>
         )}
       </CardContent>
