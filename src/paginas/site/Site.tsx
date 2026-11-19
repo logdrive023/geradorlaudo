@@ -102,7 +102,7 @@ const DUVIDAS = [
   ['E depois da vistoria?', 'O plano de ação transforma cada anomalia em tarefa com prazo (sugerido pela gravidade), responsável e custo estimado. Sai no PDF e em planilha Excel.'],
   ['Quais tipos de laudo?', 'Vistoria cautelar, entrega de imóvel, locação, inspeção predial, vícios construtivos, estrutural, reforma (NBR 16280), perícia judicial, avaliação (NBR 14653) e contábil. Cada um com seu padrão, que você pode personalizar.'],
   ['Dá para usar com a minha equipe?', 'Dá: a organização tem três papéis. O admin controla tudo; o engenheiro vê os laudos dele e os atribuídos, confere e assina; o assistente faz o campo (fotos, dados, diário) só no que for atribuído a ele, sem ver o financeiro nem emitir laudo.'],
-  ['Quanto vai custar?', 'Na fase de testes é grátis e sem cartão. Os planos (Profissional e Escritório) serão anunciados antes de qualquer cobrança.'],
+  ['Como faço para usar?', 'Nesta fase o acesso é por convite: o administrador do escritório convida a equipe e cada pessoa cria a própria senha. Os planos (Profissional e Escritório) serão anunciados antes de qualquer cobrança.'],
   ['Como provo que o laudo é meu e não foi alterado?', 'As fotos guardam data e local, e cada achado passa pela sua aprovação. Ao emitir, o laudo ganha um código de verificação no PDF: quem recebe confere online se ele é autêntico e quem é o responsável.'],
   ['Quais normas o laudo cita?', 'ABNT NBR 13752 (perícias), NBR 16747 (inspeção predial), NBR 15575 (desempenho), NBR 5674 (manutenção), conforme o tipo de laudo.'],
 ];
@@ -138,7 +138,7 @@ function Calculadora() {
           <div className="relative mt-5 font-display text-6xl font-extrabold leading-none sm:text-7xl md:text-8xl">{Math.round(horas)}<span className="ml-2 text-3xl text-[#A9B1C1]">h/mês</span></div>
           <p className="relative mt-3 text-lg text-[#C9CED8]">{fraseTempo(horas)}</p>
           <p className="relative mt-6 text-xs text-[#8C95A6]">Considera que a IA faz cerca de 70% do trabalho de legendar, descrever e montar a tabela, e que você continua conferindo cada foto. Seu resultado pode variar.</p>
-          <Link to="/cadastrar" className="pilula pilula-obra relative mt-6 w-full sm:w-auto">Criar conta grátis <ArrowRight className="size-5" /></Link>
+          <Link to="/entrar" className="pilula pilula-obra relative mt-6 w-full sm:w-auto">Entrar <ArrowRight className="size-5" /></Link>
         </div>
       </div>
     </section>
@@ -180,7 +180,7 @@ export function Site() {
           </nav>
           <div className="flex items-center gap-1.5">
             <Link to="/entrar" className="inline-flex h-10 items-center rounded-full px-3 text-sm font-bold text-texto2 hover:text-texto sm:px-4">Entrar</Link>
-            <Link to="/cadastrar" className="pilula pilula-obra !min-h-10 !px-4 whitespace-nowrap text-sm"><span className="sm:hidden">Criar conta</span><span className="hidden sm:inline">Criar conta grátis</span></Link>
+            <Link to="/entrar" className="pilula pilula-obra !min-h-10 !px-4 whitespace-nowrap text-sm">Entrar</Link>
           </div>
         </div>
       </header>
@@ -199,11 +199,11 @@ export function Site() {
                 Suba as fotos da vistoria. A IA aponta fissuras, umidade e o grau de risco de cada uma. Você confere, e o laudo sai no padrão, pronto para assinar.
               </p>
               <div className="revelar mt-8 flex flex-wrap gap-3" style={{ animationDelay: '180ms' }}>
-                <Link to="/cadastrar" className="pilula pilula-obra text-base">Criar conta grátis <ArrowRight className="size-5" /></Link>
+                <Link to="/entrar" className="pilula pilula-obra text-base">Entrar <ArrowRight className="size-5" /></Link>
                 <a href="#como" className="pilula pilula-clara text-base">Ver como funciona</a>
               </div>
               <ul className="revelar mt-6 flex flex-wrap gap-x-5 gap-y-2 text-sm font-bold text-texto2" style={{ animationDelay: '240ms' }}>
-                {['Grátis para testar', 'Sem cartão', 'Você aprova cada achado'].map((t) => <li key={t} className="flex items-center gap-1.5"><Check className="size-4 text-ok" />{t}</li>)}
+                {['Acesso por convite', 'Você aprova cada achado', 'Seu nome na capa'].map((t) => <li key={t} className="flex items-center gap-1.5"><Check className="size-4 text-ok" />{t}</li>)}
               </ul>
               <Lia className="revelar mt-7 max-w-md" humor="feliz" tam={42}>Oi! Sou a Lia. Eu olho as fotos e escrevo o rascunho. Você confere e assina.</Lia>
             </div>
@@ -361,8 +361,8 @@ export function Site() {
               </div>
             </div>
             <div className="mt-8 flex flex-wrap items-center gap-3">
-              <Link to="/cadastrar" className="pilula pilula-obra text-base">Testar grátis <ArrowRight className="size-5" /></Link>
-              <span className="text-sm font-bold text-texto2">Sem cartão · sem instalar nada</span>
+              <Link to="/entrar" className="pilula pilula-obra text-base">Entrar <ArrowRight className="size-5" /></Link>
+              <span className="text-sm font-bold text-texto2">Acesso por convite · sem instalar nada</span>
             </div>
           </div>
         </section>
@@ -409,9 +409,9 @@ export function Site() {
             <div className="mx-auto w-fit"><RostoLia humor="feliz" tam={72} /></div>
             <h2 className="mt-4 text-4xl font-extrabold md:text-6xl">Bora <span className="grifo">vistoriar</span>?</h2>
             <p className="mx-auto mt-4 max-w-lg text-lg text-[#B6BECC]">Crie a conta, mande as fotos da próxima vistoria e veja a Lia escrever o laudo. Leva dois minutos.</p>
-            <Link to="/cadastrar" className="pilula pilula-obra mt-8 text-base">Criar conta grátis <ArrowRight className="size-5" /></Link>
+            <Link to="/entrar" className="pilula pilula-obra mt-8 text-base">Entrar <ArrowRight className="size-5" /></Link>
             <ul className="mt-6 flex flex-wrap justify-center gap-x-5 gap-y-2 text-sm font-bold text-[#C9CED8]">
-              {['Grátis para testar', 'Sem cartão', 'Seus dados ficam com você', 'Exporte quando quiser'].map((t) => <li key={t} className="flex items-center gap-1.5"><ShieldCheck className="size-4 text-obra" />{t}</li>)}
+              {['Acesso por convite', 'Seus dados ficam com você', 'Exporte quando quiser'].map((t) => <li key={t} className="flex items-center gap-1.5"><ShieldCheck className="size-4 text-obra" />{t}</li>)}
             </ul>
           </div>
         </section>
@@ -427,7 +427,7 @@ export function Site() {
 
       {/* barra fixa no celular */}
       <div className="fixed inset-x-0 bottom-0 z-40 border-t border-borda bg-papel/95 p-3 pb-[max(12px,env(safe-area-inset-bottom))] backdrop-blur sm:hidden">
-        <Link to="/cadastrar" className="pilula pilula-obra w-full">Criar conta grátis <span className="font-bold opacity-70">· sem cartão</span></Link>
+        <Link to="/entrar" className="pilula pilula-obra w-full">Entrar <span className="font-bold opacity-70">· acesso por convite</span></Link>
       </div>
 
       <RodapeSite barraFixa />

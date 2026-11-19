@@ -4,7 +4,6 @@ import { ArrowLeft, Camera, ClipboardCheck, Eye, EyeOff, KeyRound, Lock, Mail, S
 import { useSessao } from '../../lib/sessao';
 import { Logo } from '../../componentes/ui';
 import { Lia } from '../../componentes/Lia';
-import { cx } from '../../lib/util';
 
 type Modo = 'entrar' | 'criar' | 'esqueci';
 
@@ -85,14 +84,8 @@ export function Entrar({ modo }: { modo: Modo }) {
         <div className="relative z-10 -mt-4 flex w-full max-w-[440px] flex-col gap-4 md:mt-0">
           {modo !== 'esqueci' && (
             <>
-                            <div className="grid grid-cols-2 gap-1 rounded-[14px] border border-borda bg-sup p-1" role="tablist">
-                {(['entrar', 'criar'] as const).map((m) => (
-                  <Link key={m} to={m === 'entrar' ? '/entrar' : '/cadastrar'} replace role="tab" aria-selected={modo === m}
-                    className={cx('rounded-[10px] py-2.5 text-center text-sm font-extrabold transition', modo === m ? 'bg-[#121A2B] text-white' : 'text-texto2 hover:bg-sup2')}>
-                    {m === 'entrar' ? 'Entrar' : 'Criar conta'}
-                  </Link>
-                ))}
-              </div>
+              {/* acesso só por convite: sem cadastro aberto */}
+              <p className="rounded-[14px] border border-borda bg-sup px-4 py-3 text-sm text-texto2"><b className="text-texto">Acesso por convite.</b> Use o e-mail e a senha que você criou pelo convite do administrador do seu escritório.</p>
             </>
           )}
 

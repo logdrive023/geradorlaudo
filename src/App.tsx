@@ -50,7 +50,7 @@ export function App() {
         <Routes>
           <Route path="/" element={<Site />} />
           <Route path="/entrar" element={<Entrar modo="entrar" />} />
-          <Route path="/cadastrar" element={<Entrar modo="criar" />} />
+          <Route path="/cadastrar" element={<Navigate to="/entrar" replace />} />
           <Route path="/esqueci" element={<Entrar modo="esqueci" />} />
           <Route path="/ver/:token" element={<VerLaudo />} />
           <Route path="/acompanhar/:token" element={<VerObra />} />

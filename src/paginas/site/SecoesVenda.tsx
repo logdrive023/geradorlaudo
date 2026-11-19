@@ -120,7 +120,7 @@ export function Confianca() {
 
 /* ---------- planos ---------- */
 const PLANOS = [
-  { nome: 'Teste', preco: 'Grátis', nota: 'agora, na fase de testes', destaque: true, itens: ['Laudos com IA (até 5 fotos por laudo)', 'Gestão de obras', 'Plano de ação e link do cliente', 'PDF, Word e Excel'] },
+  { nome: 'Teste', preco: 'Por convite', nota: 'agora, na fase de testes', destaque: true, itens: ['Laudos com IA (até 5 fotos por laudo)', 'Gestão de obras', 'Plano de ação e link do cliente', 'PDF, Word e Excel'] },
   { nome: 'Profissional', preco: 'Em breve', nota: 'para quem assina sozinho', itens: ['Laudos e fotos sem o limite de teste', 'Seu modelo e sua logo em todos', 'Código de verificação no laudo', 'Agenda de vistorias'] },
   { nome: 'Escritório', preco: 'Em breve', nota: 'para equipes', itens: ['Tudo do Profissional', 'Admin, engenheiros e assistentes', 'Laudos e obras atribuídos a cada um', 'Registro de atividades'] },
 ];
@@ -128,8 +128,8 @@ const PLANOS = [
 export function Planos() {
   return (
     <section id="planos" className="mx-auto max-w-[1180px] scroll-mt-20 px-4 py-20 md:py-28">
-      <h2 className="max-w-3xl text-4xl font-extrabold leading-tight md:text-5xl">Comece de <span className="grifo">graça</span>.</h2>
-      <p className="mt-3 max-w-2xl text-lg text-texto2">Na fase de testes tudo é liberado, sem cartão. Quando os planos chegarem, você é avisado antes de qualquer cobrança.</p>
+      <h2 className="max-w-3xl text-4xl font-extrabold leading-tight md:text-5xl">Acesso por <span className="grifo">convite</span>.</h2>
+      <p className="mt-3 max-w-2xl text-lg text-texto2">Na fase de testes o acesso é por convite. Quando os planos chegarem, você é avisado antes de qualquer cobrança.</p>
       <div className="mt-10 grid gap-4 lg:grid-cols-3">
         {PLANOS.map((p) => (
           <div key={p.nome} className={cx('flex flex-col rounded-[22px] border p-6', p.destaque ? 'border-[#121A2B] bg-[#121A2B] text-white shadow-[0_6px_0_var(--obra)]' : 'border-borda bg-sup')}>
@@ -139,7 +139,7 @@ export function Planos() {
             <ul className="mt-5 grid gap-2 text-sm">
               {p.itens.map((i) => <li key={i} className="flex items-start gap-2"><Check className={cx('mt-0.5 size-4 shrink-0', p.destaque ? 'text-obra' : 'text-ok')} />{i}</li>)}
             </ul>
-            {p.destaque && <Link to="/cadastrar" className="pilula pilula-obra mt-6 w-full">Criar conta grátis <ArrowRight className="size-5" /></Link>}
+            {p.destaque && <Link to="/entrar" className="pilula pilula-obra mt-6 w-full">Entrar <ArrowRight className="size-5" /></Link>}
           </div>
         ))}
       </div>

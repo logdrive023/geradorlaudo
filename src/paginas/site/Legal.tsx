@@ -324,8 +324,8 @@ export function Sobre() {
         </section>
 
         <div className="flex flex-wrap items-center gap-3">
-          <Link to="/cadastrar" className="pilula pilula-obra text-base">Criar conta grátis <ArrowRight className="size-5" /></Link>
-          <span className="text-sm font-bold text-texto2">Sem cartão · leva dois minutos</span>
+          <Link to="/entrar" className="pilula pilula-obra text-base">Entrar <ArrowRight className="size-5" /></Link>
+          <span className="text-sm font-bold text-texto2">Acesso por convite do seu escritório</span>
         </div>
       </div>
     </Pagina>
