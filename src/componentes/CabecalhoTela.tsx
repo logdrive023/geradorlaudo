@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { Lia, type HumorLia } from './Lia';
 import { cx } from '../lib/util';
+import { ValorAjustado } from './Pecas';
 
 export interface NumeroCabecalho { n: ReactNode; t: string; alerta?: boolean; aoTocar?: () => void }
 
@@ -28,9 +29,10 @@ export function CabecalhoTela({ sobre, titulo, grifo, acao, lia, humor = 'normal
           {numeros.map((s) => {
             const Tag = s.aoTocar ? 'button' : 'div';
             return (
-              <Tag key={s.t} onClick={s.aoTocar} className={cx('rounded-2xl px-2 py-3 text-center ring-1 transition', s.alerta ? 'bg-critico/20 ring-critico/50' : 'bg-white/[.07] ring-white/10', s.aoTocar && 'hover:bg-white/[.12]')}>
-                <div className={cx('font-display text-2xl font-extrabold md:text-3xl', s.alerta && 'text-[#FF8B8B]')}>{s.n}</div>
-                <div className="text-[11px] font-bold text-[#A9B1C1] md:text-sm">{s.t}</div>
+              <Tag key={s.t} onClick={s.aoTocar} className={cx('min-w-0 rounded-2xl px-2 py-3 text-center ring-1 transition', s.alerta ? 'bg-critico/20 ring-critico/50' : 'bg-white/[.07] ring-white/10', s.aoTocar && 'hover:bg-white/[.12]')}>
+                {/* o valor nunca quebra nem estoura: diminui a fonte até caber (ex.: "Servidor") */}
+                <ValorAjustado className={cx('font-display text-2xl font-extrabold md:text-3xl', s.alerta && 'text-[#FF8B8B]')}>{s.n}</ValorAjustado>
+                <div className="truncate text-[11px] font-bold text-[#A9B1C1] md:text-sm">{s.t}</div>
               </Tag>
             );
           })}
