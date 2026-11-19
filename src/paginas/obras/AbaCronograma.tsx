@@ -4,7 +4,7 @@ import { mudarObra } from '../../db/db';
 import { avancoFisico, avancoPrevisto, situacaoEtapa, type Etapa, type Obra, type SituacaoEtapa } from '../../dominio/obra';
 import { reais } from '../../dominio/plano';
 import { Botao, Cartao, Dica, Entrada } from '../../componentes/ui';
-import { BarraDupla, EntradaReais, ItemAbre, Ponto } from '../../componentes/Pecas';
+import { Anel, BarraDupla, EntradaReais, ItemAbre, Ponto } from '../../componentes/Pecas';
 import { NIVEL_ETAPA, type NivelEtapa } from '../../dominio/etapas';
 import { cx, dataBR, novoId } from '../../lib/util';
 
@@ -142,11 +142,23 @@ export function AbaCronograma({ obra }: { obra: Obra }) {
   return (
     <div className="grid gap-4">
       <Cartao className="grid gap-3 p-4">
-        <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <h2 className="text-lg font-bold">Cronograma físico</h2>
-          <span className="text-sm text-texto2">realizado <b className="text-texto">{fis}%</b>{prev != null && <> · previsto <b className="text-texto">{prev}%</b></>}</span>
+        <div className="flex items-center gap-4">
+          <Anel pct={fis} previsto={prev} tam={88} espessura={9} />
+          <div className="min-w-0 flex-1">
+            <h2 className="text-lg font-bold">Cronograma físico</h2>
+            <p className="text-sm text-texto2">feito <b className="text-texto">{fis}%</b>{prev != null && <> · previsto hoje <b className="text-texto">{prev}%</b></>}</p>
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {(Object.keys(SITUACAO) as SituacaoEtapa[]).map((k) => {
+                const n = obra.etapas.filter((e) => situacaoEtapa(e) === k).length;
+                return n ? <span key={k} className={cx('rounded-full px-2 py-0.5 text-[11px] font-extrabold', SITUACAO[k].cls)}>{n} {SITUACAO[k].nome.toLowerCase()}</span> : null;
+              })}
+            </div>
+          </div>
         </div>
-        <BarraDupla real={fis} previsto={prev} />
+        <div className="flex flex-wrap items-center gap-3 border-t border-borda pt-2 text-xs">
+          <span className="font-bold text-texto3">Classificação:</span>
+          {(Object.keys(NIVEL_ETAPA) as NivelEtapa[]).map((n) => <Ponto key={n} cor={NIVEL_ETAPA[n].cor} nome={NIVEL_ETAPA[n].nome} />)}
+        </div>
         {inicio && fim && obra.etapas.some((e) => e.inicioPrev && e.fimPrev)
           ? <Gantt etapas={obra.etapas} inicio={inicio} fim={fim} />
           : <p className="rounded-xl bg-sup2 p-3 text-sm text-texto2">Coloque início e fim previstos nas etapas para ver a linha do tempo.</p>}

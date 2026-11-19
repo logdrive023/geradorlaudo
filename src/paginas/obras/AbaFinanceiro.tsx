@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { CheckCircle2, Circle, FileSpreadsheet, Plus, Trash2 } from 'lucide-react';
+import { CheckCircle2, Circle, Clock, FileSpreadsheet, Plus, Trash2, TrendingUp, Wallet } from 'lucide-react';
 import { mudarObra } from '../../db/db';
 import { CATEGORIA, financeiro, type CategoriaGasto, type Lancamento, type Obra } from '../../dominio/obra';
 import { reais } from '../../dominio/plano';
 import { Botao, Cartao, Dica, Entrada } from '../../componentes/ui';
-import { EntradaReais, Escolha, Indicador } from '../../componentes/Pecas';
+import { Anel, EntradaReais, Escolha, Indicador } from '../../componentes/Pecas';
 import { baixar, cx, dataBR, hoje, novoId } from '../../lib/util';
 
 /** Planilha do financeiro (CSV com ; e BOM, abre certo no Excel). */
@@ -37,12 +37,23 @@ export function AbaFinanceiro({ obra }: { obra: Obra }) {
   return (
     <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
       <div className="grid content-start gap-4">
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-          <Indicador valor={reais(f.orcado)} rotulo="orçado" dica="Soma do orçado de cada etapa (aba Cronograma ou aqui embaixo)." />
-          <Indicador valor={reais(f.realizado)} rotulo={pct != null ? `realizado · ${pct}%` : 'realizado'} tom={pct != null && pct > 100 ? 'critico' : 'obra'} />
-          <Indicador valor={reais(f.saldo)} rotulo={f.saldo < 0 ? 'acima do orçado' : 'saldo do orçamento'} tom={f.saldo < 0 ? 'critico' : 'ok'} />
-          <Indicador valor={reais(f.aPagar)} rotulo="a pagar" tom={f.aPagar > 0 ? 'medio' : 'neutro'} />
-        </div>
+        <Cartao className="grid gap-4 p-4">
+          <div className="flex items-center gap-4">
+            <Anel pct={pct ?? 0} tam={96} espessura={10}>
+              <span><b className="block font-display text-2xl font-extrabold leading-none">{pct ?? 0}%</b><span className="text-[10px] font-bold uppercase tracking-wider text-texto3">usado</span></span>
+            </Anel>
+            <div className="min-w-0">
+              <h2 className="flex items-center gap-1.5 text-lg font-bold">Orçamento<Dica texto="Quanto do orçado já foi gasto. O orçado é a soma das etapas; sem valor nas etapas, vale o orçamento da ficha da obra." /></h2>
+              <p className="font-display text-2xl font-extrabold">{reais(f.realizado)}</p>
+              <p className="text-sm text-texto2">de {reais(f.orcado)} orçados</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+            <Indicador ic={Wallet} valor={reais(f.saldo)} rotulo={f.saldo < 0 ? 'acima do orçado' : 'saldo'} tom={f.saldo < 0 ? 'critico' : 'ok'} />
+            <Indicador ic={Clock} valor={reais(f.aPagar)} rotulo="a pagar" tom={f.aPagar > 0 ? 'medio' : 'neutro'} />
+            <Indicador ic={TrendingUp} valor={reais(f.recebido)} rotulo="recebido do cliente" />
+          </div>
+        </Cartao>
 
         <Cartao className="grid gap-3 p-4">
           <h2 className="flex items-center gap-1.5 text-lg font-bold">Orçado × realizado por etapa<Dica texto="Ponha o orçado de cada etapa e lance as despesas escolhendo a etapa. A barra vermelha passou do orçado." /></h2>

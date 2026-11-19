@@ -6,7 +6,7 @@ import { CLIMA, type Clima, type Diario, type FotoObra, type Obra } from '../../
 import { redigirDiario } from '../../ia/obra';
 import { prepararFoto } from '../../lib/imagem';
 import { AreaTexto, Botao, Cartao, Dica, Entrada, Vazio, useUrl } from '../../componentes/ui';
-import { ItemAbre } from '../../componentes/Pecas';
+import { Indicador, ItemAbre } from '../../componentes/Pecas';
 import { cx, dataBR, dataExtenso, hoje, novoId } from '../../lib/util';
 
 const MAX_FOTOS_DIA = 8;
@@ -101,7 +101,10 @@ function DiaItem({ obra, d, fotos, aberto, alternar, imprimir, avisar }: { obra:
     <ItemAbre aberto={aberto} alternar={alternar} faixa={so ? 'var(--ok)' : 'var(--obra)'} cabeca={
       <span className="grid gap-1">
         <span className="flex items-center justify-between gap-2">
-          <b className="text-[15px]">{dataBR(d.data)} <span className="font-normal text-texto2">{CLIMA[d.clima.manha].emoji} {CLIMA[d.clima.tarde].emoji}</span></b>
+          <span className="flex items-center gap-3">
+            <span className="grid w-12 shrink-0 justify-items-center rounded-xl bg-sup2 py-1 leading-none"><b className="font-display text-lg">{d.data.slice(8, 10)}</b><span className="text-[10px] font-bold uppercase text-texto3">{new Date(`${d.data}T12:00:00`).toLocaleDateString('pt-BR', { month: 'short' }).replace('.', '')}</span></span>
+            <span><b className="block text-[15px] first-letter:uppercase">{new Date(`${d.data}T12:00:00`).toLocaleDateString('pt-BR', { weekday: 'long' })}</b><span className="text-sm">{CLIMA[d.clima.manha].emoji} {CLIMA[d.clima.tarde].emoji}</span></span>
+          </span>
           <span className={cx('flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-extrabold', so ? 'bg-ok-suave text-ok-texto' : 'bg-obra-suave text-obra-texto')}>{so ? <><Lock className="size-3" />Fechado</> : 'Aberto'}</span>
         </span>
         <span className="line-clamp-1 text-sm text-texto2">{d.atividades || 'Sem atividades anotadas'}</span>
@@ -210,12 +213,22 @@ export function AbaDiario({ obra, avisar }: { obra: Obra; avisar: (t: string, to
 
   return (
     <div className="grid gap-4">
-      <Cartao className="nao-imprimir flex flex-wrap items-center justify-between gap-3 p-4">
-        <div>
-          <h2 className="text-lg font-bold">Diário de obra</h2>
-          <p className="text-sm text-texto2">{dias.length ? `${dias.length} dia${dias.length > 1 ? 's' : ''} registrado${dias.length > 1 ? 's' : ''}` : 'Registre o dia: clima, equipe, o que foi feito e as fotos.'}</p>
+      <Cartao className="nao-imprimir grid gap-3 p-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-bold">Diário de obra</h2>
+            <p className="text-sm text-texto2">{dias.length ? 'O registro do dia a dia da obra, com prova em foto.' : 'Registre o dia: clima, equipe, o que foi feito e as fotos.'}</p>
+          </div>
+          <Botao variante="obra" onClick={novo}><CalendarPlus className="size-4" />{temHoje ? 'Outro registro hoje' : 'Registrar hoje'}</Botao>
         </div>
-        <Botao variante="obra" onClick={novo}><CalendarPlus className="size-4" />{temHoje ? 'Outro registro hoje' : 'Registrar hoje'}</Botao>
+        {dias.length > 0 && (
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            <Indicador ic={CalendarPlus} valor={dias.length} rotulo="dias registrados" />
+            <Indicador ic={Users} valor={dias.reduce((s, d) => s + d.equipe.reduce((x, e) => x + e.qtd, 0), 0)} rotulo="pessoas-dia" dica="Soma da equipe de todos os dias: mede o esforço na obra." />
+            <Indicador ic={Camera} valor={dias.reduce((s, d) => s + d.fotoIds.length, 0)} rotulo="fotos" />
+            <Indicador valor={dias.filter((d) => [d.clima.manha, d.clima.tarde].some((c) => c === 'chuva' || c === 'impraticavel')).length} rotulo="dias com chuva" tom="medio" dica="Dias com chuva ou impraticáveis ajudam a justificar o prazo." />
+          </div>
+        )}
       </Cartao>
       {dias.length === 0 ? (
         <div className="nao-imprimir"><Vazio icone={<CalendarPlus className="size-7" />} titulo="Nenhum dia registrado" texto="O diário vira prova do que aconteceu na obra. Dica: a equipe e as etapas do último dia já vêm preenchidas no próximo." /></div>
