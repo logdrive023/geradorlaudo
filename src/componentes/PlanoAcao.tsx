@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { AlarmClock, CheckCircle2, ChevronDown, ClipboardList, FileSpreadsheet } from 'lucide-react';
 import { db } from '../db/db';
 import type { Acompanhamento, Foto, Laudo, StatusAcao } from '../dominio/modelo';
-import { STATUS_ACAO, dataCurta, itensPlano, planilhaPlano, reais, resumoPlano, type ItemPlano } from '../dominio/plano';
+import { GUT_EIXOS, GUT_SUGERIDA, STATUS_ACAO, dataCurta, itensPlano, planilhaPlano, reais, resumoPlano, type ItemPlano } from '../dominio/plano';
 import { Botao, Cartao, Dica, Entrada, SeloGravidade } from './ui';
 import { Rotulado } from './Pecas';
 import { baixar, cx } from '../lib/util';
@@ -40,6 +40,7 @@ function Item({ i, aberto, alternar }: { i: ItemPlano; aberto: boolean; alternar
           <b className="block truncate text-[15px] leading-tight">{i.achado.tipo}</b>
           <span className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-texto2">
             <SeloGravidade g={i.achado.gravidade} />
+            <span className={cx('rounded-md px-1.5 py-0.5 text-[10px] font-extrabold', i.pontos >= 64 ? 'bg-critico-suave text-critico-texto' : i.pontos >= 18 ? 'bg-medio-suave text-medio-texto' : 'bg-sup2 text-texto2')} title="Matriz GUT: gravidade × urgência × tendência">GUT {i.pontos}</span>
             {i.foto.analise?.ambiente && <span className="truncate">{i.foto.analise.ambiente}</span>}
           </span>
         </span>
@@ -63,6 +64,22 @@ function Item({ i, aberto, alternar }: { i: ItemPlano; aberto: boolean; alternar
                 {STATUS_ACAO[s].nome}
               </button>
             ))}
+          </div>
+          <div className="grid gap-1.5 rounded-xl bg-sup2 p-2.5">
+            <span className="flex items-center gap-1.5 text-xs font-extrabold text-texto2">Matriz GUT · <b className="text-texto">{i.pontos}</b> de 125
+              <Dica texto={<>Prioridade pelo padrão IBAPE: as três notas multiplicadas. Quanto maior, mais na frente do plano.<br />{GUT_EIXOS.map((e) => <span key={e.k} className="block"><b>{e.nome}:</b> {e.explica}</span>)}</>} />
+              {i.acomp.gut && <button onClick={() => void salvar(i, { gut: undefined })} className="ml-auto font-bold text-tinta underline underline-offset-2">voltar à sugestão</button>}
+            </span>
+            <div className="grid grid-cols-3 gap-2">
+              {GUT_EIXOS.map((e) => (
+                <label key={e.k} className="grid gap-1 text-[11px] font-bold text-texto2">{e.nome}
+                  <select value={i.gut[e.k]} onChange={(ev) => void salvar(i, { gut: { ...(i.acomp.gut ?? GUT_SUGERIDA[i.achado.gravidade]), [e.k]: Number(ev.target.value) } })}
+                    className="h-9 rounded-lg border border-borda-forte bg-sup px-2 text-sm font-extrabold text-texto">
+                    {[1, 2, 3, 4, 5].map((n) => <option key={n} value={n}>{n}</option>)}
+                  </select>
+                </label>
+              ))}
+            </div>
           </div>
           <div className="grid gap-2 sm:grid-cols-3">
             <label className="grid gap-1 text-xs font-bold text-texto2">Prazo

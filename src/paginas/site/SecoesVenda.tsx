@@ -5,7 +5,6 @@ import { cx } from '../../lib/util';
 /* Seções de venda da página inicial: para quem é, comparação, confiança e planos.
    Regra: só prometer o que existe; o que ainda não tem tela aparece como "em breve". */
 
-const Breve = () => <span className="ml-1.5 rounded-full bg-obra-suave px-2 py-0.5 align-middle text-[10px] font-extrabold uppercase tracking-wider text-obra-texto">em breve</span>;
 
 /* ---------- para quem ---------- */
 const PUBLICOS = [
@@ -95,7 +94,7 @@ const PILARES = [
   { ic: ScanSearch, t: 'Prova datada', d: 'Data e local de cada foto lidos da própria imagem, com a anomalia marcada e numerada.' },
   { ic: QrCode, t: 'Laudo verificável', d: 'Código de verificação no PDF: qualquer pessoa confere online se o laudo é autêntico, quando foi emitido e quem é o responsável.' },
   { ic: Landmark, t: 'Armazenamento privado', d: 'Fotos e laudos guardados em armazenamento privado, com acesso só pela sua conta. O cliente vê apenas pelo link que você criar e pode desligar.' },
-  { ic: Fingerprint, t: 'Aceite do cliente', d: 'O cliente lê pelo link e registra o aceite ou a contestação, com data e hora.', breve: true },
+  { ic: Fingerprint, t: 'Aceite do cliente', d: 'O cliente lê pelo link e registra o aceite ou a contestação, com data e hora. Você vê a resposta na hora.' },
   { ic: ShieldCheck, t: 'Seus dados são seus', d: 'Exporte tudo quando quiser. Sem anúncio e sem vender dado de ninguém.' },
 ];
 
@@ -106,10 +105,10 @@ export function Confianca() {
         <h2 className="max-w-3xl text-4xl font-extrabold leading-tight md:text-5xl">Laudo é <span className="grifo">responsabilidade</span>. A gente leva a sério.</h2>
         <p className="mt-3 max-w-2xl text-lg text-[#B6BECC]">A IA acelera; quem decide é você. Tudo foi pensado para o laudo aguentar a pergunta do cliente, do síndico e do juiz.</p>
         <div className="mt-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {PILARES.map(({ ic: Ic, t, d, breve }) => (
+          {PILARES.map(({ ic: Ic, t, d }) => (
             <div key={t} className="rounded-[22px] border border-white/10 bg-white/5 p-6">
               <span className="grid size-11 place-items-center rounded-xl bg-obra text-[#121A2B]"><Ic className="size-5" /></span>
-              <h3 className="mt-4 text-lg font-bold">{t}{breve && <Breve />}</h3>
+              <h3 className="mt-4 text-lg font-bold">{t}</h3>
               <p className="mt-1.5 text-[#B6BECC]">{d}</p>
             </div>
           ))}

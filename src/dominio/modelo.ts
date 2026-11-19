@@ -44,6 +44,8 @@ export interface Acompanhamento {
   responsavel?: string;  // construtora, síndico, proprietário…
   custo?: number;        // custo estimado do reparo, em R$
   nota?: string;
+  /** Matriz GUT (IBAPE): gravidade, urgência e tendência de 1 a 5. Sem ela vale a sugestão pela gravidade. */
+  gut?: { g: number; u: number; t: number };
 }
 
 export interface Analise {

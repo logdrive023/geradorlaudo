@@ -28,6 +28,7 @@ type Servidor struct {
 	Arquivos     portas.Arquivos // nil = sem storage de imagens
 	Negocio      portas.Negocio  // nil = sem organização/cliente/agenda (rotas novas respondem 503)
 
+	AuditoriaLigada     bool   // AUDITORIA=ligada: registro de atividades gravando
 	AsaasToken          string // ASAAS_WEBHOOK_TOKEN: liga o aviso de pagamento
 	WhatsAppVerificacao string // WHATSAPP_VERIFY_TOKEN: liga o webhook do WhatsApp
 	WhatsAppSegredo     string // WHATSAPP_APP_SECRET: confere a assinatura do Meta

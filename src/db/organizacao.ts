@@ -12,13 +12,15 @@ export const PAPEIS: Record<Papel, { nome: string; ve: string; faz: string; naoF
 
 export interface UsuarioOrg { id: string; email: string; nome: string; papel: Papel; ativo: boolean; registro: string; profissao: string }
 export interface ConviteOrg { email: string; nome: string; papel: Papel; organizacao?: string; criadoEm: string; expiraEm: string; pendente: boolean }
-export interface EventoOrg { id: number; nome?: string; acao: string; alvoTipo?: string; alvoId?: string; criadoEm: string }
+export interface EventoOrg { id: number; nome?: string; acao: string; alvoTipo?: string; alvoId?: string; detalhe?: { nome?: string }; criadoEm: string }
 export interface Org {
   organizacao: { id: string; nome: string; cnpj: string };
   assinatura: { plano: string; status: string; laudosMes: number; usuariosMax: number; creditos: number };
   uso: { laudosMes: number; analisesIA: number; porMotor: Record<string, number>; usuarios: number };
   papel: Papel;
   permissoes: Record<string, boolean>;
+  /** registro de atividades ligado no servidor (AUDITORIA=ligada) */
+  auditoria?: boolean;
 }
 
 const json = (corpo: unknown, metodo = 'POST'): RequestInit => ({ method: metodo, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(corpo) });

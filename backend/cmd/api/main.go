@@ -80,6 +80,7 @@ func main() {
 			slog.Error("banco indisponível; seguindo sem banco", "erro", err)
 		} else {
 			defer b.Fechar()
+			b.LigarAuditoria(cfg.Auditoria)
 			banco = b
 		}
 	} else {
@@ -114,6 +115,7 @@ func main() {
 		Banco:        banco,
 		Arquivos:     arqs,
 
+		AuditoriaLigada:     cfg.Auditoria,
 		AsaasToken:          cfg.AsaasToken,
 		WhatsAppVerificacao: cfg.WhatsAppVerif,
 		WhatsAppSegredo:     cfg.WhatsAppSecret,

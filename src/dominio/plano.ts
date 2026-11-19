@@ -15,7 +15,17 @@ export const STATUS_ACAO: Record<StatusAcao, { nome: string; cor: string }> = {
   resolvida: { nome: 'Resolvida', cor: 'ok' },
 };
 
-export interface ItemPlano { foto: Foto; achado: Achado; numeroFoto: number; acomp: Acompanhamento; prazo: string; atrasado: boolean }
+export interface ItemPlano { foto: Foto; achado: Achado; numeroFoto: number; acomp: Acompanhamento; prazo: string; atrasado: boolean; gut: Gut; pontos: number }
+
+/** Matriz GUT (padrão IBAPE): Gravidade × Urgência × Tendência, cada uma de 1 a 5 (máximo 125). */
+export type Gut = { g: number; u: number; t: number };
+export const GUT_SUGERIDA: Record<Gravidade, Gut> = { critico: { g: 5, u: 5, t: 4 }, medio: { g: 3, u: 3, t: 3 }, minimo: { g: 2, u: 2, t: 2 } };
+export const GUT_EIXOS: { k: keyof Gut; nome: string; explica: string }[] = [
+  { k: 'g', nome: 'Gravidade', explica: '1 sem gravidade · 3 grave · 5 extremamente grave (risco à vida, à estrutura ou ao meio ambiente)' },
+  { k: 'u', nome: 'Urgência', explica: '1 pode esperar · 3 o mais cedo possível · 5 ação imediata' },
+  { k: 't', nome: 'Tendência', explica: '1 não piora · 3 piora a médio prazo · 5 piora rápido se nada for feito' },
+];
+export const pontosGut = (x: Gut) => x.g * x.u * x.t;
 
 const iso = (d: Date) => d.toISOString().slice(0, 10);
 
@@ -32,9 +42,11 @@ export function itensPlano(laudo: Laudo, fotos: Foto[], hoje = iso(new Date())):
   const itens = fotos.flatMap((f, i) => achadosValidos(f).map((a) => {
     const acomp: Acompanhamento = a.acompanhamento ?? { status: 'aberta' };
     const prazo = acomp.prazo || prazoSugerido(laudo.dados.dataVistoria, a.gravidade);
-    return { foto: f, achado: a, numeroFoto: i + 1, acomp, prazo, atrasado: acomp.status !== 'resolvida' && prazo < hoje };
+    const gut = acomp.gut ?? GUT_SUGERIDA[a.gravidade];
+    return { foto: f, achado: a, numeroFoto: i + 1, acomp, prazo, atrasado: acomp.status !== 'resolvida' && prazo < hoje, gut, pontos: pontosGut(gut) };
   }));
-  return itens.sort((x, y) => ordem[x.achado.gravidade] - ordem[y.achado.gravidade] || x.prazo.localeCompare(y.prazo));
+  // maior pontuação GUT primeiro (sem GUT preenchida, a sugestão segue a gravidade); empate: gravidade e prazo
+  return itens.sort((x, y) => y.pontos - x.pontos || ordem[x.achado.gravidade] - ordem[y.achado.gravidade] || x.prazo.localeCompare(y.prazo));
 }
 
 export function resumoPlano(itens: ItemPlano[]) {
@@ -63,10 +75,10 @@ export function planilhaPlano(laudo: Laudo, itens: ItemPlano[]): Blob {
   };
   const linhas = [
     ['Laudo', laudo.titulo], ['Endereço', laudo.dados.endereco ?? ''], [],
-    ['Foto', 'Ambiente', 'Anomalia', 'Grau', 'Prioridade', 'Recomendação', 'Status', 'Prazo', 'Responsável', 'Custo estimado (R$)', 'Observação'],
+    ['Foto', 'Ambiente', 'Anomalia', 'Grau', 'Prioridade', 'G', 'U', 'T', 'GUT', 'Recomendação', 'Status', 'Prazo', 'Responsável', 'Custo estimado (R$)', 'Observação'],
     ...itens.map((i) => [
       String(i.numeroFoto).padStart(2, '0'), i.foto.analise?.ambiente ?? '', i.achado.tipo, GRAVIDADE[i.achado.gravidade].nome,
-      GRAVIDADE[i.achado.gravidade].prioridade, i.achado.recomendacao, STATUS_ACAO[i.acomp.status].nome, dataCurta(i.prazo),
+      GRAVIDADE[i.achado.gravidade].prioridade, i.gut.g, i.gut.u, i.gut.t, i.pontos, i.achado.recomendacao, STATUS_ACAO[i.acomp.status].nome, dataCurta(i.prazo),
       i.acomp.responsavel ?? '', i.acomp.custo != null ? i.acomp.custo.toFixed(2).replace('.', ',') : '', i.acomp.nota ?? '',
     ]),
   ];

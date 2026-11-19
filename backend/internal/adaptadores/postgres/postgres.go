@@ -19,7 +19,13 @@ import (
 	"github.com/logdrive023/geradorlaudo/backend/migrations"
 )
 
-type Banco struct{ pool *pgxpool.Pool }
+type Banco struct {
+	pool      *pgxpool.Pool
+	auditoria bool // registro de atividades: desligado por padrão para não ocupar espaço
+}
+
+// LigarAuditoria liga o registro de atividades (AUDITORIA=ligada).
+func (b *Banco) LigarAuditoria(ligada bool) { b.auditoria = ligada }
 
 // Abrir conecta e aplica as migrations que faltam.
 func Abrir(ctx context.Context, url string) (*Banco, error) {

@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
-import { Copy, History, Mail, MessageCircle, RotateCw, Shield, UserCheck, UserPlus, UserX } from 'lucide-react';
-import { ACAO, PAPEIS, alterarUsuario, auditoria, convidar, lerOrg, listarConvites, listarUsuarios, type ConviteOrg, type EventoOrg, type Org, type UsuarioOrg } from '../../db/organizacao';
+import { Copy, Mail, MessageCircle, RotateCw, Shield, UserCheck, UserPlus, UserX } from 'lucide-react';
+import { PAPEIS, alterarUsuario, auditoria, convidar, lerOrg, listarConvites, listarUsuarios, type ConviteOrg, type EventoOrg, type Org, type UsuarioOrg } from '../../db/organizacao';
 import { Botao, Campo, Cartao, Dica, Entrada, Modal, Selo, useAviso } from '../../componentes/ui';
-import { Recolhivel } from '../../componentes/Wizard';
+import { Atividades } from './Atividades';
 import { cx } from '../../lib/util';
 import type { Papel } from '../../dominio/modelo';
 
@@ -99,7 +99,7 @@ export function EquipeOrganizacao({ euId }: { euId: string }) {
               <div className="truncate text-sm text-texto3">{u.email}</div>
             </div>
             {admin && u.id !== euId && (
-              <div className="flex flex-wrap gap-1.5">
+              <div className="flex w-full flex-wrap gap-1.5 pl-14 sm:w-auto sm:pl-0">
                 <select value={u.papel} onChange={(e) => mudar(u, { papel: e.target.value as Papel })} aria-label={`Papel de ${u.nome}`}
                   className="h-9 rounded-xl border border-borda-forte bg-sup px-2 text-sm font-bold">
                   {(Object.keys(PAPEIS) as Papel[]).map((p) => <option key={p} value={p}>{PAPEIS[p].nome}</option>)}
@@ -125,15 +125,7 @@ export function EquipeOrganizacao({ euId }: { euId: string }) {
         </>
       )}
 
-      {org.permissoes.auditoria && eventos.length > 0 && (
-        <Recolhivel className="mt-7" titulo={<span className="flex items-center gap-1.5"><History className="size-4" />Atividades recentes</span>} resumo="Quem fez o quê, com data e hora">
-          <ul className="grid gap-1.5 text-sm">
-            {eventos.slice(0, 40).map((e) => (
-              <li key={e.id} className="flex gap-2 rounded-xl bg-sup2 px-3 py-2"><span className="shrink-0 text-texto3">{data(e.criadoEm)}</span><span><b>{e.nome || 'Cliente'}</b> {ACAO[e.acao] ?? e.acao}</span></li>
-            ))}
-          </ul>
-        </Recolhivel>
-      )}
+      {org.permissoes.auditoria && org.auditoria && eventos.length > 0 && <Atividades eventos={eventos} />}
 
       <Modal aberto={!!novo} aoFechar={() => setNovo(null)} titulo={link ? 'Convite pronto' : 'Convidar pessoa'}>
         {link ? (

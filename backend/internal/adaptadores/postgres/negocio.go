@@ -196,9 +196,11 @@ func (b *Banco) AceitarConvite(ctx context.Context, resumo []byte, nome, senhaHa
 	if _, err := tx.Exec(ctx, `update convites set usado_em = now() where token_hash = $1`, resumo); err != nil {
 		return conta.Usuario{}, err
 	}
-	if _, err := tx.Exec(ctx, `insert into auditoria (organizacao_id, usuario_id, acao, alvo_tipo, alvo_id) values ($1, $2::uuid, 'usuario.entrou', 'usuario', $3::text)`,
-		org, id, id); err != nil {
-		return conta.Usuario{}, err
+	if b.auditoria {
+		if _, err := tx.Exec(ctx, `insert into auditoria (organizacao_id, usuario_id, acao, alvo_tipo, alvo_id) values ($1, $2::uuid, 'usuario.entrou', 'usuario', $3::text)`,
+			org, id, id); err != nil {
+			return conta.Usuario{}, err
+		}
 	}
 	if err := tx.Commit(ctx); err != nil {
 		return conta.Usuario{}, err
@@ -289,6 +291,9 @@ func (b *Banco) DefinirMembros(ctx context.Context, u conta.Usuario, tipo, id st
 
 // Auditar grava sem travar quem chamou (falha só vai para o log).
 func (b *Banco) Auditar(ctx context.Context, u conta.Usuario, acao, alvoTipo, alvoID string, detalhe any) {
+	if !b.auditoria {
+		return
+	}
 	var d []byte
 	if detalhe != nil {
 		d, _ = json.Marshal(detalhe)
@@ -300,6 +305,9 @@ func (b *Banco) Auditar(ctx context.Context, u conta.Usuario, acao, alvoTipo, al
 }
 
 func (b *Banco) Auditoria(ctx context.Context, u conta.Usuario, limite int) ([]portas.EventoAuditoria, error) {
+	if !b.auditoria {
+		return []portas.EventoAuditoria{}, nil
+	}
 	if limite <= 0 || limite > 500 {
 		limite = 200
 	}
@@ -348,8 +356,10 @@ func (b *Banco) ResponderPorLink(ctx context.Context, tipo, token string, r port
 	if err != nil {
 		return r, traduzir(err)
 	}
-	_, _ = b.pool.Exec(ctx, `insert into auditoria (organizacao_id, acao, alvo_tipo, alvo_id, detalhe) values ($1, $2, $3, $4, $5)`,
-		org, "cliente."+r.Tipo, tipo, alvo, []byte(`{"nome":`+string(mustJSON(r.Nome))+`}`))
+	if b.auditoria {
+		_, _ = b.pool.Exec(ctx, `insert into auditoria (organizacao_id, acao, alvo_tipo, alvo_id, detalhe) values ($1, $2, $3, $4, $5)`,
+			org, "cliente."+r.Tipo, tipo, alvo, []byte(`{"nome":`+string(mustJSON(r.Nome))+`}`))
+	}
 	return r, nil
 }
 

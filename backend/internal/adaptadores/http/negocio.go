@@ -124,7 +124,7 @@ func (s *Servidor) lerOrg(w http.ResponseWriter, r *http.Request) {
 		responderDados(w, err)
 		return
 	}
-	json200(w, map[string]any{"organizacao": o, "assinatura": a, "uso": uso, "papel": u.Papel, "permissoes": permissoesDe(u.Papel)})
+	json200(w, map[string]any{"organizacao": o, "assinatura": a, "uso": uso, "papel": u.Papel, "permissoes": permissoesDe(u.Papel), "auditoria": s.AuditoriaLigada})
 }
 
 func (s *Servidor) salvarOrg(w http.ResponseWriter, r *http.Request) {
