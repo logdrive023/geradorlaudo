@@ -1,4 +1,5 @@
 import { useEffect, type ReactNode } from 'react';
+import { cx } from '../../lib/util';
 import { Link } from 'react-router';
 import { ArrowLeft, ArrowRight, Camera, ClipboardCheck, FileCheck2, Lock, ScanSearch, ShieldCheck, Users } from 'lucide-react';
 import { Logo } from '../../componentes/ui';
@@ -57,7 +58,8 @@ function Pagina({ titulo, resumo, secoes, children }: { titulo: string; resumo: 
           <h1 className="text-4xl font-extrabold leading-tight md:text-5xl">{titulo}</h1>
           <div className="mt-4 text-lg leading-relaxed text-texto2">{resumo}</div>
         </div>
-        <div className="mt-10 grid gap-10 lg:grid-cols-[220px_minmax(0,1fr)]">
+        {/* duas colunas só quando há índice (Termos, Privacidade); o Sobre usa a largura toda */}
+        <div className={cx('mt-10 grid gap-10', secoes && 'lg:grid-cols-[220px_minmax(0,1fr)]')}>
           {secoes && (
             <nav className="hidden lg:block" aria-label="Nesta página">
               <ol className="sticky top-24 grid gap-1 border-l-2 border-borda text-sm">
@@ -65,7 +67,7 @@ function Pagina({ titulo, resumo, secoes, children }: { titulo: string; resumo: 
               </ol>
             </nav>
           )}
-          <article className="legal max-w-3xl">{children}</article>
+          <article className={cx('legal min-w-0', secoes && 'max-w-3xl')}>{children}</article>
         </div>
       </main>
       <RodapeSite />
