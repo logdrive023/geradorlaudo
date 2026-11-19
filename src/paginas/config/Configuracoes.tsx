@@ -326,14 +326,17 @@ export function Configuracoes() {
   const { usuario } = useSessao();
   const cfg = useLiveQuery(lerConfig);
   const [busca, setBusca] = useSearchParams();
-  const aba = (busca.get('aba') as Aba) || 'perfil';
+  // assistente de campo: só o que é dele (perfil, aparência, segurança, dados); o resto é da empresa (admin)
+  const abas = usuario?.papel === 'assistente' ? ABAS.filter((a) => ['perfil', 'aparencia', 'seguranca', 'dados'].includes(a.id)) : ABAS;
+  const pedida = (busca.get('aba') as Aba) || 'perfil';
+  const aba = abas.some((a) => a.id === pedida) ? pedida : 'perfil';
   if (!usuario || !cfg) return null;
   return (
     <div className="mx-auto max-w-5xl px-3 py-5 sm:px-4 md:px-8 md:py-9 pb-28">
       <h1 className="text-3xl font-extrabold md:text-4xl"><span className="grifo">Ajustes</span></h1>
       <p className="mt-1 text-texto2">Seu perfil, os modelos de laudo, a IA e os seus dados.</p>
       <nav className="mt-5 grid grid-cols-4 gap-1 rounded-2xl border border-borda bg-sup p-1 sm:flex sm:w-fit" role="tablist">
-        {ABAS.map(({ id, rotulo, ic: Ic }) => (
+        {abas.map(({ id, rotulo, ic: Ic }) => (
           <button key={id} role="tab" aria-selected={aba === id} onClick={() => setBusca({ aba: id }, { replace: true })}
             className={cx('flex flex-col items-center gap-1 rounded-xl px-1 py-2 text-[11px] font-extrabold transition sm:flex-row sm:gap-2 sm:px-4 sm:text-sm', aba === id ? 'bg-[#121A2B] text-white dark:bg-tinta dark:text-[#0E1320]' : 'text-texto2 hover:bg-sup2 hover:text-texto')}>
             <Ic className="size-5 sm:size-4" />{rotulo}

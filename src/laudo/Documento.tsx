@@ -272,6 +272,12 @@ export function Documento({ laudo, fotos, autor, editar }: Props) {
               <b>{autor?.nome}</b><br />{[autor?.profissao, autor?.registro].filter(Boolean).join(' · ')}{d.art && <><br />ART/RRT nº {d.art}</>}
             </div>
           </div>
+          {d.codigoVerificacao && (
+            <div style={{ marginTop: '12mm', border: '1px solid #c9d2e0', borderRadius: 6, padding: '3mm 4mm', fontSize: '9pt', color: '#526079', textAlign: 'center' }}>
+              <b style={{ color: '#1D3B70' }}>Autenticidade</b> · confira este laudo em <b style={{ color: '#1D3B70' }}>{location.host}/verificar/{d.codigoVerificacao}</b>
+              {' '}· código <b style={{ fontFamily: 'monospace', color: '#1D3B70' }}>{d.codigoVerificacao}</b>
+            </div>
+          )}
         </Folha>
       </div>
     </EdicaoCtx.Provider>

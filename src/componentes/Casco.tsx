@@ -18,7 +18,7 @@ export function Casco() {
     { para: '/painel', rotulo: 'Laudos', ic: LayoutGrid },
     { para: '/obras', rotulo: 'Obras', ic: HardHat },
     { para: '/configuracoes', rotulo: 'Configurações', ic: Settings },
-    ...(usuario.papel === 'admin' ? [{ para: '/usuarios', rotulo: 'Usuários', ic: Users }] : []),
+    ...(usuario.papel === 'admin' ? [{ para: '/usuarios', rotulo: 'Equipe', ic: Users }] : []),
   ];
   const iniciais = usuario.nome.split(' ').map((p) => p[0]).slice(0, 2).join('').toUpperCase();
 
@@ -44,7 +44,7 @@ export function Casco() {
             <span className="grid size-10 place-items-center rounded-full bg-tinta font-extrabold text-white dark:text-[#0E1320]">{iniciais}</span>
             <div className="min-w-0 flex-1">
               <div className="truncate font-bold">{usuario.nome}</div>
-              <div className="truncate text-xs text-texto3">{usuario.papel === 'admin' ? 'Administrador · acesso total' : usuario.registro || usuario.profissao}</div>
+              <div className="truncate text-xs text-texto3">{usuario.papel === 'admin' ? 'Administrador · acesso total' : usuario.papel === 'assistente' ? 'Assistente de campo' : usuario.registro || usuario.profissao}</div>
             </div>
             <button onClick={() => { sair(); nav('/entrar'); }} aria-label="Sair" title="Sair" className="rounded-lg p-2 text-texto3 hover:bg-sup2 hover:text-texto"><LogOut className="size-5" /></button>
           </div>

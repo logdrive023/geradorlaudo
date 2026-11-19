@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
-import { BookOpen, CheckCircle2, FileDown, FileText, Maximize2, Minimize2, Pencil, Printer, Sparkles, Wand2 } from 'lucide-react';
+import { BookOpen, CheckCircle2, FileDown, FileText, Maximize2, Minimize2, Pencil, Printer, ShieldCheck, Sparkles, Wand2 } from 'lucide-react';
+import { emitirLaudo, urlVerificacao } from '../../db/organizacao';
+import { useSessao } from '../../lib/sessao';
 import { LinkPublico } from '../../componentes/Pecas';
 import { PlanoAcao } from '../../componentes/PlanoAcao';
 import { criarLinkCliente, desligarLinkCliente, logadoNaNuvem } from '../../db/nuvem';
@@ -71,6 +73,34 @@ function LinkCliente({ laudoId, avisar, link, setLink }: { laudoId: string; avis
   );
 }
 
+/** Emitir: registra o laudo no servidor com código público e resumo do conteúdo (vai no PDF). */
+function Autenticidade({ laudo, avisar }: { laudo: Laudo; avisar: (t: string, tom?: 'ok' | 'erro') => void }) {
+  const { usuario } = useSessao();
+  const [emitindo, setEmitindo] = useState(false);
+  if (!logadoNaNuvem() || usuario?.papel === 'assistente') return null;
+  const codigo = laudo.dados.codigoVerificacao;
+  const emitir = async () => {
+    setEmitindo(true);
+    try {
+      const e = await emitirLaudo(laudo.id);
+      await tocarLaudo(laudo.id, { dados: { ...laudo.dados, codigoVerificacao: e.codigo, emitidoEm: e.emitidoEm } });
+      avisar(codigo ? 'Emissão atualizada' : 'Laudo emitido: o código já está no PDF');
+    } catch (err) { avisar((err as Error).message, 'erro'); }
+    setEmitindo(false);
+  };
+  return (
+    <Cartao className="grid gap-2 p-4">
+      <div className="flex items-center gap-2"><ShieldCheck className="size-5 text-ok" /><b>Autenticidade</b>
+        <Dica texto="Ao emitir, o servidor guarda o resumo do conteúdo (SHA-256) e gera um código. O código sai no PDF; quem recebe confere online se o laudo é autêntico e quem é o responsável." /></div>
+      {codigo ? (
+        <p className="text-sm text-texto2">Emitido · código <b className="font-mono text-texto">{codigo}</b> ·{' '}
+          <a href={urlVerificacao(codigo)} target="_blank" rel="noreferrer" className="font-extrabold text-tinta underline underline-offset-2">ver a verificação</a></p>
+      ) : <p className="text-sm text-texto2">Quando o laudo estiver pronto, emita para pôr o código de verificação no PDF.</p>}
+      <Botao tam="p" variante={codigo ? 'claro' : 'obra'} carregando={emitindo} onClick={emitir}>{codigo ? 'Emitir de novo (após mudanças)' : 'Emitir com código de verificação'}</Botao>
+    </Cartao>
+  );
+}
+
 export function AbaLaudo({ laudo, fotos, autor, irPara }: { laudo: Laudo; fotos: Foto[]; autor?: Usuario; irPara: (a: Aba, foto?: string) => void }) {
   const doc = useRef<HTMLDivElement>(null);
   const [conclusao, setConclusao] = useState(laudo.conclusao);
@@ -125,6 +155,7 @@ export function AbaLaudo({ laudo, fotos, autor, irPara }: { laudo: Laudo; fotos:
         : <p className="rounded-xl bg-ok-suave p-3 text-center text-sm font-bold text-ok-texto">Laudo concluído</p>}
       {!pronto && laudo.status !== 'concluido' && <p className="text-center text-xs text-texto3">Resolva o que falta para concluir.</p>}
       <LinkCliente laudoId={laudo.id} avisar={avisar} link={linkCliente} setLink={setLinkCliente} />
+      <Autenticidade laudo={laudo} avisar={avisar} />
     </Cartao>
   );
 

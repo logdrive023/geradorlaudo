@@ -31,7 +31,7 @@ const emitir = (e: EventoNuvem) => ouvintes.forEach((fn) => fn(e));
 
 class ErroServidor extends Error { constructor(public status: number, msg: string) { super(msg); } }
 
-async function api<T>(caminho: string, init: RequestInit = {}): Promise<T> {
+export async function api<T>(caminho: string, init: RequestInit = {}): Promise<T> {
   const t = lerToken();
   const r = await fetch(base() + caminho, { ...init, headers: { ...(init.headers ?? {}), ...(t ? { Authorization: `Bearer ${t}` } : {}) } });
   if (r.status === 401) {

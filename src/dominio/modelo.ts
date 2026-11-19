@@ -7,7 +7,7 @@ export type TipoLaudo = 'cautelar' | 'entrega' | 'locacao' | 'inspecao' | 'extra
 import type { EtapaModelo } from './etapas';
 
 export type StatusLaudo = 'rascunho' | 'conferencia' | 'concluido';
-export type Papel = 'admin' | 'engenheiro';
+export type Papel = 'admin' | 'engenheiro' | 'assistente';
 
 /** Grau de risco (IBAPE / ABNT NBR 16747): define a prioridade do reparo. */
 export type Gravidade = 'critico' | 'medio' | 'minimo';

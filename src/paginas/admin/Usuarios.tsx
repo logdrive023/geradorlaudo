@@ -6,9 +6,17 @@ import { useSessao } from '../../lib/sessao';
 import { Botao, Campo, Cartao, Entrada, Modal, Selo, useAviso } from '../../componentes/ui';
 import { cx, novoId, resumoSenha } from '../../lib/util';
 import type { Papel, Usuario } from '../../dominio/modelo';
+import { logadoNaNuvem } from '../../db/nuvem';
+import { EquipeOrganizacao } from './EquipeOrganizacao';
 
-/** Só o admin vê: contas deste navegador, papéis, ativar/desativar e redefinir senha. */
+/** Só o admin vê. Conta no servidor: a equipe da organização. Sem servidor: as contas deste navegador. */
 export function Usuarios() {
+  const { usuario } = useSessao();
+  if (usuario && logadoNaNuvem()) return <EquipeOrganizacao euId={usuario.id} />;
+  return <UsuariosLocais />;
+}
+
+function UsuariosLocais() {
   const { usuario: eu } = useSessao();
   const { avisar, el } = useAviso();
   const dados = useLiveQuery(async () => {

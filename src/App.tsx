@@ -14,6 +14,8 @@ import { Configuracoes } from './paginas/config/Configuracoes';
 import { Usuarios } from './paginas/admin/Usuarios';
 import { VerLaudo } from './paginas/publico/VerLaudo';
 import { VerObra } from './paginas/publico/VerObra';
+import { Convite } from './paginas/publico/Convite';
+import { Verificar } from './paginas/publico/Verificar';
 import { ListaObras } from './paginas/obras/ListaObras';
 import { ObraTela } from './paginas/obras/ObraTela';
 import { Privacidade, Sobre, Termos } from './paginas/site/Legal';
@@ -51,6 +53,8 @@ export function App() {
           <Route path="/esqueci" element={<Entrar modo="esqueci" />} />
           <Route path="/ver/:token" element={<VerLaudo />} />
           <Route path="/acompanhar/:token" element={<VerObra />} />
+          <Route path="/convite/:token" element={<Convite />} />
+          <Route path="/verificar/:codigo" element={<Verificar />} />
           <Route path="/termos" element={<Termos />} />
           <Route path="/privacidade" element={<Privacidade />} />
           <Route path="/sobre" element={<Sobre />} />

@@ -21,7 +21,7 @@ function saudacao() {
 }
 
 /** Cartão do laudo: capa com tipo e status, nome inteiro, endereço e números com rótulo. */
-function CartaoLaudo({ laudo, fotos, autor, aoDuplicar, aoExcluir }: { laudo: Laudo; fotos: Foto[]; autor?: string; aoDuplicar: () => void; aoExcluir: () => void }) {
+function CartaoLaudo({ laudo, fotos, autor, aoDuplicar, aoExcluir }: { laudo: Laudo; fotos: Foto[]; autor?: string; aoDuplicar: () => void; aoExcluir?: () => void }) {
   const [menu, setMenu] = useState(false);
   const capa = useUrl(fotos[0]?.miniatura);
   const p = progressoFotos(fotos);
@@ -42,7 +42,7 @@ function CartaoLaudo({ laudo, fotos, autor, aoDuplicar, aoExcluir }: { laudo: La
           {menu && (
             <div className="absolute right-0 top-10 z-20 w-44 overflow-hidden rounded-xl border border-borda bg-sup py-1 text-texto shadow-xl" onMouseLeave={() => setMenu(false)}>
               <button onClick={() => { setMenu(false); aoDuplicar(); }} className="flex w-full items-center gap-2 px-3 py-2.5 text-sm font-semibold hover:bg-sup2"><Copy className="size-4" />Duplicar</button>
-              <button onClick={() => { setMenu(false); aoExcluir(); }} className="flex w-full items-center gap-2 px-3 py-2.5 text-sm font-semibold text-critico-texto hover:bg-critico-suave"><Trash2 className="size-4" />Excluir</button>
+              {aoExcluir && <button onClick={() => { setMenu(false); aoExcluir(); }} className="flex w-full items-center gap-2 px-3 py-2.5 text-sm font-semibold text-critico-texto hover:bg-critico-suave"><Trash2 className="size-4" />Excluir</button>}
             </div>
           )}
         </div>
@@ -233,7 +233,7 @@ export function Painel() {
             {filtrados.map((l) => (
               <CartaoLaudo key={l.id} laudo={l} fotos={dados.porLaudo.get(l.id) ?? []}
                 autor={admin && l.usuarioId !== usuario.id ? dados.autores.get(l.usuarioId) : undefined}
-                aoDuplicar={() => duplicar(l)} aoExcluir={() => setExcluir(l)} />
+                aoDuplicar={() => duplicar(l)} aoExcluir={usuario?.papel === 'assistente' ? undefined : () => setExcluir(l)} />
             ))}
             <button onClick={() => setNovo(true)} className="flex min-h-24 items-center justify-center gap-2 rounded-[18px] border-2 border-dashed border-borda-forte font-extrabold text-texto2 transition hover:border-obra hover:bg-obra-suave hover:text-obra-texto">
               <FilePlus2 className="size-5" />Novo laudo<ChevronRight className="size-4" />

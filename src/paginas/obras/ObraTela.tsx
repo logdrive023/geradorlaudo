@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams, useSearchParams } from 'react-router';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { ArrowLeft, BookOpenText, CalendarRange, LayoutDashboard, MoreVertical, ShoppingCart, Trash2, Wallet } from 'lucide-react';
 import { db, excluirObra, mudarObra } from '../../db/db';
+import { useSessao } from '../../lib/sessao';
 import { STATUS_OBRA, type StatusObra } from '../../dominio/obra';
 import { Abas, Escolha } from '../../componentes/Pecas';
 import { Botao, Carregando, Modal, Vazio, useAviso } from '../../componentes/ui';
@@ -16,6 +17,7 @@ export type AbaObra = 'resumo' | 'cronograma' | 'diario' | 'financeiro' | 'compr
 
 /** Tela da obra: cabeçalho com status e as abas de gestão. */
 export function ObraTela() {
+  const { usuario } = useSessao();
   const { id = '' } = useParams();
   const [q, setQ] = useSearchParams();
   const aba = (q.get('aba') as AbaObra) || 'resumo';
@@ -45,7 +47,7 @@ export function ObraTela() {
           <button onClick={() => setMenu(!menu)} aria-label="Mais opções" aria-expanded={menu} className="grid size-10 place-items-center rounded-xl hover:bg-sup2"><MoreVertical className="size-5" /></button>
           {menu && (
             <div className="revelar absolute right-0 top-11 z-30 w-52 rounded-2xl border border-borda bg-sup p-1 shadow-xl">
-              <button onClick={() => { setMenu(false); setApagar(true); }} className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-sm font-bold text-critico-texto hover:bg-critico-suave"><Trash2 className="size-4" />Apagar obra</button>
+              {usuario?.papel !== 'assistente' && <button onClick={() => { setMenu(false); setApagar(true); }} className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-sm font-bold text-critico-texto hover:bg-critico-suave"><Trash2 className="size-4" />Apagar obra</button>}
             </div>
           )}
         </div>

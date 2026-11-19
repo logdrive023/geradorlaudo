@@ -58,18 +58,18 @@ export function Entrar({ modo }: { modo: Modo }) {
   return (
     <div className="flex min-h-dvh flex-col bg-papel md:flex-row">
       {/* lado da marca (no celular vira o topo) */}
-      <aside className="relative overflow-hidden bg-[#121A2B] px-5 pb-9 pt-4 text-white md:flex md:min-h-dvh md:w-[44%] md:max-w-[620px] md:flex-col md:px-12 md:py-9">
+      <aside className="relative overflow-hidden bg-[#121A2B] px-5 pb-8 pt-4 text-white md:flex md:min-h-dvh md:w-[44%] md:max-w-[620px] md:flex-col md:px-12 md:py-9">
         <div className="pointer-events-none absolute -right-24 -top-24 size-[380px] rounded-full bg-obra/25 blur-3xl" aria-hidden />
         <div className="pointer-events-none absolute -bottom-32 -left-20 size-[320px] rounded-full bg-[#3b6bc4]/30 blur-3xl" aria-hidden />
         <div className="relative flex items-center justify-between">
           <Link to="/"><Logo claro tam={34} /></Link>
           <Link to="/" className="inline-flex h-8 items-center gap-1.5 rounded-full border border-white/15 px-3 text-[13px] font-bold text-[#C9CED8] hover:border-white/30 hover:text-white"><ArrowLeft className="size-4" />Site</Link>
         </div>
-        <div className="relative mt-7 max-w-[460px] md:my-auto">
+        <div className="relative mt-5 max-w-[460px] md:my-auto">
           <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-extrabold uppercase tracking-wider text-obra"><Sparkles className="size-3.5" />Laudo com IA</span>
           <h1 className="mt-4 text-[28px] font-bold leading-[1.1] md:text-[42px]" key={modo}>{cena.titulo}</h1>
           <p className="mt-3 text-[15px] leading-relaxed text-[#A9B1C1] md:text-[17px]">{cena.texto}</p>
-          <Lia className="mt-5 max-w-sm" tom="escuro" tam={40} humor="feliz">Oi! Sou a Lia. Eu olho as fotos e faço o rascunho; você confere e assina.</Lia>
+          <Lia className="mt-4 max-w-sm" tom="escuro" tam={40} humor="feliz">Oi! Sou a Lia. Eu olho as fotos e faço o rascunho; você confere e assina.</Lia>
           <ul className="mt-8 hidden gap-3.5 md:grid">
             {[{ ic: Camera, t: 'Suba as fotos da vistoria, do celular ou do computador' }, { ic: ScanSearch, t: 'A IA aponta fissuras, umidade e o grau de risco' }, { ic: ClipboardCheck, t: 'Você confere e o laudo sai pronto para assinar' }].map(({ ic: Ic, t }) => (
               <li key={t} className="flex items-center gap-3 text-[15px] font-semibold text-[#E4E7EC]">
@@ -81,7 +81,7 @@ export function Entrar({ modo }: { modo: Modo }) {
         <div className="fita absolute inset-x-0 bottom-0 h-2 md:inset-y-0 md:left-auto md:right-0 md:h-auto md:w-2" aria-hidden />
       </aside>
 
-      <main className="flex flex-1 flex-col items-center px-4 pb-8 md:justify-center md:px-8 md:py-10">
+      <main className="flex flex-1 flex-col items-center justify-center px-4 pb-3 md:px-8 md:py-10">
         <div className="relative z-10 -mt-4 flex w-full max-w-[440px] flex-col gap-4 md:mt-0">
           {modo !== 'esqueci' && (
             <>
@@ -136,11 +136,19 @@ export function Entrar({ modo }: { modo: Modo }) {
             </form>
           )}
 
-          <p className="mt-4 text-center text-xs leading-relaxed text-texto3">
+          <p className="mt-2 text-center text-xs leading-relaxed text-texto3">
             {modo === 'criar' ? <>Ao criar a conta, você concorda com os </> : <>Ao entrar, você concorda com os </>}
             <Link to="/termos" className="font-bold text-texto2 underline-offset-2 hover:underline">Termos de uso</Link> e a{' '}
             <Link to="/privacidade" className="font-bold text-texto2 underline-offset-2 hover:underline">Política de privacidade</Link>.
           </p>
+          {/* no celular, o espaço de baixo mostra como funciona (no computador isso fica no lado escuro) */}
+          <ul className="mt-2 grid grid-cols-3 gap-2 md:hidden">
+            {[{ ic: Camera, t: 'Suba as fotos' }, { ic: ScanSearch, t: 'A IA aponta os problemas' }, { ic: ClipboardCheck, t: 'Você confere e assina' }].map(({ ic: Ic, t }) => (
+              <li key={t} className="flex flex-col items-center gap-1.5 rounded-2xl border border-borda bg-sup px-2 py-3 text-center text-xs font-bold leading-tight text-texto2">
+                <span className="grid size-9 place-items-center rounded-xl bg-obra-suave text-obra-texto"><Ic className="size-[18px]" /></span>{t}
+              </li>
+            ))}
+          </ul>
         </div>
       </main>
     </div>
