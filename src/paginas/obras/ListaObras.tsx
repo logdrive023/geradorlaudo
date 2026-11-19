@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { AlarmClock, BookOpenText, ChevronRight, HardHat, MapPin, Plus, Search, ShoppingCart, User } from 'lucide-react';
+import { AlarmClock, BookOpenText, ChevronRight, HardHat, MapPin, Plus, Search, ShoppingCart, TriangleAlert, User } from 'lucide-react';
 import { db } from '../../db/db';
 import { STATUS_OBRA, TIPO_OBRA, prazoObra, resumoObra, situacaoEtapa, type Obra, type StatusObra } from '../../dominio/obra';
 import { ICONE_OBRA } from './CamposObra';
@@ -16,22 +16,44 @@ import { NovaObra } from './NovaObra';
 const normal = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 
 /** Cartão da obra: tipo e status no topo, onde e para quem, avanço explicado e números com rótulo. */
+/** Quanto a obra pede atenção: 2 = etapa crítica atrasada, 1 = alguma etapa atrasada, 0 = em dia. */
+export function alertaObra(o: Obra) {
+  const atrasadas = o.etapas.filter((e) => situacaoEtapa(e) === 'atrasada');
+  const criticas = atrasadas.filter((e) => e.nivel === 'critica');
+  return { nivel: criticas.length ? 2 : atrasadas.length ? 1 : 0, atrasadas, criticas };
+}
+const diasAtraso = (fim?: string) => (fim ? Math.max(1, Math.round((Date.now() - new Date(`${fim}T23:59:59`).getTime()) / 864e5)) : 0);
+
 function CartaoObra({ o }: { o: Obra }) {
   const r = resumoObra(o);
   const p = prazoObra(o);
   const Ic = o.tipo ? ICONE_OBRA[o.tipo] : HardHat;
   const concluidas = o.etapas.filter((e) => e.percentual >= 100).length;
-  const atrasadasCriticas = o.etapas.filter((e) => e.nivel === 'critica' && situacaoEtapa(e) === 'atrasada').length;
+  const al = alertaObra(o);
+  const atrasadasCriticas = al.criticas.length;
+  const destaque = (al.criticas.length ? al.criticas : al.atrasadas).slice().sort((a, b) => (a.fimPrev ?? '').localeCompare(b.fimPrev ?? ''));
   const orcado = r.fin.orcado || o.orcamentoPrevisto || 0;
   const atrasada = r.desvio != null && r.desvio < -5;
   return (
-    <Link to={`/obra/${o.id}`} className="group flex flex-col overflow-hidden rounded-[20px] border border-borda bg-sup transition hover:-translate-y-0.5 hover:shadow-[0_12px_30px_rgba(18,26,43,.08)]">
+    <Link to={`/obra/${o.id}`} className={cx('group flex flex-col overflow-hidden rounded-[20px] border bg-sup transition hover:-translate-y-0.5 hover:shadow-[0_12px_30px_rgba(18,26,43,.08)]',
+      al.nivel === 2 ? 'border-critico ring-2 ring-critico/25' : al.nivel === 1 ? 'border-critico/50' : 'border-borda')}>
       {/* topo: tipo e status */}
       <div className="relative flex items-center justify-between gap-2 bg-[#121A2B] px-4 py-2.5 text-white">
         <span className="flex items-center gap-1.5 text-xs font-extrabold uppercase tracking-wider text-obra"><Ic className="size-4" />{o.tipo ? TIPO_OBRA[o.tipo].nome : 'Obra'}</span>
         <Selo tom={STATUS_OBRA[o.status].tom}>{STATUS_OBRA[o.status].nome}</Selo>
         <span className="fita absolute inset-x-0 bottom-0 h-1" aria-hidden />
       </div>
+
+      {/* atenção: o que está atrasado (crítico primeiro) */}
+      {al.nivel > 0 && (
+        <div className={cx('flex items-start gap-2 px-4 py-2.5 text-sm', al.nivel === 2 ? 'bg-critico text-white' : 'bg-critico-suave text-critico-texto')}>
+          {al.nivel === 2 ? <TriangleAlert className="mt-0.5 size-4 shrink-0" /> : <AlarmClock className="mt-0.5 size-4 shrink-0" />}
+          <span className="min-w-0">
+            <b>{al.nivel === 2 ? `${al.criticas.length} etapa${al.criticas.length > 1 ? 's críticas atrasadas' : ' crítica atrasada'}` : `${al.atrasadas.length} etapa${al.atrasadas.length > 1 ? 's atrasadas' : ' atrasada'}`}</b>
+            <span className="block truncate text-xs opacity-90">{destaque.slice(0, 2).map((e) => `${e.nome} (${diasAtraso(e.fimPrev)}d)`).join(' · ')}{destaque.length > 2 && ` · +${destaque.length - 2}`}</span>
+          </span>
+        </div>
+      )}
 
       <div className="flex flex-1 flex-col gap-3 p-4">
         {/* o quê, onde e para quem */}
@@ -86,16 +108,20 @@ export function ListaObras() {
   const obras = useLiveQuery(() => db.obras.orderBy('atualizadoEm').reverse().toArray(), []);
   const [busca, setBusca] = useState('');
   const [status, setStatus] = useState<'todas' | StatusObra>('todas');
+  const [atencao, setAtencao] = useState<0 | 1 | 2>(0); // 1 = com atraso, 2 = crítica atrasada
   const [nova, setNova] = useState(false);
 
   const filtradas = useMemo(() => {
     const t = normal(busca.trim());
-    return (obras ?? []).filter((o) => (status === 'todas' || o.status === status) && (!t || normal(`${o.nome} ${o.endereco} ${o.cliente}`).includes(t)));
-  }, [obras, busca, status]);
+    return (obras ?? [])
+      .filter((o) => (status === 'todas' || o.status === status) && (!t || normal(`${o.nome} ${o.endereco} ${o.cliente}`).includes(t)) && alertaObra(o).nivel >= atencao)
+      .sort((a, b) => alertaObra(b).nivel - alertaObra(a).nivel); // o que pede atenção vem primeiro
+  }, [obras, busca, status, atencao]);
 
   if (!usuario || !obras) return <Carregando />;
   const ativas = obras.filter((o) => o.status === 'andamento');
-  const atrasadas = obras.filter((o) => resumoObra(o).atrasadas > 0).length;
+  const atrasadas = obras.filter((o) => alertaObra(o).nivel >= 1).length;
+  const criticas = obras.filter((o) => alertaObra(o).nivel === 2).length;
 
   return (
     <div className="mx-auto max-w-6xl px-3 py-4 sm:px-4 md:px-8 md:py-8">
@@ -110,15 +136,17 @@ export function ListaObras() {
         </div>
         <Lia className="relative mt-4 max-w-2xl" tom="escuro" tam={40} humor={atrasadas ? 'atenta' : 'feliz'}>
           {obras.length === 0 ? 'Cadastre a obra e eu ajudo no diário, no cronograma, nas compras e no financeiro.'
+            : criticas ? `Atenção: ${criticas} obra${criticas > 1 ? 's têm' : ' tem'} etapa crítica atrasada. Elas estão no topo da lista.`
             : atrasadas ? `${atrasadas} obra${atrasadas > 1 ? 's têm' : ' tem'} etapa atrasada. Vale olhar o cronograma.`
               : 'Cronogramas em dia. Lembre de preencher o diário de hoje.'}
         </Lia>
         <div className="relative mt-5 grid grid-cols-3 gap-2">
-          {[{ n: obras.length, t: 'obras' }, { n: ativas.length, t: 'em andamento' }, { n: atrasadas, t: 'com atraso', alerta: atrasadas > 0 }].map((s) => (
-            <div key={s.t} className="rounded-2xl bg-white/[.07] px-2 py-3 text-center ring-1 ring-white/10">
+          {[{ n: obras.length, t: 'obras' }, { n: ativas.length, t: 'em andamento' }, { n: atrasadas, t: criticas ? `com atraso · ${criticas} crítica${criticas > 1 ? 's' : ''}` : 'com atraso', alerta: atrasadas > 0 }].map((s) => (
+            <button key={s.t} disabled={!s.alerta} onClick={() => setAtencao(atencao ? 0 : criticas ? 2 : 1)}
+              className={cx('rounded-2xl px-2 py-3 text-center ring-1 transition', s.alerta ? 'bg-critico/20 ring-critico/50 hover:bg-critico/30' : 'bg-white/[.07] ring-white/10')}>
               <div className={cx('font-display text-2xl font-extrabold md:text-3xl', s.alerta && 'text-[#FF8B8B]')}>{s.n}</div>
               <div className="text-[11px] font-bold text-[#A9B1C1] md:text-sm">{s.t}</div>
-            </div>
+            </button>
           ))}
         </div>
         <div className="fita absolute inset-x-0 bottom-0 h-1.5" aria-hidden />
@@ -129,6 +157,15 @@ export function ListaObras() {
         <input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar obra, endereço, cliente…" className="h-full w-full min-w-0 bg-transparent px-2.5 outline-none placeholder:text-texto3" />
       </label>
       <div className="-mx-3 mt-3 flex gap-1.5 overflow-x-auto px-3 pb-1 sm:mx-0 sm:px-0" role="tablist">
+        {/* atenção primeiro: atraso e crítico */}
+        {([[1, 'Com atraso', atrasadas, AlarmClock], [2, 'Crítica atrasada', criticas, TriangleAlert]] as const).map(([k, v, n, Ic]) => (
+          <button key={v} role="tab" aria-selected={atencao === k} disabled={!n} onClick={() => setAtencao(atencao === k ? 0 : k)}
+            className={cx('flex h-9 shrink-0 items-center gap-1.5 rounded-full px-3.5 text-sm font-extrabold transition disabled:opacity-40',
+              atencao === k ? 'bg-critico text-white' : n ? 'bg-critico-suave text-critico-texto ring-1 ring-critico/40' : 'bg-sup text-texto3 ring-1 ring-borda')}>
+            <Ic className="size-4" />{v}<span className="text-xs opacity-80">{n}</span>
+          </button>
+        ))}
+        <span className="mx-0.5 my-1.5 w-px shrink-0 bg-borda" aria-hidden />
         {([['todas', 'Todas'], ...Object.entries(STATUS_OBRA).map(([k, v]) => [k, v.nome])] as [string, string][]).map(([k, v]) => {
           const n = k === 'todas' ? obras.length : obras.filter((o) => o.status === k).length;
           return (
