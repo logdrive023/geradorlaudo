@@ -50,6 +50,8 @@ export function Dica({ texto, className }: { texto: ReactNode; className?: strin
       const b = botao.current?.getBoundingClientRect();
       const t = balao.current;
       if (!b || !t) return;
+      // camada de topo do navegador: fica acima até de <dialog> aberto (modais)
+      try { if (!t.matches(':popover-open')) t.showPopover?.(); } catch { /* navegador sem popover: segue com z-index */ }
       const margem = 8;
       const w = Math.min(260, window.innerWidth - margem * 2);
       t.style.width = `${w}px`;
@@ -68,13 +70,14 @@ export function Dica({ texto, className }: { texto: ReactNode; className?: strin
 
   return (
     <span className={cx('relative inline-flex align-middle', className)} onMouseEnter={() => setAberta(true)} onMouseLeave={() => setAberta(false)}>
-      <button ref={botao} type="button" aria-describedby={aberta ? id : undefined} aria-label="Ajuda" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setAberta(!aberta); }} onFocus={() => setAberta(true)} onBlur={() => setAberta(false)}
+      <button ref={botao} type="button" aria-describedby={aberta ? id : undefined} aria-label="Ajuda" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setAberta(true); }} onFocus={() => setAberta(true)} onBlur={() => setAberta(false)}
         className="grid size-5 place-items-center rounded-full text-texto3 transition hover:bg-sup2 hover:text-tinta">
         <Info className="size-3.5" />
       </button>
       {aberta && createPortal(
-        <span ref={balao} id={id} role="tooltip" style={{ top: pos?.top ?? -9999, left: pos?.left ?? -9999, visibility: pos ? 'visible' : 'hidden' }}
-          className="revelar pointer-events-none fixed z-[100] rounded-xl bg-[#121A2B] px-3 py-2 text-left text-xs font-semibold normal-case leading-snug tracking-normal text-white shadow-xl">
+        <span ref={balao} id={id} role="tooltip" popover="manual"
+          style={{ inset: 'auto', margin: 0, top: pos?.top ?? -9999, left: pos?.left ?? -9999, visibility: pos ? 'visible' : 'hidden' }}
+          className="revelar pointer-events-none fixed z-[1000] overflow-visible rounded-xl border-0 bg-[#121A2B] px-3 py-2 text-left text-xs font-semibold normal-case leading-snug tracking-normal text-white shadow-xl">
           {texto}
           {pos && <span className={cx('absolute border-[6px] border-transparent', pos.baixo ? 'bottom-full border-b-[#121A2B]' : 'top-full border-t-[#121A2B]')} style={{ left: pos.seta - 6 }} />}
         </span>,
