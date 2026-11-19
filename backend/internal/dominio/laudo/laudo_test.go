@@ -47,6 +47,15 @@ func TestLimpar(t *testing.T) {
 	if l.Achados[1].Regiao != nil {
 		t.Fatal("caixa minúscula deveria ser descartada")
 	}
+	// caixa que começa na borda e "sai" da foto: some (veio assim do Gemini)
+	fora := Analise{Achados: []Achado{{Tipo: "Fissura", Descricao: "z", Regiao: &Regiao{X: 100, Y: 50, W: 100, H: 100}}}}.Limpar()
+	if fora.Achados[0].Regiao != nil {
+		t.Fatalf("caixa fora da foto deveria ser descartada: %+v", fora.Achados[0].Regiao)
+	}
+	borda := Analise{Achados: []Achado{{Tipo: "Fissura", Descricao: "z", Regiao: &Regiao{X: 60, Y: 70, W: 80, H: 50}}}}.Limpar()
+	if r := borda.Achados[0].Regiao; r == nil || r.W != 40 || r.H != 30 {
+		t.Fatalf("caixa deveria ser cortada na borda: %+v", r)
+	}
 	if l.SemAnomalia {
 		t.Fatal("com achados não pode ser sem anomalia")
 	}

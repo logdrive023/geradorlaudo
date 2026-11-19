@@ -145,7 +145,10 @@ func (a Analise) Limpar() Analise {
 			y.Sistema = "Vedações"
 		}
 		if x.Regiao != nil {
-			r := Regiao{X: limitar(x.Regiao.X, 0, 100), Y: limitar(x.Regiao.Y, 0, 100), W: limitar(x.Regiao.W, 0, 100), H: limitar(x.Regiao.H, 0, 100)}
+			r := Regiao{X: limitar(x.Regiao.X, 0, 100), Y: limitar(x.Regiao.Y, 0, 100)}
+			// a caixa não pode passar da borda da foto
+			r.W = limitar(x.Regiao.W, 0, 100-r.X)
+			r.H = limitar(x.Regiao.H, 0, 100-r.Y)
 			if r.W > 1 && r.H > 1 {
 				y.Regiao = &r
 			}

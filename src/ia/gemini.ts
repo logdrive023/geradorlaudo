@@ -66,7 +66,10 @@ function limpar(bruto: unknown): ResultadoIA {
     const a = (x ?? {}) as Record<string, unknown>;
     const g = GRAUS.includes(a.gravidade as Gravidade) ? (a.gravidade as Gravidade) : 'minimo';
     const r = a.regiao as Record<string, unknown> | undefined;
-    const regiao = r && typeof r === 'object' ? { x: pct(r.x), y: pct(r.y), w: pct(r.w), h: pct(r.h) } : undefined;
+    // a caixa não pode passar da borda da foto
+    const regiao = r && typeof r === 'object'
+      ? { x: pct(r.x), y: pct(r.y), w: Math.min(pct(r.w), 100 - pct(r.x)), h: Math.min(pct(r.h), 100 - pct(r.y)) }
+      : undefined;
     return {
       tipo: texto(a.tipo) || 'Outro', sistema: texto(a.sistema) || 'Vedações', descricao: texto(a.descricao),
       gravidade: g, causaProvavel: texto(a.causaProvavel), recomendacao: texto(a.recomendacao),

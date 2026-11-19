@@ -119,7 +119,7 @@ PREENCHA CADA ACHADO
 - causaProvavel: o mecanismo provável, justificado pelo padrão observado (Etapa 3). Sempre com "provável"; nunca como certeza.
 - recomendacao: uma ação técnica específica (Etapa 5).
 - confianca: 0,85 ou mais = sinal nítido e padrão inequívoco; 0,6 a 0,85 = provável; abaixo de 0,6 = duvidoso (diga o porquê na descrição: sombra, reflexo, baixa resolução, ângulo).
-- regiao: retângulo que envolve SÓ a anomalia, em porcentagem da imagem (0 a 100). x,y = canto superior esquerdo; w,h = largura e altura. Nunca marque a foto inteira.
+- regiao: retângulo que envolve SÓ a anomalia, em PORCENTAGEM da imagem (0 a 100, não pixels nem 0 a 1000). x = distância da borda esquerda até o início da caixa; y = distância do topo; w = largura; h = altura. Sempre x + w ≤ 100 e y + h ≤ 100. Ex.: fissura no centro da foto, ocupando o terço do meio na vertical → x: 45, y: 33, w: 10, h: 34. Nunca marque a foto inteira.
 Um achado para CADA anomalia distinta. Anomalias iguais no mesmo elemento podem ser um achado só, informando a quantidade. Nada visível: semAnomalia=true e achados=[].
 
 LEGENDA DA FOTO
