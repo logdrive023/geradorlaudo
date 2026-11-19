@@ -8,6 +8,7 @@ import { ICONE_TIPO } from '../painel/NovoLaudo';
 import { cx } from '../../lib/util';
 import { Lia, PergunteLia, RostoLia } from '../../componentes/Lia';
 import { AJUDA_SITE } from '../../ia/ajudaSite';
+import { Comparacao, Confianca, ParaQuem, Planos } from './SecoesVenda';
 
 /* ---------- a "foto" do hero: parede desenhada + IA marcando ---------- */
 const ACHADOS_HERO = [
@@ -100,6 +101,9 @@ const DUVIDAS = [
   ['Dá para gerir a obra também?', 'Dá: cada obra tem cronograma com medição e classificação das etapas, diário de obra (RDO) com fotos e PDF, financeiro orçado × gasto e compras com cotação. O cliente acompanha por um link.'],
   ['E depois da vistoria?', 'O plano de ação transforma cada anomalia em tarefa com prazo (sugerido pela gravidade), responsável e custo estimado. Sai no PDF e em planilha Excel.'],
   ['Quais tipos de laudo?', 'Vistoria cautelar, entrega de imóvel, locação, inspeção predial, vícios construtivos, estrutural, reforma (NBR 16280), perícia judicial, avaliação (NBR 14653) e contábil. Cada um com seu padrão, que você pode personalizar.'],
+  ['Dá para usar com a minha equipe?', 'Está chegando: a organização terá três papéis. O admin controla tudo; o engenheiro vê os laudos dele e os atribuídos, confere e assina; o assistente faz o campo (fotos, dados, diário) só no que for atribuído a ele, sem ver o financeiro nem emitir laudo.'],
+  ['Quanto vai custar?', 'Na fase de testes é grátis e sem cartão. Os planos (Profissional e Escritório) serão anunciados antes de qualquer cobrança.'],
+  ['Como provo que o laudo é meu e não foi alterado?', 'As fotos guardam data e local, e cada achado passa pela sua aprovação. Em breve o laudo emitido ganha um código de verificação: quem recebe confere online se ele é autêntico.'],
   ['Quais normas o laudo cita?', 'ABNT NBR 13752 (perícias), NBR 16747 (inspeção predial), NBR 15575 (desempenho), NBR 5674 (manutenção), conforme o tipo de laudo.'],
 ];
 
@@ -168,9 +172,10 @@ export function Site() {
           <Link to="/"><Logo /></Link>
           <nav className="hidden gap-7 text-sm font-bold text-texto2 lg:flex">
             <a href="#como" className="hover:text-texto">Como funciona</a>
+            <a href="#para-quem" className="hover:text-texto">Para quem</a>
             <a href="#recursos" className="hover:text-texto">Recursos</a>
-            <a href="#entrega" className="hover:text-texto">Depois do laudo</a>
-            <a href="#tipos" className="hover:text-texto">Tipos de laudo</a>
+            <a href="#confianca" className="hover:text-texto">Confiança</a>
+            <a href="#planos" className="hover:text-texto">Planos</a>
             <a href="#duvidas" className="hover:text-texto">Dúvidas</a>
           </nav>
           <div className="flex items-center gap-1.5">
@@ -248,8 +253,14 @@ export function Site() {
           </div>
         </section>
 
+        {/* PARA QUEM É */}
+        <ParaQuem />
+
         {/* FAÇA A CONTA (valor) */}
         <Calculadora />
+
+        {/* COMPARAÇÃO */}
+        <Comparacao />
 
         {/* SEU NOME NA CAPA (autoridade / pertencimento) */}
         <section className="bg-sup py-20 md:py-28">
@@ -282,6 +293,9 @@ export function Site() {
             </div>
           </div>
         </section>
+
+        {/* CONFIANÇA */}
+        <Confianca />
 
         {/* RECURSOS */}
         <section id="recursos" className="mx-auto max-w-[1180px] scroll-mt-20 px-4 py-20 md:py-28">
@@ -371,6 +385,9 @@ export function Site() {
             </div>
           </div>
         </section>
+
+        {/* PLANOS */}
+        <Planos />
 
         {/* DÚVIDAS */}
         <section id="duvidas" className="mx-auto max-w-3xl scroll-mt-20 px-4 py-20 md:py-28">

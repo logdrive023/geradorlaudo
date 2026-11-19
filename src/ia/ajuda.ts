@@ -115,6 +115,16 @@ export const AJUDA: Categoria[] = [
     ],
   },
   {
+    id: 'equipe', nome: 'Equipe e confiança',
+    perguntas: [
+      { p: 'Posso usar com a minha equipe?', r: 'Está chegando. A organização terá três papéis: o admin controla tudo (pessoas, plano, IAs, modelos); o engenheiro vê os laudos e obras dele e os atribuídos, confere e assina; o assistente faz o campo só no que for atribuído a ele.', chaves: 'equipe funcionário empresa escritório papéis admin assistente engenheiro permissão' },
+      { p: 'O que o assistente pode fazer?', r: 'Tirar fotos, preencher dados, conferir achados e escrever o diário de obra nos laudos e obras atribuídos a ele. Ele não conclui nem emite laudo, não apaga e não vê o financeiro da obra.', chaves: 'assistente campo pode permissão financeiro' },
+      { p: 'Como convido alguém?', r: 'O admin gera um link de convite com o papel da pessoa. Ela abre o link e escolhe a própria senha; ninguém mais vê a senha. O link vale 7 dias e só uma vez.', chaves: 'convidar convite adicionar usuário pessoa' },
+      { p: 'Como o cliente confere que o laudo é verdadeiro?', r: 'Em breve o laudo emitido ganha um código de verificação no PDF. Quem recebe confere online o título, a data e o responsável técnico.', chaves: 'autenticidade verdadeiro falsificado código qr verificar' },
+      { p: 'A IA tira minha responsabilidade?', r: 'Não: a IA só acelera o rascunho. Você aprova cada achado, emite a ART e assina. As fotos guardam data e local para a prova ficar datada.', chaves: 'responsabilidade art assinatura validade juiz crea cau' },
+    ],
+  },
+  {
     id: 'conta', nome: 'Conta e segurança',
     perguntas: [
       { p: 'Como troco minha senha?', r: 'Em Ajustes › Segurança. A senha fica guardada só como resumo: ninguém consegue lê-la.', ir: AJ('seguranca', 'Abrir Segurança'), chaves: 'senha trocar mudar' },

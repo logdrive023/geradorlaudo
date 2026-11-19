@@ -6,7 +6,9 @@ export const AJUDA_SITE: Categoria[] = [
     id: 'produto', nome: 'O que é',
     perguntas: [
       { p: 'O que o LaudoTech faz?', r: 'Você manda as fotos da vistoria. Eu (a Lia) analiso cada uma e escrevo legenda, achados, grau de risco e recomendação. Você confere e o laudo sai pronto em PDF.', ir: { tipo: 'rota', para: '/cadastrar', rotulo: 'Criar conta grátis' }, chaves: 'faz serve produto' },
-      { p: 'Para quem é?', r: 'Para engenheiros, arquitetos e peritos que fazem vistorias e laudos técnicos com fotos.', ir: { tipo: 'ancora', id: 'como', rotulo: 'Ver como funciona' }, chaves: 'quem engenheiro arquiteto perito' },
+      { p: 'Para quem é?', r: 'Para engenheiros, arquitetos e peritos que fazem vistorias e laudos, escritórios com equipe, construtoras e reformas, e condomínios que precisam da inspeção predial.', ir: { tipo: 'ancora', id: 'para-quem', rotulo: 'Ver para quem é' }, chaves: 'quem engenheiro arquiteto perito construtora condomínio síndico escritório' },
+      { p: 'Qual a diferença para outros apps de vistoria?', r: 'Os apps de vistoria organizam fotos e checklists. Aqui eu leio cada foto, aponto o problema com grau de risco, escrevo o laudo no padrão das normas e você só confere. Depois tem plano de ação, link do cliente e gestão da obra no mesmo lugar.', ir: { tipo: 'ancora', id: 'para-quem', rotulo: 'Ver a comparação' }, chaves: 'diferença concorrente outros apps comparação melhor' },
+      { p: 'Dá para usar com a minha equipe?', r: 'Está chegando: três papéis. O admin controla tudo; o engenheiro confere e assina; o assistente faz o campo só no que for atribuído a ele, sem ver o financeiro.', ir: { tipo: 'ancora', id: 'planos', rotulo: 'Ver os planos' }, chaves: 'equipe funcionário assistente admin empresa escritório papéis permissão' },
       { p: 'Como funciona, passo a passo?', r: '1) Você manda as fotos. 2) A Lia analisa e escreve tudo. 3) Você confere e baixa o PDF.', ir: { tipo: 'ancora', id: 'como', rotulo: 'Ver os 3 passos' }, chaves: 'funciona passo' },
       { p: 'Tem gestão de obras?', r: 'Tem: cronograma com medição, diário de obra (RDO) com fotos, financeiro orçado × gasto, compras com cotação e um link para o cliente acompanhar. As etapas vêm num padrão de consenso e você muda tudo.', ir: { tipo: 'ancora', id: 'recursos', rotulo: 'Ver os recursos' }, chaves: 'obra gestão cronograma diário rdo financeiro compras' },
       { p: 'O meu cliente consegue ver o laudo?', r: 'Consegue: você gera um link e manda no WhatsApp. O cliente lê no celular e baixa o PDF, sem criar conta. Você desliga o link quando quiser.', ir: { tipo: 'ancora', id: 'recursos', rotulo: 'Ver os recursos' }, chaves: 'cliente ver link compartilhar proprietário' },
@@ -27,14 +29,15 @@ export const AJUDA_SITE: Categoria[] = [
     id: 'teste', nome: 'Testar e preço',
     perguntas: [
       { p: 'Posso testar de graça?', r: 'Pode. Crie a conta, sem cartão. Dentro do app há um laudo de exemplo já analisado para você ver tudo funcionando.', ir: { tipo: 'rota', para: '/cadastrar', rotulo: 'Criar conta grátis' }, chaves: 'testar grátis cadastro' },
-      { p: 'Quanto custa?', r: 'Esta é a versão de teste: dá para usar de graça, sem cartão. Os planos serão divulgados antes de qualquer cobrança.', ir: { tipo: 'rota', para: '/cadastrar', rotulo: 'Criar conta grátis' }, chaves: 'preço custa valor plano' },
+      { p: 'Quanto custa?', r: 'Na fase de testes é grátis, sem cartão. Depois vêm os planos Profissional (quem assina sozinho) e Escritório (equipes). Você é avisado antes de qualquer cobrança.', ir: { tipo: 'ancora', id: 'planos', rotulo: 'Ver os planos' }, chaves: 'preço custa valor plano mensalidade' },
       { p: 'Quanto tempo eu ganho?', r: 'Depende da sua rotina. A calculadora da página faz a conta com os seus números (é uma estimativa).', ir: { tipo: 'ancora', id: 'conta', rotulo: 'Fazer a conta' }, chaves: 'tempo ganho economiza' },
     ],
   },
   {
     id: 'seguranca', nome: 'Dados e segurança',
     perguntas: [
-      { p: 'Onde ficam minhas fotos?', r: 'Nesta versão de teste, no seu navegador. Na análise com IA, cada foto vai para o serviço de IA escolhido (Gemini ou Claude) e volta com o resultado.', ir: { tipo: 'ancora', id: 'duvidas', rotulo: 'Ver mais dúvidas' }, chaves: 'fotos ficam dados privacidade' },
+      { p: 'Onde ficam minhas fotos?', r: 'No seu aparelho e no servidor do LaudoTech, em armazenamento privado. Na análise, a foto vai para o serviço de IA (Gemini) e volta com o resultado. O cliente só vê pelo link que você criar.', ir: { tipo: 'ancora', id: 'confianca', rotulo: 'Ver confiança' }, chaves: 'fotos ficam dados privacidade lgpd segurança' },
+      { p: 'O laudo tem validade? A IA tira minha responsabilidade?', r: 'O laudo é seu: você confere cada achado, emite a ART e assina. A IA só acelera o rascunho. As fotos guardam data e local para a prova ficar datada.', ir: { tipo: 'ancora', id: 'confianca', rotulo: 'Ver confiança' }, chaves: 'validade jurídica responsabilidade art crea cau juiz' },
       { p: 'Funciona no celular?', r: 'Funciona: tire a foto e confira no mesmo aparelho, com botões grandes.', ir: { tipo: 'ancora', id: 'recursos', rotulo: 'Ver recursos' }, chaves: 'celular mobile' },
       { p: 'Preciso instalar algo?', r: 'Não. Abre no navegador do computador ou do celular.', ir: { tipo: 'rota', para: '/entrar', rotulo: 'Abrir o app' }, chaves: 'instalar baixar app' },
     ],
