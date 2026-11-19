@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Check, ChevronDown, Copy, FileText, Mail, Sparkles, Users, MessageCircle, RotateCw, Shield, UserCheck, UserPlus, UserX } from 'lucide-react';
+import { Camera, Check, ChevronDown, Copy, FileText, HardHat, Mail, Sparkles, Users, MessageCircle, RotateCw, Shield, UserCheck, UserPlus, UserX } from 'lucide-react';
 import { PAPEIS, alterarUsuario, auditoria, convidar, lerOrg, listarConvites, listarUsuarios, type ConviteOrg, type EventoOrg, type Org, type UsuarioOrg } from '../../db/organizacao';
 import { Botao, Campo, Cartao, Entrada, Modal, useAviso } from '../../componentes/ui';
 import { Atividades } from './Atividades';
@@ -67,42 +67,67 @@ export function EquipeOrganizacao({ euId }: { euId: string }) {
   if (!org) return <div className="mx-auto mt-10 h-40 max-w-5xl animate-pulse rounded-2xl bg-sup2" />;
   const admin = org.permissoes.equipe;
 
-  const COR_PAPEL: Record<Papel, string> = { admin: 'bg-obra-suave text-obra-texto', engenheiro: 'bg-tinta/10 text-tinta', assistente: 'bg-sup2 text-texto2' };
+  const ESTILO: Record<Papel, { avatar: string; selo: string; faixa: string; ic: typeof Shield }> = {
+    admin: { avatar: 'bg-obra text-[#121A2B]', selo: 'bg-obra-suave text-obra-texto', faixa: 'bg-obra', ic: Shield },
+    engenheiro: { avatar: 'bg-tinta text-white dark:text-[#0E1320]', selo: 'bg-tinta/10 text-tinta', faixa: 'bg-tinta', ic: HardHat },
+    assistente: { avatar: 'bg-[#64748b] text-white', selo: 'bg-sup2 text-texto2', faixa: 'bg-[#64748b]', ic: Camera },
+  };
+  const ativos = pessoas.filter((p) => p.ativo).length;
   return (
-    <div className="mx-auto max-w-3xl px-4 py-6 md:px-8 md:py-9">
-      <div className="flex items-end justify-between gap-3">
-        <div className="min-w-0">
-          <p className="truncate font-bold text-texto3">{org.organizacao.nome}</p>
-          <h1 className="mt-1 text-3xl font-extrabold md:text-4xl"><span className="grifo">Equipe</span></h1>
+    <div className="mx-auto max-w-4xl px-3 py-4 sm:px-4 md:px-8 md:py-8">
+      {/* topo no padrão das outras telas */}
+      <section className="relative overflow-hidden rounded-[24px] bg-[#121A2B] p-5 text-white md:p-7">
+        <div className="pointer-events-none absolute -right-20 -top-24 size-72 rounded-full bg-obra/25 blur-3xl" aria-hidden />
+        <div className="relative flex flex-wrap items-end justify-between gap-4">
+          <div className="min-w-0">
+            <p className="truncate text-sm font-bold text-[#A9B1C1]">{org.organizacao.nome}</p>
+            <h1 className="mt-1 text-[28px] font-extrabold leading-tight md:text-4xl">Sua <span className="grifo">equipe</span></h1>
+          </div>
+          {admin && <button onClick={() => { setNovo({ nome: '', email: '', papel: 'engenheiro' }); setLink(''); }} className="pilula pilula-obra"><UserPlus className="size-5" />Convidar</button>}
         </div>
-        {admin && <Botao tam="p" variante="obra" onClick={() => { setNovo({ nome: '', email: '', papel: 'engenheiro' }); setLink(''); }}><UserPlus className="size-4" />Convidar</Botao>}
-      </div>
+        <div className="relative mt-5 grid grid-cols-3 gap-2">
+          {[{ n: ativos, t: ativos === 1 ? 'pessoa ativa' : 'pessoas ativas', ic: Users }, { n: org.uso.laudosMes, t: 'laudos no mês', ic: FileText }, { n: org.uso.analisesIA, t: 'fotos com IA', ic: Sparkles }].map(({ n, t, ic: Ic }) => (
+            <div key={t} className="rounded-2xl bg-white/[.07] px-2 py-3 text-center ring-1 ring-white/10">
+              <Ic className="mx-auto size-4 text-obra" />
+              <div className="mt-1 font-display text-2xl font-extrabold md:text-3xl">{n}</div>
+              <div className="text-[11px] font-bold text-[#A9B1C1] md:text-sm">{t}</div>
+            </div>
+          ))}
+        </div>
+        <div className="fita absolute inset-x-0 bottom-0 h-1.5" aria-hidden />
+      </section>
 
-      {/* o mês numa linha */}
-      <p className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-texto2">
-        <span className="flex items-center gap-1.5"><Users className="size-4 text-texto3" /><b className="text-texto">{org.uso.usuarios}</b> {org.uso.usuarios === 1 ? 'pessoa' : 'pessoas'}</span>
-        <span className="flex items-center gap-1.5"><FileText className="size-4 text-texto3" /><b className="text-texto">{org.uso.laudosMes}</b> laudos no mês</span>
-        <span className="flex items-center gap-1.5"><Sparkles className="size-4 text-texto3" /><b className="text-texto">{org.uso.analisesIA}</b> fotos com IA</span>
-      </p>
-
-      {/* pessoas e convites numa lista só */}
-      <div className="mt-5 divide-y divide-borda overflow-visible rounded-2xl border border-borda bg-sup">
+      {/* pessoas */}
+      <h2 className="mt-6 text-lg font-extrabold">Pessoas</h2>
+      <div className="mt-2 grid gap-3 sm:grid-cols-2">
         {pessoas.map((u) => {
           const eu = u.id === euId;
           const podeMexer = admin && !eu;
+          const e = ESTILO[u.papel] ?? ESTILO.assistente;
+          const Ic = e.ic;
           return (
-            <div key={u.id} className={cx('relative flex items-center gap-3 px-4 py-3', !u.ativo && 'opacity-55')}>
-              <span className="grid size-10 shrink-0 place-items-center rounded-full bg-tinta text-sm font-extrabold text-white dark:text-[#0E1320]">{iniciais(u.nome || u.email)}</span>
-              <span className="min-w-0 flex-1">
-                <b className="block truncate leading-tight">{u.nome}{eu && <span className="ml-1.5 text-xs font-bold text-ok-texto">você</span>}</b>
-                <span className="block truncate text-xs text-texto3">{u.ativo ? u.email : 'desativado'}</span>
-              </span>
-              <button disabled={!podeMexer} onClick={() => setMenuDe(menuDe === u.id ? null : u.id)} aria-label={podeMexer ? `Mudar o papel de ${u.nome}` : undefined}
-                className={cx('flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-xs font-extrabold', COR_PAPEL[u.papel], podeMexer && 'hover:ring-2 hover:ring-borda-forte')}>
-                {u.papel === 'admin' && <Shield className="size-3" />}{PAPEIS[u.papel]?.nome ?? u.papel}{podeMexer && <ChevronDown className="size-3.5" />}
-              </button>
+            <div key={u.id} className={cx('relative overflow-visible rounded-[20px] border border-borda bg-sup transition', !u.ativo && 'opacity-55')}>
+              <span className={cx('absolute inset-x-0 top-0 h-1 rounded-t-[20px]', e.faixa)} aria-hidden />
+              <div className="flex items-center gap-3 p-4 pt-5">
+                <span className={cx('relative grid size-12 shrink-0 place-items-center rounded-2xl font-display text-base font-extrabold', e.avatar)}>
+                  {iniciais(u.nome || u.email)}
+                  <span className="absolute -bottom-1 -right-1 grid size-5 place-items-center rounded-full bg-sup text-texto2 ring-2 ring-sup"><Ic className="size-3" /></span>
+                </span>
+                <span className="min-w-0 flex-1">
+                  <b className="block break-words leading-tight">{u.nome}</b>
+                  <span className="block truncate text-xs text-texto3">{u.email}</span>
+                  <span className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                    <button disabled={!podeMexer} onClick={() => setMenuDe(menuDe === u.id ? null : u.id)} aria-label={podeMexer ? `Mudar o papel de ${u.nome}` : undefined}
+                      className={cx('inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-extrabold transition', e.selo, podeMexer && 'hover:ring-2 hover:ring-borda-forte')}>
+                      <Ic className="size-3" />{PAPEIS[u.papel]?.nome ?? u.papel}{podeMexer && <ChevronDown className="size-3.5" />}
+                    </button>
+                    {eu && <span className="rounded-full bg-ok-suave px-2 py-0.5 text-[11px] font-extrabold text-ok-texto">você</span>}
+                    {!u.ativo && <span className="rounded-full bg-critico-suave px-2 py-0.5 text-[11px] font-extrabold text-critico-texto">desativado</span>}
+                  </span>
+                </span>
+              </div>
               {menuDe === u.id && (
-                <div className="absolute right-3 top-full z-20 -mt-1 w-56 overflow-hidden rounded-xl border border-borda bg-sup py-1 shadow-xl" onMouseLeave={() => setMenuDe(null)}>
+                <div className="absolute left-4 right-4 top-[calc(100%-8px)] z-20 overflow-hidden rounded-xl border border-borda bg-sup py-1 shadow-xl" onMouseLeave={() => setMenuDe(null)}>
                   {(Object.keys(PAPEIS) as Papel[]).map((p) => (
                     <button key={p} onClick={() => { setMenuDe(null); if (p !== u.papel) void mudar(u, { papel: p }); }}
                       className="flex w-full items-start gap-2 px-3 py-2 text-left text-sm hover:bg-sup2">
@@ -119,14 +144,37 @@ export function EquipeOrganizacao({ euId }: { euId: string }) {
           );
         })}
         {admin && convites.map((c) => (
-          <div key={c.email} className="flex items-center gap-3 px-4 py-3">
-            <span className="grid size-10 shrink-0 place-items-center rounded-full border-2 border-dashed border-borda-forte text-texto3"><Mail className="size-4" /></span>
-            <span className="min-w-0 flex-1"><b className="block truncate leading-tight">{c.nome || c.email}</b><span className="block truncate text-xs text-texto3">convite enviado · vale até {data(c.expiraEm)}</span></span>
-            <span className={cx('shrink-0 rounded-full px-2.5 py-1 text-xs font-extrabold', COR_PAPEL[c.papel])}>{PAPEIS[c.papel]?.nome}</span>
+          <div key={c.email} className="flex items-center gap-3 rounded-[20px] border-2 border-dashed border-borda-forte p-4">
+            <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-sup2 text-texto3"><Mail className="size-5" /></span>
+            <span className="min-w-0 flex-1">
+              <b className="block truncate leading-tight">{c.nome || c.email}</b>
+              <span className="block truncate text-xs text-texto3">convite enviado · vale até {data(c.expiraEm)}</span>
+              <span className={cx('mt-1.5 inline-flex rounded-full px-2.5 py-1 text-xs font-extrabold', (ESTILO[c.papel] ?? ESTILO.assistente).selo)}>{PAPEIS[c.papel]?.nome}</span>
+            </span>
           </div>
         ))}
+        {admin && (
+          <button onClick={() => { setNovo({ nome: '', email: '', papel: 'engenheiro' }); setLink(''); }}
+            className="flex min-h-[96px] items-center justify-center gap-2 rounded-[20px] border-2 border-dashed border-borda-forte font-extrabold text-texto2 transition hover:border-obra hover:text-obra-texto">
+            <UserPlus className="size-5" />Convidar mais alguém
+          </button>
+        )}
       </div>
-      <p className="mt-2 text-xs text-texto3">{(Object.keys(PAPEIS) as Papel[]).map((p) => `${PAPEIS[p].nome}: ${PAPEIS[p].ve.toLowerCase()}`).join(' · ')}.</p>
+
+      {/* o que cada papel vê */}
+      <h2 className="mt-7 text-lg font-extrabold">O que cada papel vê</h2>
+      <div className="mt-2 grid gap-2 sm:grid-cols-3">
+        {(Object.keys(PAPEIS) as Papel[]).map((p) => {
+          const e = ESTILO[p]; const Ic = e.ic;
+          return (
+            <div key={p} className="rounded-2xl border border-borda bg-sup p-3.5">
+              <span className="flex items-center gap-2"><span className={cx('grid size-8 place-items-center rounded-xl', e.avatar)}><Ic className="size-4" /></span><b>{PAPEIS[p].nome}</b></span>
+              <p className="mt-2 text-sm text-texto2"><b className="text-texto">Vê:</b> {PAPEIS[p].ve.toLowerCase()}.</p>
+              <p className="mt-0.5 text-sm text-texto2"><b className="text-texto">Faz:</b> {PAPEIS[p].faz.charAt(0).toLowerCase() + PAPEIS[p].faz.slice(1)}.</p>
+            </div>
+          );
+        })}
+      </div>
 
       {org.permissoes.auditoria && org.auditoria && eventos.length > 0 && <Atividades eventos={eventos} />}
 
