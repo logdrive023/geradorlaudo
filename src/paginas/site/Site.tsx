@@ -101,9 +101,9 @@ const DUVIDAS = [
   ['Dá para gerir a obra também?', 'Dá: cada obra tem cronograma com medição e classificação das etapas, diário de obra (RDO) com fotos e PDF, financeiro orçado × gasto e compras com cotação. O cliente acompanha por um link.'],
   ['E depois da vistoria?', 'O plano de ação transforma cada anomalia em tarefa com prazo (sugerido pela gravidade), responsável e custo estimado. Sai no PDF e em planilha Excel.'],
   ['Quais tipos de laudo?', 'Vistoria cautelar, entrega de imóvel, locação, inspeção predial, vícios construtivos, estrutural, reforma (NBR 16280), perícia judicial, avaliação (NBR 14653) e contábil. Cada um com seu padrão, que você pode personalizar.'],
-  ['Dá para usar com a minha equipe?', 'Está chegando: a organização terá três papéis. O admin controla tudo; o engenheiro vê os laudos dele e os atribuídos, confere e assina; o assistente faz o campo (fotos, dados, diário) só no que for atribuído a ele, sem ver o financeiro nem emitir laudo.'],
+  ['Dá para usar com a minha equipe?', 'Dá: a organização tem três papéis. O admin controla tudo; o engenheiro vê os laudos dele e os atribuídos, confere e assina; o assistente faz o campo (fotos, dados, diário) só no que for atribuído a ele, sem ver o financeiro nem emitir laudo.'],
   ['Quanto vai custar?', 'Na fase de testes é grátis e sem cartão. Os planos (Profissional e Escritório) serão anunciados antes de qualquer cobrança.'],
-  ['Como provo que o laudo é meu e não foi alterado?', 'As fotos guardam data e local, e cada achado passa pela sua aprovação. Em breve o laudo emitido ganha um código de verificação: quem recebe confere online se ele é autêntico.'],
+  ['Como provo que o laudo é meu e não foi alterado?', 'As fotos guardam data e local, e cada achado passa pela sua aprovação. Ao emitir, o laudo ganha um código de verificação no PDF: quem recebe confere online se ele é autêntico e quem é o responsável.'],
   ['Quais normas o laudo cita?', 'ABNT NBR 13752 (perícias), NBR 16747 (inspeção predial), NBR 15575 (desempenho), NBR 5674 (manutenção), conforme o tipo de laudo.'],
 ];
 

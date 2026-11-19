@@ -10,7 +10,7 @@ const Breve = () => <span className="ml-1.5 rounded-full bg-obra-suave px-2 py-0
 /* ---------- para quem ---------- */
 const PUBLICOS = [
   { ic: User, t: 'Engenheiro ou arquiteto autônomo', d: 'Faz mais vistorias no mesmo mês, com laudo no padrão e o seu nome na capa.', itens: ['Laudo a partir das fotos', 'Plano de ação com custos', 'Link para o cliente'] },
-  { ic: Users, t: 'Escritório com equipe', d: 'O assistente fotografa no campo; o engenheiro confere e assina. Cada um vê o que é dele.', itens: ['Papéis: admin, engenheiro e assistente', 'Laudo atribuído a quem vai fazer', 'Registro de quem fez o quê'], breve: true },
+  { ic: Users, t: 'Escritório com equipe', d: 'O assistente fotografa no campo; o engenheiro confere e assina. Cada um vê o que é dele.', itens: ['Papéis: admin, engenheiro e assistente', 'Convite por link; cada um com a própria senha', 'Registro de quem fez o quê'] },
   { ic: HardHat, t: 'Construtora e reforma', d: 'Obra e laudo no mesmo lugar: cronograma, diário, financeiro e a vistoria de entrega.', itens: ['Diário de obra (RDO) com a Lia', 'Orçado × gasto por etapa', 'Portal para o cliente acompanhar'] },
   { ic: Building2, t: 'Condomínio e administradora', d: 'Inspeção predial no padrão da NBR 16747, com prioridades e um plano para o síndico seguir.', itens: ['Grau de risco e prioridade', 'Prazos e responsáveis', 'Planilha para a assembleia'] },
 ];
@@ -20,10 +20,10 @@ export function ParaQuem() {
     <section id="para-quem" className="mx-auto max-w-[1180px] scroll-mt-20 px-4 py-20 md:py-28">
       <h2 className="max-w-3xl text-4xl font-extrabold leading-tight md:text-5xl">Feito para quem <span className="grifo">assina</span> e para quem toca a obra.</h2>
       <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {PUBLICOS.map(({ ic: Ic, t, d, itens, breve }) => (
+        {PUBLICOS.map(({ ic: Ic, t, d, itens }) => (
           <div key={t} className="flex flex-col rounded-[22px] border border-borda bg-sup p-6">
             <span className="grid size-11 place-items-center rounded-xl bg-obra-suave text-obra-texto"><Ic className="size-5" /></span>
-            <h3 className="mt-4 text-lg font-bold leading-snug">{t}{breve && <Breve />}</h3>
+            <h3 className="mt-4 text-lg font-bold leading-snug">{t}</h3>
             <p className="mt-1.5 text-sm text-texto2">{d}</p>
             <ul className="mt-4 grid gap-1.5 text-sm">
               {itens.map((i) => <li key={i} className="flex items-start gap-2"><Check className="mt-0.5 size-4 shrink-0 text-ok" />{i}</li>)}
@@ -93,7 +93,7 @@ export function Comparacao() {
 const PILARES = [
   { ic: BadgeCheck, t: 'Você aprova cada achado', d: 'A IA sugere; nada entra no laudo sem o seu aceite. A responsabilidade técnica, a ART e a assinatura continuam suas.' },
   { ic: ScanSearch, t: 'Prova datada', d: 'Data e local de cada foto lidos da própria imagem, com a anomalia marcada e numerada.' },
-  { ic: QrCode, t: 'Laudo verificável', d: 'Código de verificação no laudo: qualquer pessoa confere se ele é autêntico e de quem é.', breve: true },
+  { ic: QrCode, t: 'Laudo verificável', d: 'Código de verificação no PDF: qualquer pessoa confere online se o laudo é autêntico, quando foi emitido e quem é o responsável.' },
   { ic: Landmark, t: 'Armazenamento privado', d: 'Fotos e laudos guardados em armazenamento privado, com acesso só pela sua conta. O cliente vê apenas pelo link que você criar e pode desligar.' },
   { ic: Fingerprint, t: 'Aceite do cliente', d: 'O cliente lê pelo link e registra o aceite ou a contestação, com data e hora.', breve: true },
   { ic: ShieldCheck, t: 'Seus dados são seus', d: 'Exporte tudo quando quiser. Sem anúncio e sem vender dado de ninguém.' },
