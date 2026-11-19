@@ -25,7 +25,8 @@ type Banco struct{ pool *pgxpool.Pool }
 func Abrir(ctx context.Context, url string) (*Banco, error) {
 	cfg, err := pgxpool.ParseConfig(url)
 	if err != nil {
-		return nil, fmt.Errorf("DATABASE_URL inválida: %w", err)
+		// nunca repassa o erro do driver: ele repete o endereço, com a senha
+		return nil, errors.New("DATABASE_URL inválida (formato: postgresql://usuario:senha@host:5432/postgres?sslmode=require — sem colchetes; caracteres especiais da senha em %XX)")
 	}
 	cfg.MaxConns = 5 // plano grátis: poucas conexões
 	cfg.MaxConnIdleTime = 5 * time.Minute
