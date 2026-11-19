@@ -78,3 +78,68 @@ func Publico(dados json.RawMessage, comFinanceiro bool) json.RawMessage {
 	out, _ := json.Marshal(obj)
 	return out
 }
+
+// chaves do financeiro no documento da obra (o assistente de campo não vê nem altera).
+var chavesFinanceiro = []string{"lancamentos", "compras", "orcamentoPrevisto"}
+
+// SemFinanceiro: a obra como o assistente vê (sem dinheiro). Notas internas continuam (é da equipe).
+func SemFinanceiro(dados json.RawMessage) json.RawMessage {
+	var obj map[string]json.RawMessage
+	if json.Unmarshal(dados, &obj) != nil {
+		return dados
+	}
+	for _, k := range chavesFinanceiro {
+		delete(obj, k)
+	}
+	if raw, ok := obj["etapas"]; ok {
+		var etapas []map[string]json.RawMessage
+		if json.Unmarshal(raw, &etapas) == nil {
+			for _, e := range etapas {
+				delete(e, "orcado")
+			}
+			obj["etapas"], _ = json.Marshal(etapas)
+		}
+	}
+	out, _ := json.Marshal(obj)
+	return out
+}
+
+// ManterFinanceiro: quando o assistente salva, o financeiro que já estava no servidor é preservado.
+func ManterFinanceiro(novo, antigo json.RawMessage) json.RawMessage {
+	var n, a map[string]json.RawMessage
+	if json.Unmarshal(novo, &n) != nil || json.Unmarshal(antigo, &a) != nil {
+		return novo
+	}
+	for _, k := range chavesFinanceiro {
+		if v, ok := a[k]; ok {
+			n[k] = v
+		} else {
+			delete(n, k)
+		}
+	}
+	// orçado de cada etapa, pelo id
+	orcado := map[string]json.RawMessage{}
+	var etA []map[string]json.RawMessage
+	if json.Unmarshal(a["etapas"], &etA) == nil {
+		for _, e := range etA {
+			var id string
+			if json.Unmarshal(e["id"], &id) == nil && e["orcado"] != nil {
+				orcado[id] = e["orcado"]
+			}
+		}
+	}
+	var etN []map[string]json.RawMessage
+	if json.Unmarshal(n["etapas"], &etN) == nil {
+		for _, e := range etN {
+			var id string
+			_ = json.Unmarshal(e["id"], &id)
+			delete(e, "orcado")
+			if v, ok := orcado[id]; ok {
+				e["orcado"] = v
+			}
+		}
+		n["etapas"], _ = json.Marshal(etN)
+	}
+	out, _ := json.Marshal(n)
+	return out
+}

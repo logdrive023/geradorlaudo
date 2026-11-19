@@ -26,6 +26,9 @@ type Config struct {
 	SupabaseChave  string // SUPABASE_SERVICE_KEY: chave secreta, só no servidor
 	Balde          string // STORAGE_BALDE
 	PastaArquivos  string // ARQUIVOS_PASTA: sem Supabase, guarda no disco (só desenvolvimento)
+	AsaasToken     string // ASAAS_WEBHOOK_TOKEN (vazio = aviso de pagamento desligado)
+	WhatsAppVerif  string // WHATSAPP_VERIFY_TOKEN (vazio = WhatsApp desligado)
+	WhatsAppSecret string // WHATSAPP_APP_SECRET (confere a assinatura do Meta)
 }
 
 func Ler() Config {
@@ -47,6 +50,9 @@ func Ler() Config {
 		SupabaseChave:  strings.TrimSpace(os.Getenv("SUPABASE_SERVICE_KEY")),
 		Balde:          env("STORAGE_BALDE", "fotos"),
 		PastaArquivos:  strings.TrimSpace(os.Getenv("ARQUIVOS_PASTA")),
+		AsaasToken:     strings.TrimSpace(os.Getenv("ASAAS_WEBHOOK_TOKEN")),
+		WhatsAppVerif:  strings.TrimSpace(os.Getenv("WHATSAPP_VERIFY_TOKEN")),
+		WhatsAppSecret: strings.TrimSpace(os.Getenv("WHATSAPP_APP_SECRET")),
 	}
 }
 

@@ -15,9 +15,35 @@ import (
 type Papel string
 
 const (
-	Admin      Papel = "admin"
-	Engenheiro Papel = "engenheiro"
+	Admin      Papel = "admin"      // gestor: vê e controla tudo da organização
+	Engenheiro Papel = "engenheiro" // responsável técnico: os seus e os atribuídos; assina e emite
+	Assistente Papel = "assistente" // campo: só os atribuídos; não emite, não apaga, não vê financeiro
 )
+
+// Acao é o que alguém quer fazer. A regra fica num lugar só (docs/ORGANIZACAO.md).
+type Acao string
+
+const (
+	GerirEquipe      Acao = "equipe"      // convidar, mudar papel, desativar
+	GerirOrganizacao Acao = "organizacao" // plano, IAs, modelos, prompts, etapas
+	VerAuditoria     Acao = "auditoria"
+	Atribuir         Acao = "atribuir"   // pôr pessoas num laudo/obra
+	EmitirLaudo      Acao = "emitir"     // concluir, assinar, gerar o código de autenticidade
+	ApagarRegistro   Acao = "apagar"     // apagar laudo/obra (admin ou quem criou)
+	VerFinanceiro    Acao = "financeiro" // financeiro e compras da obra
+)
+
+var permissoes = map[Papel]map[Acao]bool{
+	Admin:      {GerirEquipe: true, GerirOrganizacao: true, VerAuditoria: true, Atribuir: true, EmitirLaudo: true, ApagarRegistro: true, VerFinanceiro: true},
+	Engenheiro: {Atribuir: true, EmitirLaudo: true, ApagarRegistro: true, VerFinanceiro: true},
+	Assistente: {},
+}
+
+// Pode diz se o papel permite a ação (apagar ainda exige ser admin ou quem criou).
+func Pode(p Papel, a Acao) bool { return permissoes[p][a] }
+
+// PapelValido aceita só os três papéis.
+func PapelValido(p string) bool { _, ok := permissoes[Papel(p)]; return ok }
 
 // Usuario é quem entra no app. A senha nunca sai do banco.
 type Usuario struct {

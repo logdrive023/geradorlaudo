@@ -113,6 +113,13 @@ func main() {
 		Versao:       versao,
 		Banco:        banco,
 		Arquivos:     arqs,
+
+		AsaasToken:          cfg.AsaasToken,
+		WhatsAppVerificacao: cfg.WhatsAppVerif,
+		WhatsAppSegredo:     cfg.WhatsAppSecret,
+	}
+	if n, ok := banco.(portas.Negocio); ok && banco != nil {
+		srv.Negocio = n // o mesmo Postgres guarda organização, cliente, agenda e uso
 	}
 	h := &http.Server{
 		Addr:              ":" + cfg.Porta,

@@ -32,7 +32,8 @@ func lerObra(r pgx.Row) (obra.Registro, error) {
 }
 
 func (b *Banco) ListarObras(ctx context.Context, u conta.Usuario) ([]obra.Registro, error) {
-	rows, err := b.pool.Query(ctx, `select `+colsObra+` from obras where organizacao_id = $1 order by atualizado_em desc limit 300`, u.OrganizacaoID)
+	rows, err := b.pool.Query(ctx, `select `+colsObra+` from obras where organizacao_id = $1 and pode_ver('obra', id, usuario_id, $2::uuid, $3)
+		order by atualizado_em desc limit 300`, u.OrganizacaoID, u.ID, string(u.Papel))
 	if err != nil {
 		return nil, traduzir(err)
 	}
@@ -43,17 +44,26 @@ func (b *Banco) ListarObras(ctx context.Context, u conta.Usuario) ([]obra.Regist
 		if err != nil {
 			return nil, err
 		}
+		if !conta.Pode(u.Papel, conta.VerFinanceiro) { // assistente de campo: sem dinheiro
+			o.Dados = obra.SemFinanceiro(o.Dados)
+		}
 		out = append(out, o)
 	}
 	return out, rows.Err()
 }
 
 func (b *Banco) SalvarObra(ctx context.Context, u conta.Usuario, o obra.Registro) error {
+	if !conta.Pode(u.Papel, conta.VerFinanceiro) { // o assistente não vê o financeiro: o que já está no servidor fica
+		var antigo []byte
+		if err := b.pool.QueryRow(ctx, `select dados from obras where id = $1 and organizacao_id = $2`, o.ID, u.OrganizacaoID).Scan(&antigo); err == nil {
+			o.Dados = obra.ManterFinanceiro(o.Dados, antigo)
+		}
+	}
 	tag, err := b.pool.Exec(ctx, `insert into obras (id, organizacao_id, usuario_id, nome, status, dados, criado_em, atualizado_em)
 		values ($1, $2, $3, $4, $5, $6, $7, $8)
 		on conflict (id) do update set nome = excluded.nome, status = excluded.status, dados = excluded.dados, atualizado_em = excluded.atualizado_em
-		where obras.organizacao_id = excluded.organizacao_id`,
-		o.ID, u.OrganizacaoID, u.ID, o.Nome, o.Status, []byte(o.Dados), data(o.CriadoEm), data(o.AtualizadoEm))
+		where obras.organizacao_id = excluded.organizacao_id and pode_ver('obra', obras.id, obras.usuario_id, $3::uuid, $9)`,
+		o.ID, u.OrganizacaoID, u.ID, o.Nome, o.Status, []byte(o.Dados), data(o.CriadoEm), data(o.AtualizadoEm), string(u.Papel))
 	if err != nil {
 		return traduzir(err)
 	}
@@ -66,11 +76,12 @@ func (b *Banco) SalvarObra(ctx context.Context, u conta.Usuario, o obra.Registro
 // ApagarObra apaga a obra e devolve as chaves das fotos para limpar o storage.
 func (b *Banco) ApagarObra(ctx context.Context, u conta.Usuario, id string) ([]string, error) {
 	chaves, err := b.chaves(ctx, `select f.imagem_chave, f.miniatura_chave from obra_fotos f join obras o on o.id = f.obra_id
-		where o.id = $1 and o.organizacao_id = $2`, id, u.OrganizacaoID)
+		where o.id = $1 and o.organizacao_id = $2 and ($3 = 'admin' or o.usuario_id = $4::uuid)`, id, u.OrganizacaoID, string(u.Papel), u.ID)
 	if err != nil {
 		return nil, err
 	}
-	if _, err := b.pool.Exec(ctx, `delete from obras where id = $1 and organizacao_id = $2`, id, u.OrganizacaoID); err != nil {
+	if _, err := b.pool.Exec(ctx, `delete from obras where id = $1 and organizacao_id = $2 and ($3 = 'admin' or usuario_id = $4::uuid)`,
+		id, u.OrganizacaoID, string(u.Papel), u.ID); err != nil {
 		return nil, traduzir(err)
 	}
 	return chaves, nil
@@ -83,8 +94,10 @@ type consulta interface {
 // obraDaOrg confere se a obra existe e é da organização do usuário.
 func obraDaOrg(ctx context.Context, q consulta, u conta.Usuario, obraID string) error {
 	var org string
-	err := q.QueryRow(ctx, `select organizacao_id::text from obras where id = $1`, obraID).Scan(&org)
-	if errors.Is(err, pgx.ErrNoRows) || (err == nil && org != u.OrganizacaoID) {
+	var ve bool
+	err := q.QueryRow(ctx, `select organizacao_id::text, pode_ver('obra', id, usuario_id, $2::uuid, $3) from obras where id = $1`,
+		obraID, u.ID, string(u.Papel)).Scan(&org, &ve)
+	if errors.Is(err, pgx.ErrNoRows) || (err == nil && (org != u.OrganizacaoID || !ve)) {
 		return laudo.ErrNaoEncontrado
 	}
 	return traduzir(err)
@@ -93,7 +106,8 @@ func obraDaOrg(ctx context.Context, q consulta, u conta.Usuario, obraID string) 
 func (b *Banco) ChavesFotoObra(ctx context.Context, u conta.Usuario, obraID, fotoID string) (string, string, error) {
 	var img, mini string
 	err := b.pool.QueryRow(ctx, `select f.imagem_chave, f.miniatura_chave from obra_fotos f join obras o on o.id = f.obra_id
-		where f.id = $1 and o.id = $2 and o.organizacao_id = $3`, fotoID, obraID, u.OrganizacaoID).Scan(&img, &mini)
+		where f.id = $1 and o.id = $2 and o.organizacao_id = $3 and pode_ver('obra', o.id, o.usuario_id, $4::uuid, $5)`,
+		fotoID, obraID, u.OrganizacaoID, u.ID, string(u.Papel)).Scan(&img, &mini)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return "", "", nil
 	}
@@ -116,7 +130,9 @@ func (b *Banco) SalvarFotoObra(ctx context.Context, u conta.Usuario, obraID, fot
 	}
 	defer tx.Rollback(ctx)
 	var org string
-	if err := tx.QueryRow(ctx, `select organizacao_id::text from obras where id = $1 for update`, obraID).Scan(&org); err != nil || org != u.OrganizacaoID {
+	var ve bool
+	if err := tx.QueryRow(ctx, `select organizacao_id::text, pode_ver('obra', id, usuario_id, $2::uuid, $3) from obras where id = $1 for update`,
+		obraID, u.ID, string(u.Papel)).Scan(&org, &ve); err != nil || org != u.OrganizacaoID || !ve {
 		return laudo.ErrNaoEncontrado
 	}
 	var n int
@@ -150,12 +166,14 @@ func (b *Banco) ApagarFotoObra(ctx context.Context, u conta.Usuario, obraID, fot
 func (b *Banco) CriarLinkObra(ctx context.Context, u conta.Usuario, id, novo string, financeiro bool) (string, error) {
 	var token string
 	err := b.pool.QueryRow(ctx, `update obras set link_token = coalesce(link_token, $3), link_financeiro = $4
-		where id = $1 and organizacao_id = $2 returning link_token`, id, u.OrganizacaoID, novo, financeiro).Scan(&token)
+		where id = $1 and organizacao_id = $2 and pode_ver('obra', id, usuario_id, $5::uuid, $6) returning link_token`,
+		id, u.OrganizacaoID, novo, financeiro, u.ID, string(u.Papel)).Scan(&token)
 	return token, traduzir(err)
 }
 
 func (b *Banco) ApagarLinkObra(ctx context.Context, u conta.Usuario, id string) error {
-	_, err := b.pool.Exec(ctx, `update obras set link_token = null, link_financeiro = false where id = $1 and organizacao_id = $2`, id, u.OrganizacaoID)
+	_, err := b.pool.Exec(ctx, `update obras set link_token = null, link_financeiro = false
+		where id = $1 and organizacao_id = $2 and pode_ver('obra', id, usuario_id, $3::uuid, $4)`, id, u.OrganizacaoID, u.ID, string(u.Papel))
 	return traduzir(err)
 }
 

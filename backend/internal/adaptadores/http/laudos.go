@@ -44,6 +44,9 @@ func (s *Servidor) rotasDados(mux *http.ServeMux, limite *limitador) {
 
 	// gestão de obras (mesmos padrões: sessão, storage, link público)
 	s.rotasObras(mux, publico)
+
+	// organização com papéis, cliente pelo link, autenticidade, agenda (módulo novo)
+	s.rotasNegocio(mux, publico)
 }
 
 // POST /api/laudos/{id}/link → {token}
@@ -258,6 +261,19 @@ func (s *Servidor) lerLaudo(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Servidor) salvarLaudo(w http.ResponseWriter, r *http.Request) {
+	if u := usuarioDe(r); !conta.Pode(u.Papel, conta.EmitirLaudo) {
+		// assistente: pode preencher e conferir, mas quem conclui é o responsável técnico
+		var cab struct {
+			Status string `json:"status"`
+		}
+		corpo, _ := io.ReadAll(http.MaxBytesReader(w, r.Body, 4<<20))
+		_ = json.Unmarshal(corpo, &cab)
+		if cab.Status == "concluido" {
+			erro(w, http.StatusForbidden, "Só o engenheiro responsável conclui o laudo.")
+			return
+		}
+		r.Body = io.NopCloser(strings.NewReader(string(corpo)))
+	}
 	var l laudo.Registro
 	if !lerJSON(w, r, &l) {
 		return
@@ -275,6 +291,10 @@ func (s *Servidor) salvarLaudo(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Servidor) apagarLaudo(w http.ResponseWriter, r *http.Request) {
+	if !conta.Pode(usuarioDe(r).Papel, conta.ApagarRegistro) {
+		erro(w, http.StatusForbidden, "Só o administrador ou o engenheiro apagam laudos.")
+		return
+	}
 	chaves, err := s.Banco.ApagarLaudo(r.Context(), usuarioDe(r), r.PathValue("id"))
 	if err != nil && !errors.Is(err, laudo.ErrNaoEncontrado) {
 		responderDados(w, err)

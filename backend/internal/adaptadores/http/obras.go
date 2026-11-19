@@ -92,6 +92,10 @@ func (s *Servidor) salvarObra(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Servidor) apagarObra(w http.ResponseWriter, r *http.Request) {
+	if !conta.Pode(usuarioDe(r).Papel, conta.ApagarRegistro) {
+		erro(w, http.StatusForbidden, "Só o administrador ou o engenheiro apagam obras.")
+		return
+	}
 	chaves, err := s.Banco.ApagarObra(r.Context(), usuarioDe(r), r.PathValue("id"))
 	if err != nil {
 		responderDados(w, err)

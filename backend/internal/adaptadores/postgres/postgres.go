@@ -138,7 +138,8 @@ func data(v int64) time.Time {
 func (b *Banco) ListarLaudos(ctx context.Context, u conta.Usuario) ([]laudo.Registro, error) {
 	rows, err := b.pool.Query(ctx, `select l.id::text, l.tipo, l.titulo, l.status, l.dados, l.textos, l.conclusao, l.usuario_id::text,
 			l.criado_em, l.atualizado_em, (select count(*) from fotos f where f.laudo_id = l.id)
-		from laudos l where l.organizacao_id = $1 and l.excluido_em is null order by l.atualizado_em desc limit 500`, u.OrganizacaoID)
+		from laudos l where l.organizacao_id = $1 and l.excluido_em is null and pode_ver('laudo', l.id, l.usuario_id, $2::uuid, $3)
+		order by l.atualizado_em desc limit 500`, u.OrganizacaoID, u.ID, string(u.Papel))
 	if err != nil {
 		return nil, err
 	}
@@ -189,8 +190,8 @@ func (b *Banco) SalvarLaudo(ctx context.Context, u conta.Usuario, l laudo.Regist
 		values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
 		on conflict (id) do update set tipo = excluded.tipo, titulo = excluded.titulo, status = excluded.status, dados = excluded.dados,
 			textos = excluded.textos, conclusao = excluded.conclusao, atualizado_em = excluded.atualizado_em, excluido_em = null
-		where laudos.organizacao_id = excluded.organizacao_id`,
-		l.ID, u.OrganizacaoID, u.ID, string(l.Tipo), l.Titulo, l.Status, dados, textos, l.Conclusao, data(l.CriadoEm), data(l.AtualizadoEm))
+		where laudos.organizacao_id = excluded.organizacao_id and pode_ver('laudo', laudos.id, laudos.usuario_id, $3::uuid, $12)`,
+		l.ID, u.OrganizacaoID, u.ID, string(l.Tipo), l.Titulo, l.Status, dados, textos, l.Conclusao, data(l.CriadoEm), data(l.AtualizadoEm), string(u.Papel))
 	if err != nil {
 		return traduzir(err)
 	}
@@ -202,7 +203,8 @@ func (b *Banco) SalvarLaudo(ctx context.Context, u conta.Usuario, l laudo.Regist
 
 func (b *Banco) LerLaudo(ctx context.Context, u conta.Usuario, id string) (laudo.Registro, []laudo.FotoRegistro, error) {
 	l, err := lerLaudo(b.pool.QueryRow(ctx, `select id::text, tipo, titulo, status, dados, textos, conclusao, usuario_id::text, criado_em, atualizado_em
-		from laudos where id = $1 and organizacao_id = $2 and excluido_em is null`, id, u.OrganizacaoID), false)
+		from laudos where id = $1 and organizacao_id = $2 and excluido_em is null and pode_ver('laudo', id, usuario_id, $3::uuid, $4)`,
+		id, u.OrganizacaoID, u.ID, string(u.Papel)), false)
 	if err != nil {
 		return l, nil, traduzir(err)
 	}
@@ -282,11 +284,12 @@ func (b *Banco) fotosDoLaudo(ctx context.Context, id string) ([]laudo.FotoRegist
 
 func (b *Banco) ApagarLaudo(ctx context.Context, u conta.Usuario, id string) ([]string, error) {
 	chaves, err := b.chaves(ctx, `select f.imagem_chave, f.miniatura_chave from fotos f join laudos l on l.id = f.laudo_id
-		where l.id = $1 and l.organizacao_id = $2`, id, u.OrganizacaoID)
+		where l.id = $1 and l.organizacao_id = $2 and ($3 = 'admin' or l.usuario_id = $4::uuid)`, id, u.OrganizacaoID, string(u.Papel), u.ID)
 	if err != nil {
 		return nil, err
 	}
-	tag, err := b.pool.Exec(ctx, `delete from laudos where id = $1 and organizacao_id = $2`, id, u.OrganizacaoID)
+	tag, err := b.pool.Exec(ctx, `delete from laudos where id = $1 and organizacao_id = $2 and ($3 = 'admin' or usuario_id = $4::uuid)`,
+		id, u.OrganizacaoID, string(u.Papel), u.ID)
 	if err != nil {
 		return nil, traduzir(err)
 	}
@@ -318,7 +321,8 @@ func (b *Banco) chaves(ctx context.Context, sql string, args ...any) ([]string, 
 func (b *Banco) ChavesDaFoto(ctx context.Context, u conta.Usuario, laudoID, fotoID string) (string, string, error) {
 	var img, mini string
 	err := b.pool.QueryRow(ctx, `select f.imagem_chave, f.miniatura_chave from fotos f join laudos l on l.id = f.laudo_id
-		where f.id = $1 and l.id = $2 and l.organizacao_id = $3`, fotoID, laudoID, u.OrganizacaoID).Scan(&img, &mini)
+		where f.id = $1 and l.id = $2 and l.organizacao_id = $3 and pode_ver('laudo', l.id, l.usuario_id, $4::uuid, $5)`,
+		fotoID, laudoID, u.OrganizacaoID, u.ID, string(u.Papel)).Scan(&img, &mini)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return "", "", nil
 	}
@@ -334,13 +338,15 @@ func (b *Banco) SalvarFoto(ctx context.Context, u conta.Usuario, f laudo.FotoReg
 
 	// trava o laudo: duas fotos chegando juntas não furam o limite
 	var dono string
-	if err := tx.QueryRow(ctx, `select organizacao_id::text from laudos where id = $1 and excluido_em is null for update`, f.LaudoID).Scan(&dono); err != nil {
+	var ve bool
+	if err := tx.QueryRow(ctx, `select organizacao_id::text, pode_ver('laudo', id, usuario_id, $2::uuid, $3) from laudos
+		where id = $1 and excluido_em is null for update`, f.LaudoID, u.ID, string(u.Papel)).Scan(&dono, &ve); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return laudo.ErrNaoEncontrado
 		}
 		return traduzir(err)
 	}
-	if dono != u.OrganizacaoID {
+	if dono != u.OrganizacaoID || !ve {
 		return laudo.ErrNaoEncontrado
 	}
 	var existe bool
@@ -501,13 +507,15 @@ func jsonOuNulo(b json.RawMessage) any {
 func (b *Banco) CriarLink(ctx context.Context, u conta.Usuario, id, novo string) (string, error) {
 	var token string
 	err := b.pool.QueryRow(ctx, `update laudos set link_token = coalesce(link_token, $3), link_criado_em = coalesce(link_criado_em, now())
-		where id = $1 and organizacao_id = $2 and excluido_em is null returning link_token`, id, u.OrganizacaoID, novo).Scan(&token)
+		where id = $1 and organizacao_id = $2 and excluido_em is null and pode_ver('laudo', id, usuario_id, $4::uuid, $5)
+		returning link_token`, id, u.OrganizacaoID, novo, u.ID, string(u.Papel)).Scan(&token)
 	return token, traduzir(err)
 }
 
 // ApagarLink desliga o link: quem tinha o endereço não vê mais nada.
 func (b *Banco) ApagarLink(ctx context.Context, u conta.Usuario, id string) error {
-	_, err := b.pool.Exec(ctx, `update laudos set link_token = null, link_criado_em = null where id = $1 and organizacao_id = $2`, id, u.OrganizacaoID)
+	_, err := b.pool.Exec(ctx, `update laudos set link_token = null, link_criado_em = null
+		where id = $1 and organizacao_id = $2 and pode_ver('laudo', id, usuario_id, $3::uuid, $4)`, id, u.OrganizacaoID, u.ID, string(u.Papel))
 	return traduzir(err)
 }
 

@@ -26,6 +26,11 @@ type Servidor struct {
 	Versao       string
 	Banco        portas.Banco    // nil = sem banco (só IA)
 	Arquivos     portas.Arquivos // nil = sem storage de imagens
+	Negocio      portas.Negocio  // nil = sem organização/cliente/agenda (rotas novas respondem 503)
+
+	AsaasToken          string // ASAAS_WEBHOOK_TOKEN: liga o aviso de pagamento
+	WhatsAppVerificacao string // WHATSAPP_VERIFY_TOKEN: liga o webhook do WhatsApp
+	WhatsAppSegredo     string // WHATSAPP_APP_SECRET: confere a assinatura do Meta
 }
 
 // Rotas monta o roteador com CORS envolvendo TUDO (o preflight OPTIONS também passa por ele).
@@ -86,6 +91,7 @@ func (s *Servidor) analisar(w http.ResponseWriter, r *http.Request) {
 			modelo = m.Modelo()
 		}
 	}
+	s.registrarUso(r, nome, "analise_foto")
 	json200(w, map[string]any{"versao": contratos.VersaoAnaliseFoto, "origem": nome, "modelo": modelo, "analise": a})
 }
 
@@ -176,7 +182,7 @@ func (s *Servidor) cors(next http.Handler) http.Handler {
 			h := w.Header()
 			h.Set("Access-Control-Allow-Origin", o)
 			h.Set("Vary", "Origin")
-			h.Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+			h.Set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
 			h.Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 			h.Set("Access-Control-Max-Age", "600")
 		}
