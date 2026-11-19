@@ -43,24 +43,38 @@ export function NovoLaudo({ aberto, aoFechar }: { aberto: boolean; aoFechar: () 
   return (
     <Modal aberto={aberto} aoFechar={fechar} titulo={t ? 'Onde é a vistoria?' : 'Qual laudo vamos fazer?'} largura="max-w-xl">
       {!t ? (
-        <div className="sem-barra grid max-h-[65dvh] grid-cols-1 gap-4 overflow-y-auto overflow-x-hidden overscroll-contain">
-          {GRUPOS.map((g) => (
-            <div key={g}>
-              <div className="mb-1.5 text-xs font-extrabold uppercase tracking-wider text-texto3">{g}</div>
-              <div className="grid grid-cols-1 gap-1.5">
-                {LISTA_TIPOS.filter((x) => x.grupo === g).map((x) => {
-                  const I = ICONE_TIPO[x.id];
-                  return (
-                    <button key={x.id} onClick={() => setTipo(x.id)} className="group flex w-full min-w-0 items-center gap-3 rounded-2xl border border-borda p-2.5 text-left transition hover:border-tinta hover:bg-tinta/5">
-                      <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-sup2 text-texto2 transition group-hover:bg-tinta group-hover:text-white"><I className="size-5" /></span>
-                      <span className="min-w-0 flex-1"><b className="block leading-tight">{x.nome}</b><span className="block truncate text-[13px] text-texto2">{x.descricao}</span></span>
-                      <ChevronRight className="size-5 shrink-0 text-texto3" />
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          ))}
+        <div className="sem-barra grid max-h-[68dvh] grid-cols-1 gap-5 overflow-y-auto overflow-x-hidden overscroll-contain pb-1">
+          <p className="rounded-2xl bg-obra-suave px-3 py-2.5 text-sm leading-snug text-obra-texto">
+            <b>Escolha o tipo:</b> o modelo, as normas e o texto já vêm prontos.
+            <Dica texto={<><b>Vistorias:</b> registrar o estado do imóvel (antes de obra vizinha, na entrega, na locação).<br /><b>Laudos técnicos:</b> diagnosticar problemas e dar parecer.<br /><b>Perícias e avaliações:</b> uso judicial e valor de mercado.<br />Dá para trocar depois.</>} />
+          </p>
+          {GRUPOS.map((g, gi) => {
+            const lista = LISTA_TIPOS.filter((x) => x.grupo === g);
+            if (!lista.length) return null;
+            const cor = ['bg-obra text-[#121A2B]', 'bg-tinta text-white dark:text-[#0E1320]', 'bg-[#7c5cff] text-white', 'bg-ok text-white'][gi % 4];
+            return (
+              <section key={g} className="grid gap-2">
+                <h3 className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-wider text-texto3">{g}<span className="rounded-full bg-sup2 px-1.5 text-[10px]">{lista.length}</span></h3>
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                  {lista.map((x) => {
+                    const I = ICONE_TIPO[x.id];
+                    return (
+                      <button key={x.id} onClick={() => setTipo(x.id)}
+                        className="group grid min-w-0 grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-3 rounded-2xl border border-borda bg-sup p-3 text-left transition hover:-translate-y-0.5 hover:border-obra hover:shadow-[0_10px_24px_rgba(18,26,43,.08)]">
+                        <span className={cx('grid size-11 place-items-center rounded-xl', cor)}><I className="size-5" /></span>
+                        <span className="min-w-0">
+                          <b className="block leading-tight">{x.nome}</b>
+                          <span className="mt-0.5 line-clamp-2 block text-[13px] leading-snug text-texto2">{x.descricao}</span>
+                          <span className="mt-1.5 flex flex-wrap gap-1">{x.normas.slice(0, 2).map((n) => <span key={n} className="rounded-md bg-sup2 px-1.5 py-0.5 text-[10px] font-bold text-texto2">{n.split(' —')[0].split(' (')[0]}</span>)}</span>
+                        </span>
+                        <ChevronRight className="mt-3 size-5 text-texto3 transition group-hover:translate-x-0.5 group-hover:text-obra" />
+                      </button>
+                    );
+                  })}
+                </div>
+              </section>
+            );
+          })}
         </div>
       ) : (
         <div className="grid gap-4">

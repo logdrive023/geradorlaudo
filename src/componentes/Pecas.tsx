@@ -78,12 +78,22 @@ export function Abas<T extends string>({ abas, ativa, aoMudar, rotulo }: { abas:
 export function Indicador({ valor, rotulo, tom = 'neutro', dica, ic: Ic }: { valor: ReactNode; rotulo: string; tom?: 'neutro' | 'ok' | 'obra' | 'critico' | 'medio'; dica?: ReactNode; ic?: React.ComponentType<{ className?: string }> }) {
   const cls = { neutro: 'bg-sup2 text-texto', ok: 'bg-ok-suave text-ok-texto', obra: 'bg-obra-suave text-obra-texto', critico: 'bg-critico-suave text-critico-texto', medio: 'bg-medio-suave text-medio-texto' }[tom];
   return (
-    <div className={cx('relative rounded-2xl p-3', cls)}>
-      {Ic && <span className="absolute right-2.5 top-2.5 grid size-7 place-items-center rounded-lg bg-white/60 dark:bg-black/20"><Ic className="size-4" /></span>}
-      <div className={cx('font-display text-xl font-extrabold leading-tight md:text-2xl', Ic && 'pr-8')}>{valor}</div>
-      <div className="mt-0.5 flex items-center gap-1 text-xs font-bold opacity-80">{rotulo}{dica && <Dica texto={dica} />}</div>
+    <div className={cx('grid min-w-0 content-between gap-1 rounded-2xl p-3', cls)}>
+      {/* valor ocupa a largura toda e diminui se for longo (nunca fica embaixo do ícone) */}
+      <div className={cx('min-w-0 whitespace-nowrap font-display font-extrabold leading-tight tabular-nums', tamanhoValor(valor))}>{valor}</div>
+      <div className="flex min-w-0 items-center gap-1.5 text-xs font-bold opacity-80">
+        {Ic && <Ic className="size-3.5 shrink-0" />}<span className="min-w-0">{rotulo}</span>{dica && <Dica texto={dica} />}
+      </div>
     </div>
   );
+}
+
+/** Fonte do valor pelo tamanho do texto: valores longos (R$ 1.250.000,00) diminuem em vez de quebrar. */
+function tamanhoValor(v: ReactNode) {
+  const n = typeof v === 'string' || typeof v === 'number' ? String(v).length : 0;
+  if (n > 14) return 'text-sm sm:text-base md:text-lg';
+  if (n > 10) return 'text-base sm:text-lg md:text-xl';
+  return 'text-xl md:text-2xl';
 }
 
 /** Anel de progresso (0–100) com marca do previsto; fica vermelho se estiver bem abaixo do previsto. */
