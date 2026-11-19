@@ -3,6 +3,7 @@ module github.com/logdrive023/geradorlaudo/backend
 go 1.25.5
 
 require (
+	github.com/anthropics/anthropic-sdk-go/v2 v2.11.0
 	github.com/jackc/pgx/v5 v5.7.5
 	golang.org/x/crypto v0.50.0
 	google.golang.org/genai v1.79.1
@@ -12,7 +13,6 @@ require (
 	cloud.google.com/go v0.116.0 // indirect
 	cloud.google.com/go/auth v0.9.3 // indirect
 	cloud.google.com/go/compute/metadata v0.9.0 // indirect
-	github.com/anthropics/anthropic-sdk-go/v2 v2.11.0 // indirect
 	github.com/bahlo/generic-list-go v0.2.0 // indirect
 	github.com/buger/jsonparser v1.1.2 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
