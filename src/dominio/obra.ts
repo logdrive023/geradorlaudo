@@ -162,8 +162,10 @@ export function situacaoEtapa(e: Etapa, hoje = hojeISO()): SituacaoEtapa {
   return e.percentual > 0 || e.inicioReal ? 'andamento' : 'nao_iniciada';
 }
 
-export function financeiro(o: Pick<Obra, 'etapas' | 'lancamentos'>) {
-  const orcado = o.etapas.reduce((s, e) => s + (e.orcado ?? 0), 0);
+export function financeiro(o: Pick<Obra, 'etapas' | 'lancamentos'> & { orcamentoPrevisto?: number }) {
+  // orçado: a soma das etapas; sem etapas orçadas, vale o orçamento previsto da ficha
+  const porEtapas = o.etapas.reduce((s, e) => s + (e.orcado ?? 0), 0);
+  const orcado = porEtapas || o.orcamentoPrevisto || 0;
   const despesas = o.lancamentos.filter((l) => l.tipo === 'despesa');
   const realizado = despesas.reduce((s, l) => s + l.valor, 0);
   const aPagar = despesas.filter((l) => !l.pago).reduce((s, l) => s + l.valor, 0);

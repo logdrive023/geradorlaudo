@@ -75,24 +75,47 @@ export function Abas<T extends string>({ abas, ativa, aoMudar, rotulo }: { abas:
 }
 
 /** Número grande com rótulo (painéis e resumos). */
-export function Indicador({ valor, rotulo, tom = 'neutro', dica }: { valor: ReactNode; rotulo: string; tom?: 'neutro' | 'ok' | 'obra' | 'critico' | 'medio'; dica?: ReactNode }) {
+export function Indicador({ valor, rotulo, tom = 'neutro', dica, ic: Ic }: { valor: ReactNode; rotulo: string; tom?: 'neutro' | 'ok' | 'obra' | 'critico' | 'medio'; dica?: ReactNode; ic?: React.ComponentType<{ className?: string }> }) {
   const cls = { neutro: 'bg-sup2 text-texto', ok: 'bg-ok-suave text-ok-texto', obra: 'bg-obra-suave text-obra-texto', critico: 'bg-critico-suave text-critico-texto', medio: 'bg-medio-suave text-medio-texto' }[tom];
   return (
-    <div className={cx('rounded-2xl p-3', cls)}>
-      <div className="font-display text-xl font-extrabold leading-tight md:text-2xl">{valor}</div>
+    <div className={cx('relative rounded-2xl p-3', cls)}>
+      {Ic && <span className="absolute right-2.5 top-2.5 grid size-7 place-items-center rounded-lg bg-white/60 dark:bg-black/20"><Ic className="size-4" /></span>}
+      <div className={cx('font-display text-xl font-extrabold leading-tight md:text-2xl', Ic && 'pr-8')}>{valor}</div>
       <div className="mt-0.5 flex items-center gap-1 text-xs font-bold opacity-80">{rotulo}{dica && <Dica texto={dica} />}</div>
     </div>
   );
 }
 
-/** Barra de progresso dupla: realizado (cheia) e previsto (marca). */
+/** Anel de progresso (0–100) com marca do previsto; fica vermelho se estiver bem abaixo do previsto. */
+export function Anel({ pct, previsto, tam = 104, espessura = 11, children }: { pct: number; previsto?: number | null; tam?: number; espessura?: number; children?: ReactNode }) {
+  const r = (tam - espessura) / 2;
+  const c = 2 * Math.PI * r;
+  const v = Math.max(0, Math.min(100, pct));
+  const ang = previsto == null ? null : (Math.max(0, Math.min(100, previsto)) / 100) * 2 * Math.PI - Math.PI / 2;
+  return (
+    <div className="relative shrink-0" style={{ width: tam, height: tam }} role="img" aria-label={`${v}% realizado${previsto != null ? `, previsto ${previsto}%` : ''}`}>
+      <svg width={tam} height={tam} className="-rotate-90">
+        <circle cx={tam / 2} cy={tam / 2} r={r} fill="none" className="stroke-[#121A2B] dark:stroke-white/15" strokeWidth={espessura} />
+        {v > 0 && <circle cx={tam / 2} cy={tam / 2} r={r} fill="none" stroke="var(--obra)" strokeWidth={espessura} strokeLinecap="round"
+          strokeDasharray={`${(v / 100) * c} ${c}`} className="transition-[stroke-dasharray] duration-700" />}
+      </svg>
+      {ang != null && (
+        <span className="absolute size-3 rounded-full border-2 border-[#121A2B] bg-white" title={`Previsto para hoje: ${previsto}%`}
+          style={{ left: tam / 2 + r * Math.cos(ang) - 6, top: tam / 2 + r * Math.sin(ang) - 6 }} />
+      )}
+      <div className="absolute inset-0 grid place-items-center text-center">{children ?? <b className="font-display text-2xl font-extrabold">{v}%</b>}</div>
+    </div>
+  );
+}
+
+/** Barra de progresso: trilho preto que vai enchendo de laranja; a marca branca é o previsto para hoje. */
 export function BarraDupla({ real, previsto, className }: { real: number; previsto?: number | null; className?: string }) {
   const r = Math.max(0, Math.min(100, real));
   const p = previsto == null ? null : Math.max(0, Math.min(100, previsto));
   return (
-    <div className={cx('relative h-3 overflow-hidden rounded-full bg-sup2', className)} role="progressbar" aria-valuenow={r} aria-valuemin={0} aria-valuemax={100}>
-      <div className={cx('h-full rounded-full transition-all duration-500', p != null && r < p - 5 ? 'bg-critico' : 'bg-obra')} style={{ width: `${r}%` }} />
-      {p != null && <div className="absolute inset-y-0 w-0.5 bg-[#121A2B] dark:bg-white" style={{ left: `${p}%` }} title={`Previsto: ${p}%`} />}
+    <div className={cx('relative h-3 overflow-hidden rounded-full bg-[#121A2B] dark:bg-white/15', className)} role="progressbar" aria-valuenow={r} aria-valuemin={0} aria-valuemax={100}>
+      <div className="h-full rounded-full bg-obra transition-all duration-500" style={{ width: `${r}%` }} />
+      {p != null && <div className="absolute inset-y-0 w-1 -translate-x-1/2 rounded-full bg-white shadow-[0_0_0_1px_rgba(18,26,43,.6)]" style={{ left: `${Math.max(1, p)}%` }} title={`Previsto para hoje: ${p}%`} />}
     </div>
   );
 }
