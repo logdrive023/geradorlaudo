@@ -1,0 +1,166 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.escuro, .escuro *));
+
+/* =========================================================
+   LaudoTech — tokens (mesma alma do VanAaki: papel claro, uma cor
+   de destaque, títulos em Bricolage, pílulas com sombra dura)
+   ========================================================= */
+:root {
+  --papel: #F6F8FB;
+  --superficie: #FFFFFF;
+  --superficie-2: #F1F4F9;
+  --borda: #E3E8F0;
+  --borda-forte: #CDD5E1;
+  --texto: #121A2B;
+  --texto-2: #526079;
+  --texto-3: #6B7890;
+  --tinta: #1D3B70;          /* azul prancheta */
+  --tinta-2: #142B54;
+  --obra: #FF8A1F;           /* laranja de obra */
+  --obra-forte: #F07400;
+  --obra-suave: #FFF1E3;
+  --obra-texto: #8A4300;
+  --ok: #12924A; --ok-suave: #E5F5EC; --ok-texto: #0B6634;
+  --critico: #D93636; --critico-suave: #FDECEC; --critico-texto: #9E2121;
+  --medio: #E08A00; --medio-suave: #FFF4DE; --medio-texto: #7E4E00;
+  --minimo: #2E6BD8; --minimo-suave: #EAF1FD; --minimo-texto: #1F4C9E;
+  color-scheme: light;
+}
+.escuro {
+  --papel: #0E1320;
+  --superficie: #151C2C;
+  --superficie-2: #1B2335;
+  --borda: #263049;
+  --borda-forte: #34405C;
+  --texto: #ECF0F7;
+  --texto-2: #A7B2C7;
+  --texto-3: #8592AA;
+  --tinta: #8FB1F0;
+  --tinta-2: #B5CBF5;
+  --obra-suave: #3A2611;
+  --obra-texto: #FFC690;
+  --ok-suave: #10301F; --ok-texto: #7FD9A5;
+  --critico-suave: #3A1717; --critico-texto: #FF9B9B;
+  --medio-suave: #3A2A0E; --medio-texto: #FFCB6B;
+  --minimo-suave: #14254A; --minimo-texto: #9CBDF7;
+  color-scheme: dark;
+}
+
+@theme inline {
+  --color-papel: var(--papel);
+  --color-sup: var(--superficie);
+  --color-sup2: var(--superficie-2);
+  --color-borda: var(--borda);
+  --color-borda-forte: var(--borda-forte);
+  --color-texto: var(--texto);
+  --color-texto2: var(--texto-2);
+  --color-texto3: var(--texto-3);
+  --color-tinta: var(--tinta);
+  --color-tinta2: var(--tinta-2);
+  --color-obra: var(--obra);
+  --color-obra-forte: var(--obra-forte);
+  --color-obra-suave: var(--obra-suave);
+  --color-obra-texto: var(--obra-texto);
+  --color-ok: var(--ok); --color-ok-suave: var(--ok-suave); --color-ok-texto: var(--ok-texto);
+  --color-critico: var(--critico); --color-critico-suave: var(--critico-suave); --color-critico-texto: var(--critico-texto);
+  --color-medio: var(--medio); --color-medio-suave: var(--medio-suave); --color-medio-texto: var(--medio-texto);
+  --color-minimo: var(--minimo); --color-minimo-suave: var(--minimo-suave); --color-minimo-texto: var(--minimo-texto);
+  --font-sans: 'Nunito', ui-rounded, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-display: 'Bricolage Grotesque', 'Nunito', system-ui, sans-serif;
+}
+
+html, body { overflow-x: clip; }
+html { -webkit-text-size-adjust: 100%; }
+body { background: var(--papel); color: var(--texto); font-family: var(--font-sans); -webkit-font-smoothing: antialiased; }
+h1, h2, h3 { font-family: var(--font-display); letter-spacing: -0.02em; }
+:focus-visible { outline: 2.5px solid var(--obra); outline-offset: 2px; border-radius: 6px; }
+
+/* grifo: uma palavra por título */
+.grifo { position: relative; white-space: nowrap; z-index: 0; }
+.grifo::after { content: ""; position: absolute; left: -4px; right: -6px; bottom: .06em; height: .42em; background: var(--obra); opacity: .45; z-index: -1; border-radius: 4px; transform: rotate(-1deg); }
+
+/* fita zebrada de obra (a "faixa ESCOLAR" do LaudoTech) */
+.fita { background: repeating-linear-gradient(-45deg, var(--obra) 0 18px, #121A2B 18px 36px); }
+.fita-v { background: repeating-linear-gradient(-45deg, var(--obra) 0 14px, #121A2B 14px 28px); }
+
+/* botão pílula com sombra dura */
+.pilula { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; max-width: 100%; padding: 8px 22px; border-radius: 999px; font-weight: 800; line-height: 1.2; text-align: center; border: 1.5px solid #121A2B; transition: transform .12s, background .15s, box-shadow .12s; }
+.pilula > svg { flex-shrink: 0; }
+.pilula:active { transform: translateY(2px); box-shadow: 0 1px 0 #121A2B !important; }
+.pilula-obra { background: var(--obra); color: #121A2B; box-shadow: 0 3px 0 #121A2B; }
+.pilula-obra:hover { background: var(--obra-forte); }
+.pilula-clara { background: var(--superficie); color: var(--texto); box-shadow: 0 3px 0 #121A2B; }
+.escuro .pilula-clara { border-color: var(--borda-forte); box-shadow: 0 3px 0 #000; }
+.pilula-clara:hover { background: var(--obra-suave); }
+
+/* rolagem sem barra visível (abas, miniaturas, listas em janela) */
+.overflow-x-auto, .sem-barra, dialog { scrollbar-width: none; }
+.overflow-x-auto::-webkit-scrollbar, .sem-barra::-webkit-scrollbar, dialog::-webkit-scrollbar { display: none; }
+
+/* granulado sutil de papel */
+.grao { position: fixed; inset: 0; pointer-events: none; opacity: .035; z-index: 100; }
+
+@keyframes subir { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+.revelar { animation: subir .6s cubic-bezier(.2,.7,.2,1) both; }
+@keyframes varrer { 0% { top: 0%; } 100% { top: 100%; } }
+.scanner { position: absolute; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, transparent, var(--obra), transparent); box-shadow: 0 0 18px var(--obra); animation: varrer 2.2s ease-in-out infinite alternate; }
+@keyframes aparecer-caixa { from { opacity: 0; transform: scale(.92); } to { opacity: 1; transform: none; } }
+.caixa-achado { animation: aparecer-caixa .4s ease-out both; }
+@keyframes girar { to { transform: rotate(360deg); } }
+@keyframes rolar { to { transform: translateX(-50%); } }
+@keyframes balancar { 0%, 100% { transform: translateY(0) rotate(0); } 50% { transform: translateY(-2px) rotate(-3deg); } }
+.lia-pensando { animation: balancar 1.1s ease-in-out infinite; }
+.girando { animation: girar 1s linear infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+
+/* =========================================================
+   Documento A4 (prévia e impressão / "Salvar como PDF")
+   ========================================================= */
+.folha { width: 210mm; min-height: 297mm; padding: 18mm 18mm 22mm; background: #fff; color: #1b1f29; position: relative; box-shadow: 0 10px 40px rgba(18,26,43,.14); margin: 0 auto 24px; font-family: 'Nunito', system-ui, sans-serif; font-size: 10.5pt; line-height: 1.5; }
+.folha h1, .folha h2, .folha h3 { font-family: 'Bricolage Grotesque', 'Nunito', sans-serif; color: #1D3B70; }
+.folha h2 { font-size: 13pt; margin: 0 0 8px; padding-bottom: 4px; border-bottom: 2px solid #FF8A1F; }
+.folha h3 { font-size: 11pt; margin: 14px 0 6px; }
+.folha p { margin: 0 0 8px; text-align: justify; }
+.folha table { width: 100%; border-collapse: collapse; font-size: 9.5pt; }
+.folha th, .folha td { border: 1px solid #d4dae4; padding: 5px 7px; text-align: left; vertical-align: top; }
+.folha th { background: #EEF2F8; color: #1D3B70; font-weight: 800; }
+.folha .cab { position: absolute; top: 8mm; left: 18mm; right: 18mm; display: flex; justify-content: space-between; align-items: center; font-size: 8pt; color: #6b7890; border-bottom: 1px solid #e3e8f0; padding-bottom: 3mm; }
+.folha .rod { position: absolute; bottom: 8mm; left: 18mm; right: 18mm; display: flex; justify-content: space-between; font-size: 8pt; color: #6b7890; border-top: 1px solid #e3e8f0; padding-top: 2mm; }
+.folha .corpo { padding-top: 8mm; }
+.selo { display: inline-block; padding: 1px 8px; border-radius: 99px; font-size: 8pt; font-weight: 800; }
+.selo-critico { background: #FDECEC; color: #9E2121; }
+.selo-medio { background: #FFF4DE; color: #7E4E00; }
+.selo-minimo { background: #EAF1FD; color: #1F4C9E; }
+
+@media screen and (max-width: 860px) {
+  .folha-escala { transform-origin: top left; }
+}
+
+@page { size: A4; margin: 0; }
+@media print {
+  body { background: #fff !important; }
+  .nao-imprimir { display: none !important; }
+  .so-documento { position: static !important; padding: 0 !important; margin: 0 !important; background: #fff !important; overflow: visible !important; }
+  .folha { box-shadow: none; margin: 0; page-break-after: always; break-after: page; }
+  .folha:last-child { page-break-after: auto; }
+  .folha-escala { transform: none !important; height: auto !important; }
+}
+
+/* edição direta na folha A4 */
+@media screen {
+  .editavel { border-radius: 3px; outline: 1.5px dashed transparent; outline-offset: 2px; cursor: text; transition: outline-color .15s, background .15s; }
+  .editando-a4 .editavel { outline-color: rgba(255, 138, 31, .45); }
+  .editavel:hover { outline-color: #FF8A1F; background: rgba(255, 138, 31, .06); }
+  .editavel:focus { outline: 2px solid #FF8A1F; background: #FFF6EC; }
+  .editavel:empty::before { content: attr(data-vazio); color: #9aa3b5; font-style: italic; }
+}
+
+/* grid sem colunas definidas: 1 coluna que nunca estica a tela (evita rolagem lateral no celular) */
+@layer base {
+  /* em @layer base: as classes sm:/md:/lg:grid-cols-* continuam valendo por cima */
+  .grid { grid-template-columns: minmax(0, 1fr); }
+}
