@@ -132,13 +132,29 @@ function Calculadora() {
           <div className="pointer-events-none absolute -right-16 -top-16 size-64 rounded-full bg-obra/30 blur-3xl" aria-hidden />
           <span className="relative rounded-full bg-white/10 px-3 py-1 text-xs font-extrabold uppercase tracking-wider text-obra">Estimativa</span>
           <div className="relative mt-5 font-display text-6xl font-extrabold leading-none sm:text-7xl md:text-8xl">{Math.round(horas)}<span className="ml-2 text-3xl text-[#A9B1C1]">h/mês</span></div>
-          <p className="relative mt-3 text-lg text-[#C9CED8]">≈ {Math.max(1, Math.round(horas / 8))} dia{Math.round(horas / 8) > 1 ? 's' : ''} de trabalho por mês livre de legenda e tabela, para vistoriar mais ou descansar.</p>
+          <p className="relative mt-3 text-lg text-[#C9CED8]">{fraseTempo(horas)}</p>
           <p className="relative mt-6 text-xs text-[#8C95A6]">Considera que a IA faz cerca de 70% do trabalho de legendar, descrever e montar a tabela, e que você continua conferindo cada foto. Seu resultado pode variar.</p>
           <Link to="/cadastrar" className="pilula pilula-obra relative mt-6 w-full sm:w-auto">Criar conta grátis <ArrowRight className="size-5" /></Link>
         </div>
       </div>
     </section>
   );
+}
+
+
+/** Traduz as horas economizadas numa frase que faz sentido (um mês tem ~22 dias úteis de 8 h = 176 h). */
+function fraseTempo(horas: number) {
+  const DIA = 8, MES = 22 * DIA;
+  const h = Math.round(horas);
+  if (h < DIA) return `≈ ${Math.max(1, h)} hora${h > 1 ? 's' : ''} por mês a menos de legenda e tabela.`;
+  const dias = Math.round(horas / DIA);
+  if (horas <= MES) {
+    const semanas = horas / (5 * DIA);
+    return `≈ ${dias} dia${dias > 1 ? 's' : ''} ${dias > 1 ? 'úteis' : 'útil'} por mês livre${dias > 1 ? 's' : ''} de legenda e tabela${semanas >= 1 ? ` (${Math.floor(semanas) > 1 ? `${Math.floor(semanas)} semanas` : '1 semana'} de trabalho)` : ''}, para vistoriar mais ou descansar.`;
+  }
+  const pessoas = horas / MES;
+  const nPessoas = pessoas < 10 ? pessoas.toLocaleString('pt-BR', { maximumFractionDigits: 1 }) : Math.round(pessoas).toLocaleString('pt-BR');
+  return `É mais que um mês inteiro de trabalho (~176 h úteis): seria preciso ≈ ${nPessoas} pessoa${pessoas >= 1.05 ? 's' : ''} em tempo integral só para legendar e montar tabela.`;
 }
 
 export function Site() {
