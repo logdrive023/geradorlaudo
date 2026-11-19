@@ -339,6 +339,8 @@ func (s *Servidor) limparArquivos(chaves []string) {
 func responderDados(w http.ResponseWriter, err error) {
 	var dados *portas.ErroDados
 	switch {
+	case errors.Is(err, context.Canceled): // o app desistiu do pedido (recarregou a página): não é erro do servidor
+		w.WriteHeader(499)
 	case errors.Is(err, laudo.ErrNaoEncontrado):
 		erro(w, http.StatusNotFound, "Não encontrado (ou é de outra conta).")
 	case errors.Is(err, laudo.ErrLimiteFotos):

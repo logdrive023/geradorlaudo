@@ -226,6 +226,8 @@ export function sincronizar(usuarioId: string): Promise<void> {
   if (!lerToken()) return Promise.resolve();
   sincronizando ??= (async () => {
     try {
+      // fotos que a demonstração "analisou" voltam para a fila: com login, quem analisa é o Gemini do servidor
+      await db.fotos.filter((f) => f.analise?.origem === 'demo' && f.status === 'analisada').modify({ status: 'pendente' });
       const { laudos } = await api<{ laudos: RegistroLaudo[] }>('/api/laudos');
       const locais = new Map((await db.laudos.toArray()).map((l) => [l.id, l]));
       for (const s of laudos) {
