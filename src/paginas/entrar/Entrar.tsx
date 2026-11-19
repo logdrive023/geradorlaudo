@@ -136,7 +136,11 @@ export function Entrar({ modo }: { modo: Modo }) {
             </form>
           )}
 
-          <p className="mt-4 text-center text-xs text-texto3">Versão de teste: seus dados ficam só neste navegador.</p>
+          <p className="mt-4 text-center text-xs leading-relaxed text-texto3">
+            {modo === 'criar' ? <>Ao criar a conta, você concorda com os </> : <>Ao entrar, você concorda com os </>}
+            <Link to="/termos" className="font-bold text-texto2 underline-offset-2 hover:underline">Termos de uso</Link> e a{' '}
+            <Link to="/privacidade" className="font-bold text-texto2 underline-offset-2 hover:underline">Política de privacidade</Link>.
+          </p>
         </div>
       </main>
     </div>

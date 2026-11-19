@@ -34,7 +34,7 @@ jobs:
       - name: Páginas das rotas
         run: |
           cp dist/index.html dist/404.html
-          for r in entrar cadastrar esqueci painel configuracoes usuarios; do
+          for r in entrar cadastrar esqueci painel configuracoes usuarios termos privacidade sobre; do
             mkdir -p "dist/$r" && cp dist/index.html "dist/$r/index.html"
           done
       - uses: actions/upload-pages-artifact@v3

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router';
 import { AlarmClock, ArrowRight, ArrowUp, Camera, Check, ClipboardCheck, ClipboardList, Cloud, Crosshair, FileDown, FileSpreadsheet, Link2, MapPin, Mic, ScanSearch, Share2, ShieldCheck, Smartphone, Sparkles, TriangleAlert, X } from 'lucide-react';
 import { Logo } from '../../componentes/ui';
+import { RodapeSite } from './Legal';
 import { LISTA_TIPOS } from '../../dominio/tipos';
 import { ICONE_TIPO } from '../painel/NovoLaudo';
 import { cx } from '../../lib/util';
@@ -154,7 +155,7 @@ export function Site() {
           </nav>
           <div className="flex items-center gap-1.5">
             <Link to="/entrar" className="inline-flex h-10 items-center rounded-full px-3 text-sm font-bold text-texto2 hover:text-texto sm:px-4">Entrar</Link>
-            <Link to="/cadastrar" className="pilula pilula-obra !min-h-10 !px-4 text-sm">Criar conta grátis</Link>
+            <Link to="/cadastrar" className="pilula pilula-obra !min-h-10 !px-4 whitespace-nowrap text-sm"><span className="sm:hidden">Criar conta</span><span className="hidden sm:inline">Criar conta grátis</span></Link>
           </div>
         </div>
       </header>
@@ -393,12 +394,7 @@ export function Site() {
         <Link to="/cadastrar" className="pilula pilula-obra w-full">Criar conta grátis <span className="font-bold opacity-70">· sem cartão</span></Link>
       </div>
 
-      <footer className="border-t border-borda pb-28 pt-8 sm:pb-8">
-        <div className="mx-auto flex max-w-[1180px] flex-wrap items-center justify-between gap-4 px-4 text-sm text-texto3">
-          <Logo tam={26} />
-          <span>Versão de teste · laudos salvos na nuvem e no seu aparelho · © {new Date().getFullYear()} LaudoTech</span>
-        </div>
-      </footer>
+      <RodapeSite />
     </div>
   );
 }
