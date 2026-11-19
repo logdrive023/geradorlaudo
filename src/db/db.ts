@@ -30,6 +30,7 @@ db.version(4).stores({}).upgrade(async (tx) => {
   await tx.table('usuarios').where('id').equals('admin').modify((u: Usuario) => {
     if (u.email === 'admin') { u.email = 'admin@admin'; u.sal = ADMIN.sal; u.senhaHash = ADMIN.senhaHash; }
   });
+});
 // v5: o Google tirou o gemini-2.5-flash de contas novas; quem tinha salvo passa para o 3.8
 db.version(5).stores({}).upgrade(async (tx) => {
   await tx.table('config').where('chave').equals('app').modify((c: Configuracao) => {
@@ -42,7 +43,6 @@ db.version(6).stores({}).upgrade(async (tx) => {
   await tx.table('config').where('chave').equals('app').modify((c: Configuracao) => {
     if (c.motorIA === 'demo') c.motorIA = 'servidor';
   });
-});
 });
 
 /** Admin de fábrica (login admin@admin). A senha fica só como resumo com sal. */
