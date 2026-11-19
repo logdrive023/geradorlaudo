@@ -6,6 +6,7 @@ import { lerConfig } from './db/db';
 import { Casco } from './componentes/Casco';
 import { Carregando } from './componentes/ui';
 import { Site } from './paginas/site/Site';
+import { NaoEncontrada } from './paginas/site/NaoEncontrada';
 import { Entrar } from './paginas/entrar/Entrar';
 import { Painel } from './paginas/painel/Painel';
 import { Editor } from './paginas/editor/Editor';
@@ -49,7 +50,7 @@ export function App() {
             <Route path="/configuracoes" element={<Configuracoes />} />
             <Route path="/usuarios" element={<Protegido admin><Usuarios /></Protegido>} />
           </Route>
-          <Route path="*" element={<Navigate to="/" replace />} />
+          <Route path="*" element={<NaoEncontrada />} />
         </Routes>
       </SessaoProvider>
     </BrowserRouter>

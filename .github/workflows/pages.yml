@@ -29,8 +29,14 @@ jobs:
         run: npm run build
         env:
           BASE: /${{ github.event.repository.name }}/
-      # SPA: qualquer rota desconhecida cai no app
-      - run: cp dist/index.html dist/404.html
+      # Rotas fixas ganham página própria (respondem 200); o resto cai no 404.html,
+      # que abre o app: /laudo/<id> funciona e endereço inexistente mostra a página "não encontrada".
+      - name: Páginas das rotas
+        run: |
+          cp dist/index.html dist/404.html
+          for r in entrar cadastrar esqueci painel configuracoes usuarios; do
+            mkdir -p "dist/$r" && cp dist/index.html "dist/$r/index.html"
+          done
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
