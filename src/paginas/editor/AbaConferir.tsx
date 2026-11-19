@@ -87,7 +87,10 @@ function CartaoAchado({ a, n, sel, aoSel, aoMudar, aoMarcar }: { a: Achado; n: n
       {/* cabeçalho na cor do grau */}
       <div className="flex items-center gap-2.5 px-3.5 py-2.5" style={{ background: `color-mix(in srgb, ${cor} 12%, transparent)`, borderLeft: `4px solid ${cor}` }}>
         <span className="grid size-6 shrink-0 place-items-center rounded-md text-xs font-extrabold text-white" style={{ background: cor }}>{n}</span>
-        <b className="min-w-0 flex-1 truncate leading-tight">{a.tipo}</b>
+        <span className="min-w-0 flex-1">
+          <b className="block truncate leading-tight">{a.tipo}</b>
+          {a.sistema && <span className="block truncate text-[11px] font-bold text-texto2">{a.sistema}</span>}
+        </span>
         {a.aceito === true && <span className="inline-flex items-center gap-1 rounded-full bg-ok px-2 py-0.5 text-[11px] font-extrabold text-white"><Check className="size-3" />Aceito</span>}
         <SeloGravidade g={a.gravidade} className="shrink-0" />
       </div>
@@ -100,6 +103,10 @@ function CartaoAchado({ a, n, sel, aoSel, aoMudar, aoMarcar }: { a: Achado; n: n
             <span className="text-texto3">{Math.round(a.confianca * 100)}% de certeza</span>
           </div>
         ) : <span className="text-[11px] font-extrabold text-texto3">Adicionado por você</span>}
+        {/* onde está na foto: deixa claro se falta marcar */}
+        {!sel && (a.regiao
+          ? <span className="mt-1 inline-flex items-center gap-1 text-[11px] font-bold text-texto3"><Crosshair className="size-3" />Marcado na foto</span>
+          : <button onClick={aoMarcar} className="mt-1 inline-flex items-center gap-1 text-[11px] font-extrabold text-tinta underline underline-offset-2"><Crosshair className="size-3" />Marcar onde está na foto</button>)}
       </div>
 
       {!sel ? (
@@ -164,6 +171,18 @@ export function AbaConferir({ laudo, fotos, irPara, fotoInicial }: { laudo: Laud
   const sujo = useRef(false);
   const { avisar, el } = useAviso();
   const ditado = useDitado((t) => { sujo.current = true; setObs((o) => (o ? `${o} ${t}` : t)); });
+  // atalhos do teclado (computador): ← → trocam de foto, fora dos campos de texto
+  const atalhos = useRef<{ ant?: () => void; prox?: () => void }>({});
+  useEffect(() => {
+    const ouvir = (e: KeyboardEvent) => {
+      const alvo = e.target instanceof Element ? e.target : null;
+      if (e.altKey || e.ctrlKey || e.metaKey || alvo?.closest('input, textarea, select, [contenteditable="true"]')) return;
+      if (e.key === 'ArrowLeft') atalhos.current.ant?.();
+      if (e.key === 'ArrowRight') atalhos.current.prox?.();
+    };
+    window.addEventListener('keydown', ouvir);
+    return () => window.removeEventListener('keydown', ouvir);
+  }, []);
 
   // troca de foto: carrega a cópia local
   useEffect(() => { setAn(foto?.analise); setObs(foto?.observacao ?? ''); setSel(undefined); setMarcando(undefined); sujo.current = false; }, [foto?.id, foto?.status]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -219,6 +238,12 @@ export function AbaConferir({ laudo, fotos, irPara, fotoInicial }: { laudo: Laud
   const todosAchados = an?.achados ?? [];
   const achados = certeza === 'todos' ? todosAchados : todosAchados.filter((a) => a.origem === 'manual' || naFaixa(a.confianca, certeza));
   const foraDoFiltro = todosAchados.length - achados.length;
+  const semDecisao = achados.filter((a) => a.aceito === null);
+  const decididos = achados.length - semDecisao.length;
+  const aceitarRestantes = () => { sujo.current = true; setAn((x) => (x ? { ...x, achados: x.achados.map((a) => (a.aceito === null && achados.some((v) => v.id === a.id) ? { ...a, aceito: true } : a)) } : x)); };
+  atalhos.current = { ant: idx > 0 ? () => void irFoto(idx - 1) : undefined, prox: idx < lista.length - 1 ? () => void irFoto(idx + 1) : undefined };
+  const situacao = foto.status === 'conferida' ? { t: 'Conferida', c: 'bg-ok-suave text-ok-texto' } : foto.status === 'erro' ? { t: 'Falhou', c: 'bg-critico-suave text-critico-texto' } : foto.status === 'analisando' ? { t: 'Analisando…', c: 'bg-obra-suave text-obra-texto' } : { t: 'A conferir', c: 'bg-medio-suave text-medio-texto' };
+  const criticosDa = (f: Foto) => (f.analise?.achados ?? []).filter((a) => a.gravidade === 'critico' && a.aceito !== false).length;
 
   const falaLia = (() => {
     const ativos = achados.filter((a) => a.aceito !== false && a.origem !== 'manual');
@@ -262,8 +287,9 @@ export function AbaConferir({ laudo, fotos, irPara, fotoInicial }: { laudo: Laud
         {/* qual foto está na tela: número original + posição no filtro */}
         <div className="mb-2.5 flex items-center gap-3">
           <span className="shrink-0 text-sm font-extrabold">Foto {dois(numeroOriginal)}{certeza !== 'todos' ? <span className="font-bold text-texto3"> · {idx + 1}ª de {lista.length} no filtro</span> : <span className="text-texto3"> de {dois(todas.length)}</span>}</span>
+          <span className={cx('shrink-0 whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-extrabold', situacao.c)}>{situacao.t}</span>
           <Barra className="flex-1" valor={conferidas} total={lista.length} />
-          <span className="shrink-0 text-xs font-bold text-ok-texto">{conferidas} ok</span>
+          <span className="shrink-0 whitespace-nowrap text-xs font-bold text-ok-texto">{conferidas}/{lista.length} conferidas</span>
         </div>
 
         {marcando ? (
@@ -297,6 +323,7 @@ export function AbaConferir({ laudo, fotos, irPara, fotoInicial }: { laudo: Laud
                 f.status === 'conferida' ? 'bg-ok text-white' : f.status === 'erro' ? 'bg-critico text-white' : 'bg-obra text-[#121A2B]')}>
                 {f.status === 'conferida' ? <Check className="size-3" /> : todas.indexOf(f) + 1}
               </span>
+              {criticosDa(f) > 0 && <span className="absolute left-1 top-1 grid size-4 place-items-center rounded-full bg-critico text-[9px] font-extrabold text-white ring-2 ring-white" title={`${criticosDa(f)} crítico(s)`}>!</span>}
             </button>
           ))}
         </div>
@@ -314,6 +341,14 @@ export function AbaConferir({ laudo, fotos, irPara, fotoInicial }: { laudo: Laud
             <Lia tam={38} humor={achados.some((a) => a.gravidade === 'critico' && a.aceito !== false) ? 'atenta' : achados.length ? 'normal' : 'feliz'}>{falaLia}</Lia>
 
             {foraDoFiltro > 0 && <button onClick={() => setCerteza('todos')} className="rounded-xl bg-sup2 px-3 py-2 text-left text-xs font-bold text-texto2">+{foraDoFiltro} achado{foraDoFiltro > 1 ? 's' : ''} desta foto fora do filtro · <span className="text-tinta">ver todos</span></button>}
+            {achados.length > 0 && (
+              <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-borda bg-sup px-3 py-2">
+                <span className="text-[11px] font-extrabold uppercase tracking-wider text-texto3">Achados desta foto</span>
+                <span className="text-sm font-extrabold">{decididos}/{achados.length} decididos</span>
+                <Dica texto="Aceite o que vai para o laudo e descarte o que não procede. Ao confirmar, o que ficou sem decisão entra como aceito." />
+                {semDecisao.length > 1 && <button onClick={aceitarRestantes} className="ml-auto inline-flex items-center gap-1 rounded-full bg-ok-suave px-2.5 py-1 text-xs font-extrabold text-ok-texto hover:bg-ok hover:text-white"><CheckCheck className="size-3.5" />Aceitar os {semDecisao.length}</button>}
+              </div>
+            )}
             {todosAchados.length === 0 && <Cartao className="p-4 text-sm text-ok-texto"><b>Sem anomalia aparente.</b> A foto entra no laudo como registro do ambiente.</Cartao>}
             {achados.map((a, i) => (
               <CartaoAchado key={a.id} a={a} n={i + 1} sel={sel === a.id} aoSel={() => setSel(sel === a.id ? undefined : a.id)} aoMudar={(p) => mudarAchado(a.id, p)} aoMarcar={() => { setSel(a.id); setMarcando(a.id); }} />
@@ -343,6 +378,7 @@ export function AbaConferir({ laudo, fotos, irPara, fotoInicial }: { laudo: Laud
             {/* barra de ações: fixa no celular, no fim da coluna no computador */}
             <div className="h-20 lg:hidden" aria-hidden />
             <div className="fixed inset-x-0 bottom-0 z-30 border-t border-borda bg-sup/95 px-3 pt-2.5 pb-[max(10px,env(safe-area-inset-bottom))] backdrop-blur lg:sticky lg:bottom-4 lg:rounded-2xl lg:border lg:p-3">
+              {semDecisao.length > 0 && foto.status !== 'conferida' && <p className="mb-1.5 text-center text-[11px] font-bold text-texto3">{semDecisao.length} sem decisão {semDecisao.length > 1 ? 'entram' : 'entra'} como {semDecisao.length > 1 ? 'aceitos' : 'aceito'} ao confirmar<span className="hidden lg:inline"> · ← → trocam de foto</span></p>}
               <div className="flex items-center gap-2">
                 <button onClick={() => irFoto(idx - 1)} disabled={idx === 0} aria-label="Foto anterior" className="grid size-12 shrink-0 place-items-center rounded-xl bg-sup2 text-texto2 disabled:opacity-30"><ChevronLeft className="size-5" /></button>
                 <button onClick={confirmar} className="pilula pilula-obra h-12 flex-1"><CheckCheck className="size-5" />{foto.status === 'conferida' ? 'Salvar' : 'Confirmar'}</button>

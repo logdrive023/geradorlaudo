@@ -278,6 +278,8 @@ export function sincronizar(usuarioId: string): Promise<void> {
         apagadosLa.forEach((id) => { esquecer(id); laudosPend.delete(id); });
       }
       laudos.forEach((l) => conhecer(l.id));
+      // grava a lista mesmo vazia: sem ela, a próxima sincronização acha que é a 1ª vez e apaga laudo novo que ainda não subiu
+      gravarConhecidos(lerConhecidos());
       try { await sincronizarObras(usuarioId); } catch (e) { if (e instanceof ErroServidor && e.status === 401) throw e; }
       agendar(300);
     } catch (e) {

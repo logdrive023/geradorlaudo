@@ -72,19 +72,19 @@ export function CamposObra({ v, set }: { v: ValoresObra; set: (p: Partial<Valore
       </Bloco>
 
       <Bloco ic={CalendarRange} titulo="Prazo e valor">
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 items-end gap-3">
           <Campo rotulo="Início previsto" ajuda="Com início e fim, eu já distribuo as datas das etapas no cronograma."><Entrada type="date" value={v.inicio ?? ''} onChange={txt('inicio')} /></Campo>
           <Campo rotulo="Fim previsto" ajuda="Data de entrega combinada com o cliente."><Entrada type="date" value={v.fim ?? ''} onChange={txt('fim')} /></Campo>
         </div>
         {v.inicio && v.fim && v.fim < v.inicio && <p className="rounded-xl bg-critico-suave p-2 text-xs font-bold text-critico-texto">O fim está antes do início.</p>}
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 items-end gap-3">
           <Campo rotulo="Área (m²)" ajuda="Área construída ou reformada. Serve para calcular o custo por m².">
             <span className="relative block">
               <Ruler className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-texto3" />
               <Entrada inputMode="decimal" className="pl-9" value={v.area ?? ''} placeholder="0" onChange={(e) => { const n = Number(e.target.value.replace(',', '.')); set({ area: e.target.value && Number.isFinite(n) && n > 0 ? n : undefined }); }} />
             </span>
           </Campo>
-          <Campo rotulo="Orçamento previsto" ajuda="Valor total do contrato. Depois você detalha por etapa no Financeiro.">
+          <Campo rotulo="Orçamento" ajuda="Orçamento previsto: valor total do contrato. Depois você detalha por etapa no Financeiro.">
             <EntradaReais aria-label="Orçamento previsto" valor={v.orcamentoPrevisto} aoMudar={(n) => set({ orcamentoPrevisto: n })} />
           </Campo>
         </div>

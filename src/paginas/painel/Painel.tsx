@@ -174,7 +174,6 @@ export function Painel() {
       {/* um lugar só: laudos e plano de ação, com a mesma busca */}
       {(() => {
         const plano = itensDoPainel(dados.laudos, dados.porLaudo);
-        if (!plano.length) return null;
         const abertas = plano.filter((i) => i.acomp.status !== 'resolvida').length;
         return (
           <div className="mt-5">
@@ -198,7 +197,9 @@ export function Painel() {
           {status !== 'todos' && <span className="absolute -right-1 -top-1 size-3 rounded-full bg-obra ring-2 ring-papel" />}
         </button>}
       </div>
-      {vista === 'plano' && <div className="mt-4"><PainelPlano laudos={dados.laudos} porLaudo={dados.porLaudo} buscaExterna={busca} /></div>}
+      {vista === 'plano' && <div className="mt-4">{itensDoPainel(dados.laudos, dados.porLaudo).length
+        ? <PainelPlano laudos={dados.laudos} porLaudo={dados.porLaudo} buscaExterna={busca} />
+        : <Vazio icone={<ClipboardList className="size-7" />} titulo="Nenhum plano de ação ainda" texto="Abra um laudo, vá na aba Laudo e preencha o plano de ação dos achados (prazo, responsável e custo). Eles aparecem aqui, juntos, para você acompanhar." />}</div>}
       {vista === 'laudos' && <>
       {filtros && (
         <div className="revelar mt-2 flex flex-wrap gap-1.5">
