@@ -224,3 +224,29 @@ export function prazoObra(o: Pick<Obra, 'inicio' | 'fim'>, hoje = hojeISO()) {
   const passados = Math.min(total, Math.max(0, diasEntre(o.inicio, hoje)));
   return { total, passados, restantes: diasEntre(hoje, o.fim), pct: Math.round((passados / total) * 100) };
 }
+
+/**
+ * Resumo da semana para o cliente: avanço, dias trabalhados, o que foi feito e ocorrências dos últimos 7 dias.
+ * Só usa o que foi registrado no diário (nada é inventado).
+ */
+export function resumoSemana(o: Obra, hoje = hojeISO()): string {
+  const ini = new Date(`${hoje}T12:00:00`); ini.setDate(ini.getDate() - 6);
+  const de = ini.toISOString().slice(0, 10);
+  const br = (d: string) => d.split('-').reverse().slice(0, 2).join('/');
+  const dias = o.diarios.filter((d) => d.data >= de && d.data <= hoje).sort((a, b) => a.data.localeCompare(b.data));
+  const real = avancoFisico(o), prev = avancoPrevisto(o, hoje);
+  const chuva = dias.filter((d) => [d.clima.manha, d.clima.tarde].some((c) => c === 'chuva' || c === 'impraticavel')).length;
+  const equipe = dias.length ? Math.round(dias.reduce((s, d) => s + d.equipe.reduce((x, e) => x + e.qtd, 0), 0) / dias.length) : 0;
+  const itens = (campo: 'atividades' | 'ocorrencias') => dias.flatMap((d) => d[campo].split('\n').map((l) => l.replace(/^[-*•]\s*/, '').trim()).filter(Boolean).map((l) => `• ${br(d.data)}: ${l}`));
+  const etapas = [...new Set(dias.flatMap((d) => d.etapaIds))].map((id) => o.etapas.find((e) => e.id === id)?.nome).filter(Boolean);
+  const feito = itens('atividades'), ocorr = itens('ocorrencias');
+  return [
+    `Resumo da semana — ${o.nome} (${br(de)} a ${br(hoje)})`,
+    '',
+    `Avanço da obra: ${real}%${prev != null ? ` (previsto para hoje: ${prev}%)` : ''}.`,
+    dias.length ? `Dias com registro: ${dias.length}${chuva ? ` · com chuva: ${chuva}` : ''}${equipe ? ` · equipe média: ${equipe} pessoa${equipe > 1 ? 's' : ''} por dia` : ''}.` : 'Sem registros no diário nesta semana.',
+    ...(etapas.length ? ['', `Etapas trabalhadas: ${etapas.join(', ')}.`] : []),
+    ...(feito.length ? ['', 'O que foi feito:', ...feito] : []),
+    ...(ocorr.length ? ['', 'Ocorrências e observações:', ...ocorr] : []),
+  ].join('\n');
+}

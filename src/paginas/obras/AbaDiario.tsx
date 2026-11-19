@@ -1,11 +1,11 @@
 import { useRef, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { CalendarPlus, Camera, Lock, LockOpen, Minus, Plus, Printer, Trash2, Users, Wand2 } from 'lucide-react';
+import { CalendarPlus, Camera, Copy, Lock, LockOpen, MessageCircle, MessageSquareText, Minus, Plus, Printer, Trash2, Users, Wand2 } from 'lucide-react';
 import { db, mudarObra } from '../../db/db';
-import { CLIMA, type Clima, type Diario, type FotoObra, type Obra } from '../../dominio/obra';
-import { redigirDiario } from '../../ia/obra';
+import { CLIMA, resumoSemana, type Clima, type Diario, type FotoObra, type Obra } from '../../dominio/obra';
+import { redigirDiario, resumoParaCliente } from '../../ia/obra';
 import { prepararFoto } from '../../lib/imagem';
-import { AreaTexto, Botao, Cartao, Dica, Entrada, Vazio, useUrl } from '../../componentes/ui';
+import { AreaTexto, Botao, Cartao, Dica, Entrada, Modal, Vazio, useUrl } from '../../componentes/ui';
 import { Indicador, ItemAbre } from '../../componentes/Pecas';
 import { cx, dataBR, dataExtenso, hoje, novoId } from '../../lib/util';
 
@@ -195,6 +195,8 @@ function DiaItem({ obra, d, fotos, aberto, alternar, imprimir, avisar }: { obra:
 export function AbaDiario({ obra, avisar }: { obra: Obra; avisar: (t: string, tom?: 'ok' | 'erro') => void }) {
   const [aberto, setAberto] = useState<string | null>(null);
   const [imprimindo, setImprimindo] = useState<string | null>(null);
+  const [resumo, setResumo] = useState<string | null>(null);
+  const [melhorando, setMelhorando] = useState(false);
   const fotos = useLiveQuery(() => db.obraFotos.where('obraId').equals(obra.id).toArray(), [obra.id], []);
   const porId = new Map(fotos.map((f) => [f.id, f]));
   const dias = [...obra.diarios].sort((a, b) => b.data.localeCompare(a.data) || b.criadoEm - a.criadoEm);
@@ -219,7 +221,10 @@ export function AbaDiario({ obra, avisar }: { obra: Obra; avisar: (t: string, to
             <h2 className="text-lg font-bold">Diário de obra</h2>
             <p className="text-sm text-texto2">{dias.length ? 'O registro do dia a dia da obra, com prova em foto.' : 'Registre o dia: clima, equipe, o que foi feito e as fotos.'}</p>
           </div>
-          <Botao variante="obra" onClick={novo}><CalendarPlus className="size-4" />{temHoje ? 'Outro registro hoje' : 'Registrar hoje'}</Botao>
+          <div className="flex flex-wrap gap-2">
+            {dias.length > 0 && <Botao variante="claro" onClick={() => setResumo(resumoSemana(obra))}><MessageSquareText className="size-4" />Resumo da semana</Botao>}
+            <Botao variante="obra" onClick={novo}><CalendarPlus className="size-4" />{temHoje ? 'Outro registro hoje' : 'Registrar hoje'}</Botao>
+          </div>
         </div>
         {dias.length > 0 && (
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -239,6 +244,17 @@ export function AbaDiario({ obra, avisar }: { obra: Obra; avisar: (t: string, to
         </ul>
       )}
       {dPrint && <div className="hidden print:block"><DocumentoRdo obra={obra} d={dPrint} fotos={dPrint.fotoIds.map((id) => porId.get(id)).filter(Boolean) as FotoObra[]} /></div>}
+      <Modal aberto={resumo != null} aoFechar={() => setResumo(null)} titulo="Resumo da semana para o cliente">
+        <div className="grid gap-3">
+          <p className="text-sm text-texto2">Montado com o que foi registrado no diário dos últimos 7 dias. Edite à vontade antes de mandar.</p>
+          <AreaTexto rows={12} value={resumo ?? ''} onChange={(e) => setResumo(e.target.value)} />
+          <div className="flex flex-wrap gap-2">
+            <Botao variante="claro" carregando={melhorando} onClick={async () => { setMelhorando(true); setResumo(await resumoParaCliente(resumo ?? '')); setMelhorando(false); }}><Wand2 className="size-4" />Lia deixa mais amigável</Botao>
+            <Botao variante="claro" onClick={() => { void navigator.clipboard.writeText(resumo ?? ''); avisar('Resumo copiado'); }}><Copy className="size-4" />Copiar</Botao>
+            <a className="pilula pilula-obra" target="_blank" rel="noreferrer" href={`https://wa.me/?text=${encodeURIComponent(resumo ?? '')}`}><MessageCircle className="size-4" />Mandar no WhatsApp</a>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }
