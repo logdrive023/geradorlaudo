@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { BookOpen, CheckCircle2, FileDown, FileText, Maximize2, Minimize2, Pencil, Printer, ShieldCheck, Sparkles, Wand2 } from 'lucide-react';
-import { emitirLaudo, urlVerificacao } from '../../db/organizacao';
+import { BookOpen, CheckCircle2, FileDown, FileText, Maximize2, Minimize2, Pencil, MessageSquare, Printer, ShieldCheck, Sparkles, Wand2 } from 'lucide-react';
+import { emitirLaudo, respostasDoLaudo, urlVerificacao, type RespostaCliente } from '../../db/organizacao';
 import { useSessao } from '../../lib/sessao';
 import { LinkPublico } from '../../componentes/Pecas';
 import { PlanoAcao } from '../../componentes/PlanoAcao';
@@ -70,6 +70,29 @@ function LinkCliente({ laudoId, avisar, link, setLink }: { laudoId: string; avis
     <LinkPublico titulo="Link para o cliente" textoCompartilhar="Seu laudo está pronto para leitura:" link={link} setLink={setLink} avisar={avisar}
       dica="O cliente abre o laudo no celular, só para ler e baixar o PDF, sem conta. Você pode desligar o link quando quiser."
       gerar={() => criarLinkCliente(laudoId)} desligar={() => desligarLinkCliente(laudoId)} />
+  );
+}
+
+/** O que o cliente respondeu pelo link (aceite, contestação, comentário), mais recente primeiro. */
+function RespostasDoCliente({ laudo, fotos }: { laudo: Laudo; fotos: Foto[] }) {
+  const [rs, setRs] = useState<RespostaCliente[]>([]);
+  useEffect(() => { if (logadoNaNuvem()) respostasDoLaudo(laudo.id).then(setRs).catch(() => setRs([])); }, [laudo.id]);
+  if (!rs.length) return null;
+  const nomeAchado = (id?: string) => { for (const f of fotos) { const a = f.analise?.achados.find((x) => x.id === id); if (a) return `${a.tipo}${f.analise?.ambiente ? ` (${f.analise.ambiente})` : ''}`; } return ''; };
+  const ROT = { aceite: ['Aceitou o laudo', 'bg-ok-suave text-ok-texto'], contestacao: ['Contestou', 'bg-medio-suave text-medio-texto'], comentario: ['Comentou', 'bg-sup2 text-texto2'], reparo: ['Pediu reparo', 'bg-obra-suave text-obra-texto'], aprovacao: ['Aprovou', 'bg-ok-suave text-ok-texto'] } as const;
+  return (
+    <Cartao className="grid gap-2 p-4">
+      <b className="flex items-center gap-2"><MessageSquare className="size-5 text-tinta" />Respostas do cliente<span className="rounded-full bg-sup2 px-2 text-xs">{rs.length}</span></b>
+      <ul className="grid gap-2">
+        {rs.map((r) => (
+          <li key={r.id} className="rounded-xl bg-sup2 px-3 py-2.5 text-sm">
+            <span className="flex flex-wrap items-center gap-2"><span className={cx('rounded-full px-2 py-0.5 text-[11px] font-extrabold', ROT[r.tipo][1])}>{ROT[r.tipo][0]}</span><b>{r.nome}</b>{r.documento && <span className="text-texto3">· {r.documento}</span>}<span className="ml-auto text-xs text-texto3">{new Date(r.criadoEm).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</span></span>
+            {r.achadoId && nomeAchado(r.achadoId) && <span className="mt-1 block text-xs font-bold text-texto2">Sobre: {nomeAchado(r.achadoId)}</span>}
+            {r.texto && <p className="mt-1 text-texto">{r.texto}</p>}
+          </li>
+        ))}
+      </ul>
+    </Cartao>
   );
 }
 
@@ -156,6 +179,7 @@ export function AbaLaudo({ laudo, fotos, autor, irPara }: { laudo: Laudo; fotos:
       {!pronto && laudo.status !== 'concluido' && <p className="text-center text-xs text-texto3">Resolva o que falta para concluir.</p>}
       <LinkCliente laudoId={laudo.id} avisar={avisar} link={linkCliente} setLink={setLinkCliente} />
       <Autenticidade laudo={laudo} avisar={avisar} />
+      <RespostasDoCliente laudo={laudo} fotos={fotos} />
     </Cartao>
   );
 

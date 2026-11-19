@@ -7,6 +7,7 @@ import { TIPOS } from '../../dominio/tipos';
 import { Leitura } from '../../laudo/Leitura';
 import { Documento } from '../../laudo/Documento';
 import { Carregando, Logo } from '../../componentes/ui';
+import { RespostaCliente } from './RespostaCliente';
 
 /** Página do cliente: abre o laudo pelo link, só para ler e baixar o PDF. Não precisa de conta. */
 export function VerLaudo() {
@@ -53,6 +54,7 @@ export function VerLaudo() {
           <span>Responsável técnico: <b>{autor.nome || '—'}</b>{autor.registro && <> · {autor.registro}</>}{autor.telefone && <> · {autor.telefone}</>}</span>
         </p>
         <Leitura laudo={laudo} fotos={d.fotos} autor={autor} />
+        <RespostaCliente token={token} laudo={laudo} fotos={d.fotos} />
         <p className="pb-8 text-center text-xs text-texto3">Documento compartilhado pelo responsável técnico via LaudoTech. Somente leitura.</p>
       </main>
       <div className="hidden print:block">
