@@ -31,7 +31,7 @@ async function contextoDoLaudo(laudoId?: string): Promise<{ texto: string; pende
 const BASE: [RegExp, string][] = [
   [/risco|grav|critic|prioridad|classific/i, 'Uso o grau de risco da inspeção predial (IBAPE / NBR 16747):\n• Crítico (Prioridade 1): risco à segurança, saúde ou funcionamento. Corrigir já.\n• Médio (Prioridade 2): perda parcial de desempenho. Programar.\n• Mínimo (Prioridade 3): estético ou manutenção.\nVocê pode mudar o grau de qualquer achado na aba Conferir.'],
   [/norma|nbr|abnt/i, 'Depende do tipo de laudo:\n• Cautelar: NBR 13752 e NBR 12722.\n• Inspeção predial: NBR 16747 e NBR 5674.\n• Extrajudicial: NBR 13752 e NBR 15575.\n• Contábil: NBC TP 01.\nElas aparecem na seção "Metodologia" do laudo.'],
-  [/ia de verdade|chave|claude|api|ligar/i, 'Vá em Configurações › IA, escolha "Claude" e cole uma chave da API da Anthropic. Eu testo a chave antes de salvar. Sem chave, fico no modo demonstração, com análise simulada.'],
+  [/ia de verdade|chave|claude|gemini|api|ligar/i, 'Vá em Ajustes › IA e escolha Gemini (tem faixa grátis) ou Claude, e cole a chave. Eu testo a chave antes de salvar. Sem chave, fico no modo demonstração, com análise simulada.'],
   [/pdf|word|imprim|export|entreg/i, 'Na aba Laudo: "Imprimir / salvar PDF" abre a impressão (escolha "Salvar como PDF") e "Baixar Word" gera um .doc editável.'],
   [/art|rrt|assin|registro|crea/i, 'O laudo só fica pronto com seu registro profissional (Configurações › Perfil) e o número da ART/RRT (aba Dados). Também dá para enviar a imagem da sua assinatura no perfil.'],
   [/foto|subir|enviar|camera|câmera/i, 'Na aba Fotos, solte todas as fotos de uma vez ou use "Tirar foto" no celular. Eu reduzo o tamanho, guardo a data e o GPS e analiso 3 por vez.'],
@@ -53,11 +53,11 @@ export async function perguntarLia(conversa: MensagemLia[], laudoId?: string): P
   const ctx = await contextoDoLaudo(laudoId);
   const cfg = await lerConfig();
   const ultima = conversa[conversa.length - 1]?.texto ?? '';
-  if (cfg.motorIA !== 'claude' || !cfg.apiKey) {
+  const comGemini = cfg.motorIA === 'gemini' && !!cfg.geminiKey;
+  if (!comGemini && (cfg.motorIA !== 'claude' || !cfg.apiKey)) {
     await new Promise((r) => setTimeout(r, 500));
     return responderSemIA(ultima, ctx);
   }
-  const { conversarClaude } = await import('./claude');
   const sistema = [
     'Você é a Lia, assistente do LaudoTech, um app que transforma fotos de vistoria em laudos técnicos de engenharia no Brasil.',
     'Fale em português do Brasil, curto e direto (até 6 linhas), com tom simpático e profissional. Sem markdown pesado; use • para listas.',
@@ -66,5 +66,10 @@ export async function perguntarLia(conversa: MensagemLia[], laudoId?: string): P
     'Como usar o app: Fotos (subir e analisar), Conferir (aceitar/descartar achados, marcar na foto, ditar), Laudo (prévia, conclusão, PDF/Word), Configurações (perfil, IA, backup).',
     ctx ? `\nContexto do laudo aberto:\n${ctx.texto}` : '',
   ].join('\n');
+  if (comGemini) {
+    const { conversarGemini } = await import('./gemini');
+    return conversarGemini(sistema, conversa, cfg.geminiKey!, cfg.geminiModelo);
+  }
+  const { conversarClaude } = await import('./claude');
   return conversarClaude(sistema, conversa, cfg.apiKey);
 }

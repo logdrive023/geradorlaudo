@@ -14,6 +14,10 @@ async function analisar(laudo: Laudo, foto: Foto): Promise<{ r: ResultadoIA; ori
     foto.analise?.ambiente && `Ambiente anotado: ${foto.analise.ambiente}`,
     foto.observacao && `Observação: ${foto.observacao}`,
   ].filter(Boolean).join('. ');
+  if (cfg.motorIA === 'gemini' && cfg.geminiKey) {
+    const { analisarGemini } = await import('./gemini'); // só carrega o SDK quando usado
+    return { r: await analisarGemini({ imagem: foto.imagem, tipoLaudo: laudo.tipo, contexto }, cfg.geminiKey, cfg.geminiModelo), origem: 'gemini' };
+  }
   if (cfg.motorIA === 'claude' && cfg.apiKey) {
     const { analisarClaude } = await import('./claude'); // só carrega o SDK quando usado
     return { r: await analisarClaude({ imagem: foto.imagem, tipoLaudo: laudo.tipo, contexto }, cfg.apiKey), origem: 'claude' };
@@ -38,7 +42,7 @@ export async function analisarFoto(laudo: Laudo, fotoId: string) {
   }
 }
 
-/** Analisa as fotos pendentes, 3 por vez. */
+/** Analisa as fotos pendentes, 3 por vez (2 no Gemini grátis, que tem limite por minuto). */
 export async function analisarPendentes(laudo: Laudo, aoAvancar?: (feitas: number, total: number) => void) {
   const fila = (await fotosDoLaudo(laudo.id)).filter((f) => f.status === 'pendente' || f.status === 'erro');
   let feitas = 0;
@@ -48,14 +52,18 @@ export async function analisarPendentes(laudo: Laudo, aoAvancar?: (feitas: numbe
       aoAvancar?.(++feitas, feitas + fila.length);
     }
   };
-  await Promise.all([trabalhador(), trabalhador(), trabalhador()]);
+  const cfg = await lerConfig();
+  const vezes = cfg.motorIA === 'gemini' ? 2 : 3;
+  await Promise.all(Array.from({ length: vezes }, trabalhador));
   if (laudo.status === 'rascunho') await tocarLaudo(laudo.id, { status: 'conferencia' });
 }
 
 export async function gerarConclusao(laudo: Laudo): Promise<string> {
   const fotos = await fotosDoLaudo(laudo.id);
   const cfg = await lerConfig();
-  if (cfg.motorIA !== 'claude' || !cfg.apiKey) return conclusaoPadrao(laudo, fotos);
+  const comGemini = cfg.motorIA === 'gemini' && !!cfg.geminiKey;
+  const comClaude = cfg.motorIA === 'claude' && !!cfg.apiKey;
+  if (!comGemini && !comClaude) return conclusaoPadrao(laudo, fotos);
   const r = resumoAchados(fotos);
   const linhas = porAmbiente(fotos).map(([amb, fs]) => {
     const itens = fs.flatMap(achadosValidos).map((a) => `${a.tipo} (${a.gravidade}): ${a.descricao}. Recomendação: ${a.recomendacao}`);
@@ -68,6 +76,10 @@ export async function gerarConclusao(laudo: Laudo): Promise<string> {
     `Fotos: ${fotos.length}. Achados aceitos: ${r.total} (críticos ${r.critico}, médios ${r.medio}, mínimos ${r.minimo}).`,
     'Por ambiente:', ...linhas,
   ].join('\n');
+  if (comGemini) {
+    const { conclusaoGemini } = await import('./gemini');
+    return conclusaoGemini(resumo, cfg.geminiKey!, cfg.geminiModelo);
+  }
   const { conclusaoClaude } = await import('./claude');
   return conclusaoClaude(resumo, cfg.apiKey);
 }

@@ -39,7 +39,7 @@ const ADMIN: Usuario = {
   criadoEm: 0,
 };
 
-const CONFIG_PADRAO: Configuracao = { chave: 'app', motorIA: 'demo', apiKey: '', tema: 'claro' };
+const CONFIG_PADRAO: Configuracao = { chave: 'app', motorIA: 'demo', apiKey: '', geminiKey: '', geminiModelo: 'gemini-2.5-flash', tema: 'claro' };
 
 db.on('populate', (tx) => {
   void tx.table('usuarios').add(ADMIN);
@@ -47,7 +47,7 @@ db.on('populate', (tx) => {
 });
 
 export async function lerConfig(): Promise<Configuracao> {
-  return (await db.config.get('app')) ?? CONFIG_PADRAO;
+  return { ...CONFIG_PADRAO, ...(await db.config.get('app')) };
 }
 
 export async function salvarConfig(parcial: Partial<Configuracao>) {

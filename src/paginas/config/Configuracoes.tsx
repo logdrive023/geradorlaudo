@@ -10,6 +10,13 @@ import { prepararFoto } from '../../lib/imagem';
 import type { Configuracao, Usuario } from '../../dominio/modelo';
 import { Modelos } from './Modelos';
 
+// lista dos modelos sem carregar o SDK do Gemini nesta tela
+const MODELOS_GEMINI_UI = [
+  { id: 'gemini-2.5-flash', nome: 'Gemini 2.5 Flash', nota: 'recomendado no grátis' },
+  { id: 'gemini-2.5-flash-lite', nome: 'Gemini 2.5 Flash-Lite', nota: 'mais rápido, mais limite' },
+  { id: 'gemini-3.5-flash', nome: 'Gemini 3.5 Flash', nota: 'mais novo (confira se o seu plano cobre)' },
+];
+
 type Aba = 'perfil' | 'modelos' | 'ia' | 'aparencia' | 'seguranca' | 'dados';
 const ABAS: { id: Aba; rotulo: string; ic: typeof User }[] = [
   { id: 'perfil', rotulo: 'Perfil', ic: User },
@@ -105,38 +112,72 @@ function Perfil({ u }: { u: Usuario }) {
 
 function IA({ cfg }: { cfg: Configuracao }) {
   const [chave, setChave] = useState(cfg.apiKey);
+  const [gKey, setGKey] = useState(cfg.geminiKey ?? '');
   const [testando, setTestando] = useState(false);
   const { avisar, el } = useAviso();
-  const testar = async () => {
+  const testarClaude = async () => {
     setTestando(true);
-    try { const { testarChave } = await import('../../ia/claude'); await testarChave(chave.trim()); await salvarConfig({ apiKey: chave.trim(), motorIA: 'claude' }); avisar('Chave válida. IA ligada!'); }
+    try { const { testarChave } = await import('../../ia/claude'); await testarChave(chave.trim()); await salvarConfig({ apiKey: chave.trim(), motorIA: 'claude' }); avisar('Chave válida. Claude ligado!'); }
     catch (e) { avisar((e as Error).message, 'erro'); }
     setTestando(false);
   };
+  const testarGemini = async () => {
+    setTestando(true);
+    try { const { testarChaveGemini } = await import('../../ia/gemini'); await testarChaveGemini(gKey.trim(), cfg.geminiModelo); await salvarConfig({ geminiKey: gKey.trim(), motorIA: 'gemini' }); avisar('Chave válida. Gemini ligado!'); }
+    catch (e) { avisar((e as Error).message, 'erro'); }
+    setTestando(false);
+  };
+  const opcoes = [
+    { id: 'demo', t: 'Demonstração', selo: 'grátis', d: 'Sem chave e sem internet. A análise é simulada, só para testar o fluxo.' },
+    { id: 'gemini', t: 'Gemini (Google)', selo: 'tem faixa grátis', d: 'IA de verdade com a faixa grátis do Google AI Studio. Ótimo para começar.' },
+    { id: 'claude', t: 'Claude (Anthropic)', selo: 'pago por uso', d: 'IA de verdade, a mais precisa em patologia. Cobra por foto analisada.' },
+  ] as const;
   return (
     <div className="grid gap-5">
-      <div className="grid gap-3 sm:grid-cols-2">
-        {([
-          { id: 'demo', t: 'Demonstração', d: 'Sem custo e sem internet. A análise é simulada, só para testar o fluxo.' },
-          { id: 'claude', t: 'Claude (IA de verdade)', d: 'A foto vai para a API da Anthropic e volta com os achados. Precisa de chave.' },
-        ] as const).map((o) => (
+      <div className="grid gap-3 sm:grid-cols-3">
+        {opcoes.map((o) => (
           <button key={o.id} onClick={() => salvarConfig({ motorIA: o.id })}
             className={cx('rounded-2xl border p-4 text-left transition', cfg.motorIA === o.id ? 'border-tinta bg-tinta/5 ring-2 ring-tinta/15' : 'border-borda bg-sup hover:border-borda-forte')}>
-            <div className="flex items-center justify-between"><b>{o.t}</b>{cfg.motorIA === o.id && <CheckCircle2 className="size-5 text-tinta" />}</div>
-            <p className="mt-1 text-sm text-texto2">{o.d}</p>
+            <div className="flex items-center justify-between gap-2"><b>{o.t}</b>{cfg.motorIA === o.id && <CheckCircle2 className="size-5 shrink-0 text-tinta" />}</div>
+            <span className={cx('mt-1 inline-block rounded-full px-2 py-0.5 text-[11px] font-extrabold', o.id === 'claude' ? 'bg-sup2 text-texto2' : 'bg-ok-suave text-ok-texto')}>{o.selo}</span>
+            <p className="mt-1.5 text-sm text-texto2">{o.d}</p>
           </button>
         ))}
       </div>
+
+      {cfg.motorIA === 'gemini' && (
+        <Cartao className="grid gap-4 p-5">
+          <ol className="grid gap-2 text-sm">
+            <li className="flex gap-2"><span className="grid size-6 shrink-0 place-items-center rounded-full bg-obra text-xs font-extrabold text-[#121A2B]">1</span><span>Abra o <a href="https://aistudio.google.com/apikey" target="_blank" rel="noreferrer" className="font-extrabold text-tinta underline underline-offset-2">Google AI Studio › API keys</a> com a sua conta Google.</span></li>
+            <li className="flex gap-2"><span className="grid size-6 shrink-0 place-items-center rounded-full bg-obra text-xs font-extrabold text-[#121A2B]">2</span><span>Toque em <b>Create API key</b> e copie a chave.</span></li>
+            <li className="flex gap-2"><span className="grid size-6 shrink-0 place-items-center rounded-full bg-obra text-xs font-extrabold text-[#121A2B]">3</span><span>Cole aqui embaixo e toque em <b>Testar e salvar</b>.</span></li>
+          </ol>
+          <Campo rotulo="Chave do Gemini" ajuda="Fica só neste navegador. Quando o servidor existir, a chave sai daqui e fica só nele.">
+            <Entrada type="password" value={gKey} onChange={(e) => setGKey(e.target.value)} placeholder="AIza…" autoComplete="off" />
+          </Campo>
+          <Campo rotulo="Modelo" ajuda="O Flash é o que a faixa grátis cobre melhor. Se der erro de limite, troque para o Flash-Lite.">
+            <select value={cfg.geminiModelo} onChange={(e) => salvarConfig({ geminiModelo: e.target.value })} className="h-11 rounded-xl border border-borda-forte bg-sup px-3 text-texto outline-none focus:border-tinta">
+              {MODELOS_GEMINI_UI.map((m) => <option key={m.id} value={m.id}>{m.nome} — {m.nota}</option>)}
+            </select>
+          </Campo>
+          <div className="flex flex-wrap gap-2">
+            <Botao onClick={testarGemini} carregando={testando} disabled={!gKey.trim()}><KeyRound className="size-4" />Testar e salvar</Botao>
+            {cfg.geminiKey && <Botao variante="fantasma" onClick={async () => { setGKey(''); await salvarConfig({ geminiKey: '', motorIA: 'demo' }); }}>Remover chave</Botao>}
+          </div>
+          <p className="rounded-xl bg-medio-suave p-3 text-sm text-medio-texto"><b>Atenção:</b> no plano grátis o Google pode usar o que é enviado para melhorar os produtos dele, e há limite de pedidos por minuto e por dia. Bom para testar; para fotos de clientes em produção, use o plano pago.</p>
+        </Cartao>
+      )}
+
       {cfg.motorIA === 'claude' && (
         <Cartao className="grid gap-4 p-5">
           <Campo rotulo="Chave da API da Anthropic" dica="Fica só neste navegador. Use uma chave de teste com limite de gasto: no navegador ela pode ser lida por quem usar este aparelho.">
             <Entrada type="password" value={chave} onChange={(e) => setChave(e.target.value)} placeholder="sk-ant-…" autoComplete="off" />
           </Campo>
           <div className="flex flex-wrap gap-2">
-            <Botao onClick={testar} carregando={testando} disabled={!chave.trim()}><KeyRound className="size-4" />Testar e salvar</Botao>
+            <Botao onClick={testarClaude} carregando={testando} disabled={!chave.trim()}><KeyRound className="size-4" />Testar e salvar</Botao>
             {cfg.apiKey && <Botao variante="fantasma" onClick={async () => { setChave(''); await salvarConfig({ apiKey: '', motorIA: 'demo' }); }}>Remover chave</Botao>}
           </div>
-          <p className="text-sm text-texto2">Modelo: <b>Claude Opus 5.5</b> · cada foto é uma chamada. Quando o backend Go existir, a chave sai do navegador e fica só no servidor.</p>
+          <p className="text-sm text-texto2">Modelo: <b>Claude Opus 5.5</b> · cada foto é uma chamada.</p>
         </Cartao>
       )}
       {el}

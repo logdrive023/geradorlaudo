@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.10.0",
+    "@google/genai": "^3.6.1",
     "dexie": "^4.4.7",
     "dexie-react-hooks": "^4.4.0",
     "exifr": "^7.1.3",

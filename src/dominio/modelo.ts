@@ -11,7 +11,7 @@ export type Papel = 'admin' | 'engenheiro';
 export type Gravidade = 'critico' | 'medio' | 'minimo';
 
 export type StatusFoto = 'pendente' | 'analisando' | 'analisada' | 'conferida' | 'erro';
-export type OrigemAnalise = 'demo' | 'claude' | 'manual';
+export type OrigemAnalise = 'demo' | 'claude' | 'gemini' | 'manual';
 
 /** Região da foto onde está o achado, em % (0–100) da largura/altura. */
 export interface Regiao { x: number; y: number; w: number; h: number }
@@ -103,12 +103,14 @@ export interface ModeloTexto {
   normas?: string[];
 }
 
-export type MotorIA = 'demo' | 'claude';
+export type MotorIA = 'demo' | 'claude' | 'gemini';
 
 export interface Configuracao {
   chave: 'app';
   motorIA: MotorIA;
-  apiKey: string;          // só neste navegador; no backend vai para o servidor
+  apiKey: string;          // chave da Anthropic (Claude) — só neste navegador; no backend vai para o servidor
+  geminiKey?: string;      // chave do Google AI Studio (Gemini)
+  geminiModelo?: string;
   tema: 'claro' | 'escuro' | 'sistema';
 }
 
