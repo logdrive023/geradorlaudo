@@ -394,7 +394,7 @@ export function Site() {
         <Link to="/cadastrar" className="pilula pilula-obra w-full">Criar conta grátis <span className="font-bold opacity-70">· sem cartão</span></Link>
       </div>
 
-      <RodapeSite />
+      <RodapeSite barraFixa />
     </div>
   );
 }

@@ -18,10 +18,10 @@ function Contato() {
     : <>o canal de suporte dentro do aplicativo (botão <b>Ajuda</b>)</>;
 }
 
-/** Rodapé comum do site (landing e páginas institucionais). */
-export function RodapeSite() {
+/** Rodapé comum do site. `barraFixa`: a página tem a barra "Criar conta" fixa no celular (só a landing), então reserva espaço para ela. */
+export function RodapeSite({ barraFixa = false }: { barraFixa?: boolean }) {
   return (
-    <footer className="border-t border-borda pb-28 pt-10 sm:pb-10">
+    <footer className={barraFixa ? 'border-t border-borda pb-28 pt-10 sm:pb-10' : 'border-t border-borda pb-10 pt-10'}>
       <div className="mx-auto grid max-w-[1180px] gap-6 px-4 sm:grid-cols-[1fr_auto] sm:items-start">
         <div className="grid gap-2">
           <Logo tam={26} />
