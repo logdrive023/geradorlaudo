@@ -6,6 +6,7 @@ import (
 
 	"github.com/logdrive023/geradorlaudo/backend/internal/dominio/conta"
 	"github.com/logdrive023/geradorlaudo/backend/internal/dominio/laudo"
+	"github.com/logdrive023/geradorlaudo/backend/internal/dominio/obra"
 )
 
 // Banco guarda contas, sessões e laudos. Tudo é filtrado pela organização do usuário.
@@ -34,6 +35,19 @@ type Banco interface {
 	ApagarLink(ctx context.Context, u conta.Usuario, laudoID string) error
 	LaudoPublico(ctx context.Context, token string) (laudo.Registro, []laudo.FotoRegistro, conta.Usuario, error)
 	ChavesFotoPublica(ctx context.Context, token, fotoID string) (imagem, miniatura string, err error)
+
+	// gestão de obras
+	ListarObras(ctx context.Context, u conta.Usuario) ([]obra.Registro, error)
+	SalvarObra(ctx context.Context, u conta.Usuario, o obra.Registro) error
+	ApagarObra(ctx context.Context, u conta.Usuario, id string) ([]string, error)
+	ChavesFotoObra(ctx context.Context, u conta.Usuario, obraID, fotoID string) (imagem, miniatura string, err error)
+	ContarFotosObra(ctx context.Context, u conta.Usuario, obraID string) (int, error)
+	SalvarFotoObra(ctx context.Context, u conta.Usuario, obraID, fotoID, imagem, miniatura string, bytes int) error
+	ApagarFotoObra(ctx context.Context, u conta.Usuario, obraID, fotoID string) ([]string, error)
+	CriarLinkObra(ctx context.Context, u conta.Usuario, id, tokenNovo string, financeiro bool) (string, error)
+	ApagarLinkObra(ctx context.Context, u conta.Usuario, id string) error
+	ObraPublica(ctx context.Context, token string) (o obra.Registro, comFinanceiro bool, fotos []string, autor conta.Usuario, err error)
+	ChavesFotoObraPublica(ctx context.Context, token, fotoID string) (imagem, miniatura string, err error)
 }
 
 // Arquivos é o storage das imagens (Supabase Storage em produção; disco em desenvolvimento).

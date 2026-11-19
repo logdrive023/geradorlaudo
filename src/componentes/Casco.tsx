@@ -1,5 +1,5 @@
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router';
-import { FilePlus2, LayoutGrid, LogOut, Settings, Users } from 'lucide-react';
+import { FilePlus2, HardHat, LayoutGrid, LogOut, Settings, Users } from 'lucide-react';
 import { useState } from 'react';
 import { useSessao } from '../lib/sessao';
 import { Logo } from './ui';
@@ -16,6 +16,7 @@ export function Casco() {
   if (!usuario) return null;
   const itens = [
     { para: '/painel', rotulo: 'Laudos', ic: LayoutGrid },
+    { para: '/obras', rotulo: 'Obras', ic: HardHat },
     { para: '/configuracoes', rotulo: 'Configurações', ic: Settings },
     ...(usuario.papel === 'admin' ? [{ para: '/usuarios', rotulo: 'Usuários', ic: Users }] : []),
   ];
@@ -59,13 +60,13 @@ export function Casco() {
       <main className={noLaudo ? 'md:pb-0' : 'pb-36 md:pb-16'}><Outlet /></main>
 
       <nav style={{ gridTemplateColumns: `repeat(${itens.length + 1}, 1fr)` }} className={cx(noLaudo ? 'hidden' : 'grid', 'nao-imprimir fixed inset-x-0 bottom-0 z-30 border-t border-borda bg-sup/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden')}>
-        {itens.slice(0, 1).map(({ para, rotulo, ic: Ic }) => (
+        {itens.slice(0, 2).map(({ para, rotulo, ic: Ic }) => (
           <NavLink key={para} to={para} className={({ isActive }) => cx('flex flex-col items-center gap-0.5 py-2 text-[11px] font-bold', isActive ? 'text-tinta' : 'text-texto3')}><Ic className="size-5" />{rotulo}</NavLink>
         ))}
         <button onClick={() => setNovo(true)} className="flex flex-col items-center gap-0.5 py-2 text-[11px] font-bold text-obra-texto">
           <span className="-mt-5 grid size-11 place-items-center rounded-full border-[1.5px] border-[#121A2B] bg-obra text-[#121A2B] shadow-[0_3px_0_#121A2B]"><FilePlus2 className="size-5" /></span>Novo
         </button>
-        {itens.slice(1).map(({ para, rotulo, ic: Ic }) => (
+        {itens.slice(2).map(({ para, rotulo, ic: Ic }) => (
           <NavLink key={para} to={para} className={({ isActive }) => cx('flex flex-col items-center gap-0.5 py-2 text-[11px] font-bold', isActive ? 'text-tinta' : 'text-texto3')}><Ic className="size-5" />{rotulo === 'Configurações' ? 'Ajustes' : rotulo}</NavLink>
         ))}
       </nav>

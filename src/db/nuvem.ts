@@ -1,6 +1,7 @@
 import type { Transaction } from 'dexie';
 import { db } from './db';
 import type { Foto, Laudo, Papel, Usuario } from '../dominio/modelo';
+import type { FotoObra, Obra } from '../dominio/obra';
 import { SERVIDOR_PADRAO } from '../ia/servidor';
 import { novoId, resumoSenha } from '../lib/util';
 
@@ -200,6 +201,7 @@ async function enviar() {
       if (laudosPend.has(f.laudoId)) { fotosPend.add(id); continue; } // o laudo ainda não subiu
       await passo(() => enviarFoto(f), () => fotosPend.add(id));
     }
+    await enviarObras(passo);
   } catch { /* 401: sessão encerrada */ } finally {
     enviando = false;
     emitirEstado();
@@ -276,6 +278,7 @@ export function sincronizar(usuarioId: string): Promise<void> {
         apagadosLa.forEach((id) => { esquecer(id); laudosPend.delete(id); });
       }
       laudos.forEach((l) => conhecer(l.id));
+      try { await sincronizarObras(usuarioId); } catch (e) { if (e instanceof ErroServidor && e.status === 401) throw e; }
       agendar(300);
     } catch (e) {
       if (!(e instanceof ErroServidor && e.status === 401)) emitir({ tipo: 'erro', mensagem: 'Não deu para sincronizar com o servidor agora. Seus laudos continuam salvos aqui.' });
@@ -325,4 +328,144 @@ export async function abrirLaudoPublico(token: string): Promise<LaudoPublico> {
     return { ...f, imagem, miniatura } as Foto;
   }));
   return { laudo: d.laudo, fotos, autor: d.autor };
+}
+
+// ================= gestão de obras (mesmo padrão dos laudos) =================
+
+const obrasPend = new Set<string>();
+const obrasDel = new Set<string>();
+const fotosObraPend = new Map<string, string>(); // foto → obra
+const fotosObraDel = new Map<string, string>();
+const CHAVE_OBRAS = 'laudotech.nuvem.obras';
+const lerObrasConhecidas = (): Set<string> => { try { return new Set(JSON.parse(localStorage.getItem(CHAVE_OBRAS) || '[]') as string[]); } catch { return new Set(); } };
+const gravarObrasConhecidas = (c: Set<string>) => { try { localStorage.setItem(CHAVE_OBRAS, JSON.stringify([...c])); } catch { /* modo privado */ } };
+const conhecerObra = (id: string) => { const c = lerObrasConhecidas(); if (!c.has(id)) { c.add(id); gravarObrasConhecidas(c); } };
+const esquecerObra = (id: string) => { const c = lerObrasConhecidas(); if (c.delete(id)) gravarObrasConhecidas(c); };
+
+db.obras.hook('creating', (_pk, o, tx) => { if (!daNuvem(tx)) { obrasPend.add(o.id); agendar(); } });
+db.obras.hook('updating', (_m, pk, _o, tx) => { if (!daNuvem(tx)) { obrasPend.add(pk as string); agendar(2000); } });
+db.obras.hook('deleting', (pk, _o, tx) => { if (!daNuvem(tx)) { obrasPend.delete(pk as string); obrasDel.add(pk as string); agendar(); } });
+db.obraFotos.hook('creating', (_pk, f, tx) => { if (!daNuvem(tx)) { fotosObraPend.set(f.id, f.obraId); agendar(); } });
+db.obraFotos.hook('deleting', (pk, f, tx) => { if (!daNuvem(tx)) { fotosObraPend.delete(pk as string); fotosObraDel.set(pk as string, f.obraId); agendar(); } });
+
+/** A obra trafega como {id, nome, status, dados}; "dados" é o resto do documento. */
+function registroObra(o: Obra) {
+  const { id, nome, status, usuarioId: _u, criadoEm, atualizadoEm, ...dados } = o;
+  return { id, nome, status, dados, criadoEm, atualizadoEm };
+}
+
+type Passo = (fn: () => Promise<void>, devolver: () => void) => Promise<void>;
+async function enviarObras(passo: Passo) {
+  for (const id of [...obrasDel]) {
+    obrasDel.delete(id);
+    await passo(async () => { await api(`/api/obras/${id}`, { method: 'DELETE' }); esquecerObra(id); }, () => obrasDel.add(id));
+  }
+  for (const [id, oid] of [...fotosObraDel]) {
+    fotosObraDel.delete(id);
+    if (obrasDel.has(oid)) continue;
+    await passo(() => api(`/api/obras/${oid}/fotos/${id}`, { method: 'DELETE' }), () => fotosObraDel.set(id, oid));
+  }
+  for (const id of [...obrasPend]) {
+    obrasPend.delete(id);
+    const o = await db.obras.get(id);
+    if (!o) continue;
+    await passo(async () => {
+      await api(`/api/obras/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(registroObra(o)) });
+      conhecerObra(id);
+    }, () => obrasPend.add(id));
+  }
+  for (const [id, oid] of [...fotosObraPend]) {
+    fotosObraPend.delete(id);
+    if (obrasPend.has(oid)) { fotosObraPend.set(id, oid); continue; } // a obra ainda não subiu
+    const f = await db.obraFotos.get(id);
+    if (!f) continue;
+    await passo(async () => {
+      const d = new FormData();
+      d.append('imagem', f.imagem, 'imagem');
+      d.append('miniatura', f.miniatura, 'miniatura');
+      await api(`/api/obras/${oid}/fotos/${id}`, { method: 'PUT', body: d });
+    }, () => fotosObraPend.set(id, oid));
+  }
+}
+
+interface RegistroObraServidor { id: string; nome: string; status: Obra['status']; dados: Omit<Obra, 'id' | 'nome' | 'status' | 'usuarioId' | 'criadoEm' | 'atualizadoEm'>; criadoEm: number; atualizadoEm: number }
+
+const VAZIA = { endereco: '', cliente: '', etapas: [], diarios: [], lancamentos: [], compras: [], laudoIds: [] };
+
+async function sincronizarObras(usuarioId: string) {
+  const { obras } = await api<{ obras: RegistroObraServidor[] }>('/api/obras');
+  const locais = new Map((await db.obras.toArray()).map((o) => [o.id, o]));
+  for (const s of obras) {
+    const l = locais.get(s.id);
+    if (l && l.atualizadoEm >= s.atualizadoEm) continue;
+    const o: Obra = { ...VAZIA, ...s.dados, id: s.id, nome: s.nome, status: s.status, usuarioId: l?.usuarioId ?? usuarioId, criadoEm: s.criadoEm, atualizadoEm: s.atualizadoEm };
+    // fotos do diário que ainda não estão no aparelho
+    const ids = o.diarios.flatMap((d) => d.fotoIds);
+    const tem = new Set((await db.obraFotos.where('obraId').equals(o.id).primaryKeys()) as string[]);
+    const novas: FotoObra[] = [];
+    for (const fid of ids.filter((x) => !tem.has(x))) {
+      try {
+        const [imagem, miniatura] = await Promise.all([api<Blob>(`/api/obras/${o.id}/fotos/${fid}`), api<Blob>(`/api/obras/${o.id}/fotos/${fid}?tam=mini`)]);
+        novas.push({ id: fid, obraId: o.id, imagem, miniatura, criadoEm: Date.now() });
+      } catch (e) { if (e instanceof ErroServidor && e.status === 401) throw e; }
+    }
+    await db.transaction('rw', db.obras, db.obraFotos, async (tx) => {
+      (tx as unknown as Record<symbol, boolean>)[DA_NUVEM] = true;
+      await db.obras.put(o);
+      if (novas.length) await db.obraFotos.bulkPut(novas);
+    });
+  }
+  const noServidor = new Set(obras.map((o) => o.id));
+  let primeira = false;
+  try { primeira = localStorage.getItem(CHAVE_OBRAS) === null; } catch { /* modo privado */ }
+  const conhecidas = lerObrasConhecidas();
+  const apagadas: string[] = [];
+  for (const o of locais.values()) {
+    if (noServidor.has(o.id) || o.usuarioId !== usuarioId) continue;
+    if (!primeira && conhecidas.has(o.id)) { apagadas.push(o.id); continue; } // apagada no servidor: não volta
+    obrasPend.add(o.id);
+    (await db.obraFotos.where('obraId').equals(o.id).primaryKeys()).forEach((fid) => fotosObraPend.set(fid as string, o.id));
+  }
+  if (apagadas.length) {
+    await db.transaction('rw', db.obras, db.obraFotos, async (tx) => {
+      (tx as unknown as Record<symbol, boolean>)[DA_NUVEM] = true;
+      await db.obraFotos.where('obraId').anyOf(apagadas).delete();
+      await db.obras.bulkDelete(apagadas);
+    });
+    apagadas.forEach((id) => { esquecerObra(id); obrasPend.delete(id); });
+  }
+  obras.forEach((o) => conhecerObra(o.id));
+  if (primeira) gravarObrasConhecidas(lerObrasConhecidas());
+}
+
+// ---------- link do cliente da obra ----------
+
+export async function criarLinkObra(obraId: string, financeiro: boolean): Promise<string> {
+  if (!lerToken()) throw new Error('Entre com sua conta para gerar o link (a obra precisa estar salva no servidor).');
+  await enviar();
+  const { token } = await api<{ token: string }>(`/api/obras/${obraId}/link`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ financeiro }) });
+  return `${location.origin}${import.meta.env.BASE_URL.replace(/\/$/, '')}/acompanhar/${token}`;
+}
+
+export async function desligarLinkObra(obraId: string) {
+  await api(`/api/obras/${obraId}/link`, { method: 'DELETE' });
+}
+
+export interface ObraPublica { obra: Obra; financeiro: boolean; fotos: Map<string, Blob>; autor: LaudoPublico['autor'] }
+
+/** Abre a obra pelo link (sem login): documento sem o que é privado e as miniaturas do diário. */
+export async function abrirObraPublica(token: string): Promise<ObraPublica> {
+  const r = await fetch(`${base()}/api/publico/obra/${encodeURIComponent(token)}`);
+  if (!r.ok) {
+    const corpo = await r.json().catch(() => ({})) as { erro?: string };
+    throw new Error(corpo.erro || 'Não deu para abrir esta obra agora.');
+  }
+  const d = await r.json() as { obra: RegistroObraServidor; financeiro: boolean; fotos: string[]; autor: LaudoPublico['autor'] };
+  const o: Obra = { ...VAZIA, ...d.obra.dados, id: d.obra.id, nome: d.obra.nome, status: d.obra.status, usuarioId: '', criadoEm: d.obra.criadoEm, atualizadoEm: d.obra.atualizadoEm };
+  const fotos = new Map<string, Blob>();
+  await Promise.all(d.fotos.map(async (fid) => {
+    const x = await fetch(`${base()}/api/publico/obra/${encodeURIComponent(token)}/fotos/${fid}?tam=mini`);
+    if (x.ok) fotos.set(fid, await x.blob());
+  }));
+  return { obra: o, financeiro: d.financeiro, fotos, autor: d.autor };
 }

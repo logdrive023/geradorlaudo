@@ -13,6 +13,7 @@ import (
 	"github.com/logdrive023/geradorlaudo/backend/internal/adaptadores/arquivos"
 	"github.com/logdrive023/geradorlaudo/backend/internal/dominio/conta"
 	"github.com/logdrive023/geradorlaudo/backend/internal/dominio/laudo"
+	"github.com/logdrive023/geradorlaudo/backend/internal/dominio/obra"
 	"github.com/logdrive023/geradorlaudo/backend/internal/portas"
 )
 
@@ -40,6 +41,9 @@ func (s *Servidor) rotasDados(mux *http.ServeMux, limite *limitador) {
 	publico := novoLimitador(120)
 	mux.Handle("GET /api/publico/{token}", publico.envolver(http.HandlerFunc(s.laudoPublico)))
 	mux.Handle("GET /api/publico/{token}/fotos/{foto}", publico.envolver(http.HandlerFunc(s.fotoPublica)))
+
+	// gestão de obras (mesmos padrões: sessão, storage, link público)
+	s.rotasObras(mux, publico)
 }
 
 // POST /api/laudos/{id}/link → {token}
@@ -330,16 +334,9 @@ func (s *Servidor) salvarFoto(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 		}
-		base := "org/" + u.OrganizacaoID + "/laudos/" + f.LaudoID + "/" + f.ID
-		chaveImg, chaveMini = base+extensao(tipoImg), base+"_mini"+extensao(tipoMini)
-		if err := s.Arquivos.Enviar(r.Context(), chaveImg, img, tipoImg); err != nil {
-			slog.Error("storage", "erro", err)
-			erro(w, http.StatusBadGateway, "Não deu para guardar a imagem agora. Tente de novo.")
-			return
-		}
-		if err := s.Arquivos.Enviar(r.Context(), chaveMini, mini, tipoMini); err != nil {
-			slog.Error("storage", "erro", err)
-			erro(w, http.StatusBadGateway, "Não deu para guardar a miniatura agora. Tente de novo.")
+		var ok bool
+		chaveImg, chaveMini, ok = s.guardarImagens(w, r, "org/"+u.OrganizacaoID+"/laudos/"+f.LaudoID+"/"+f.ID, img, tipoImg, mini, tipoMini)
+		if !ok {
 			return
 		}
 	}
@@ -452,6 +449,8 @@ func responderDados(w http.ResponseWriter, err error) {
 		w.WriteHeader(499)
 	case errors.Is(err, laudo.ErrNaoEncontrado):
 		erro(w, http.StatusNotFound, "Não encontrado (ou é de outra conta).")
+	case errors.Is(err, obra.ErrLimiteFotos):
+		erro(w, http.StatusConflict, "Na fase de teste cada obra aceita no máximo 60 fotos no diário.")
 	case errors.Is(err, laudo.ErrLimiteFotos):
 		erro(w, http.StatusConflict, "Na fase de teste cada laudo aceita no máximo 5 fotos.")
 	case errors.Is(err, laudo.ErrPrecisaImagem):

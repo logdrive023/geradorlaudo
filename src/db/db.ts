@@ -1,5 +1,6 @@
 import Dexie, { type EntityTable } from 'dexie';
 import type { Configuracao, Foto, Laudo, ModeloTexto, Usuario } from '../dominio/modelo';
+import type { FotoObra, Obra } from '../dominio/obra';
 
 /** Prompt da IA editado pelo usuário (Ajustes › Prompts da IA). */
 export interface PromptSalvo { chave: string; texto: string; atualizadoEm: number }
@@ -15,6 +16,8 @@ export const db = new Dexie('laudotech') as Dexie & {
   config: EntityTable<Configuracao, 'chave'>;
   modelos: EntityTable<ModeloTexto, 'tipo'>;
   prompts: EntityTable<PromptSalvo, 'chave'>;
+  obras: EntityTable<Obra, 'id'>;
+  obraFotos: EntityTable<FotoObra, 'id'>;
 };
 
 db.version(1).stores({
@@ -44,6 +47,8 @@ db.version(6).stores({}).upgrade(async (tx) => {
     if (c.motorIA === 'demo') c.motorIA = 'servidor';
   });
 });
+// v7: gestão de obras (a obra é um documento; as fotos do diário ficam à parte)
+db.version(7).stores({ obras: 'id, usuarioId, atualizadoEm', obraFotos: 'id, obraId' });
 
 /** Admin de fábrica (login admin@admin). A senha fica só como resumo com sal. */
 const ADMIN: Usuario = {
@@ -96,6 +101,24 @@ export function fotosDoLaudo(laudoId: string) {
 
 export async function tocarLaudo(id: string, mudancas: Partial<Laudo> = {}) {
   await db.laudos.update(id, { ...mudancas, atualizadoEm: Date.now() });
+}
+
+/** Edita a obra numa transação (lê, aplica a mudança, grava com a data nova). Todas as telas de obra usam isto. */
+export async function mudarObra(id: string, fn: (o: Obra) => void) {
+  await db.transaction('rw', db.obras, async () => {
+    const o = await db.obras.get(id);
+    if (!o) return;
+    fn(o);
+    o.atualizadoEm = Date.now();
+    await db.obras.put(o);
+  });
+}
+
+export async function excluirObra(id: string) {
+  await db.transaction('rw', db.obras, db.obraFotos, async () => {
+    await db.obraFotos.where('obraId').equals(id).delete();
+    await db.obras.delete(id);
+  });
 }
 
 export async function excluirLaudo(id: string) {

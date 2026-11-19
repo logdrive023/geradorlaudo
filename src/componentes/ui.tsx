@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes } from 'react';
 import { Info, LoaderCircle, X } from 'lucide-react';
+import { createPortal } from 'react-dom';
 import { cx } from '../lib/util';
 import type { Gravidade } from '../dominio/modelo';
 import { GRAVIDADE } from '../dominio/modelo';
@@ -32,20 +33,53 @@ export function Botao({ variante = 'tinta', tam = 'm', carregando, className, ch
 }
 
 /** Tooltip: ícone "i" que explica o campo (passar o mouse, focar ou tocar). */
+/**
+ * Dica (tooltip). Fica num portal com posição fixa e se ajusta para caber na tela:
+ * abre em cima (ou embaixo, se não couber) e nunca sai pelas laterais, nem dentro de modais com rolagem.
+ */
 export function Dica({ texto, className }: { texto: ReactNode; className?: string }) {
   const [aberta, setAberta] = useState(false);
+  const [pos, setPos] = useState<{ top: number; left: number; seta: number; baixo: boolean } | null>(null);
+  const botao = useRef<HTMLButtonElement>(null);
+  const balao = useRef<HTMLSpanElement>(null);
   const id = useRef(`dica-${Math.random().toString(36).slice(2, 8)}`).current;
+
+  useLayoutEffect(() => {
+    if (!aberta) { setPos(null); return; }
+    const medir = () => {
+      const b = botao.current?.getBoundingClientRect();
+      const t = balao.current;
+      if (!b || !t) return;
+      const margem = 8;
+      const w = Math.min(260, window.innerWidth - margem * 2);
+      t.style.width = `${w}px`;
+      const h = t.offsetHeight;
+      const centro = b.left + b.width / 2;
+      const left = Math.min(Math.max(margem, centro - w / 2), window.innerWidth - w - margem);
+      const baixo = b.top - h - 10 < margem;
+      const top = baixo ? b.bottom + 10 : b.top - h - 10;
+      setPos({ top, left, seta: Math.min(Math.max(12, centro - left), w - 12), baixo });
+    };
+    medir();
+    addEventListener('scroll', medir, true);
+    addEventListener('resize', medir);
+    return () => { removeEventListener('scroll', medir, true); removeEventListener('resize', medir); };
+  }, [aberta]);
+
   return (
     <span className={cx('relative inline-flex align-middle', className)} onMouseEnter={() => setAberta(true)} onMouseLeave={() => setAberta(false)}>
-      <button type="button" aria-describedby={id} aria-label="Ajuda" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setAberta(!aberta); }} onFocus={() => setAberta(true)} onBlur={() => setAberta(false)}
+      <button ref={botao} type="button" aria-describedby={aberta ? id : undefined} aria-label="Ajuda" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setAberta(!aberta); }} onFocus={() => setAberta(true)} onBlur={() => setAberta(false)}
         className="grid size-5 place-items-center rounded-full text-texto3 transition hover:bg-sup2 hover:text-tinta">
         <Info className="size-3.5" />
       </button>
-      {aberta && <span id={id} role="tooltip" className={cx('pointer-events-none absolute bottom-full -left-2 z-40 mb-2 w-60 max-w-[calc(100vw-48px)] rounded-xl bg-[#121A2B] px-3 py-2 text-left text-xs font-semibold normal-case leading-snug tracking-normal text-white shadow-xl transition',
-        'revelar')}>
-        {texto}
-        <span className="absolute left-[11px] top-full border-[6px] border-transparent border-t-[#121A2B]" />
-      </span>}
+      {aberta && createPortal(
+        <span ref={balao} id={id} role="tooltip" style={{ top: pos?.top ?? -9999, left: pos?.left ?? -9999, visibility: pos ? 'visible' : 'hidden' }}
+          className="revelar pointer-events-none fixed z-[100] rounded-xl bg-[#121A2B] px-3 py-2 text-left text-xs font-semibold normal-case leading-snug tracking-normal text-white shadow-xl">
+          {texto}
+          {pos && <span className={cx('absolute border-[6px] border-transparent', pos.baixo ? 'bottom-full border-b-[#121A2B]' : 'top-full border-t-[#121A2B]')} style={{ left: pos.seta - 6 }} />}
+        </span>,
+        document.body,
+      )}
     </span>
   );
 }

@@ -22,7 +22,7 @@ export function lerReais(t: string): number | undefined {
   const v = Number(s.includes(',') ? s.replace(/\./g, '').replace(',', '.') : s);
   return Number.isFinite(v) && v >= 0 ? v : undefined;
 }
-const mostrarReais = (v?: number) => (v == null ? '' : v.toFixed(2).replace('.', ','));
+const mostrarReais = (v?: number) => (v == null ? '' : v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
 
 /** Campo em R$: digita à vontade e grava ao sair do campo. */
 export function EntradaReais({ valor, aoMudar, placeholder = '0,00', className, ...p }: { valor?: number; aoMudar: (v: number | undefined) => void; placeholder?: string; className?: string; 'aria-label'?: string }) {
@@ -33,6 +33,16 @@ export function EntradaReais({ valor, aoMudar, placeholder = '0,00', className, 
       <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-texto3">R$</span>
       <input inputMode="decimal" value={t} placeholder={placeholder} onChange={(e) => setT(e.target.value.replace(/[^\d.,]/g, ''))}
         onBlur={() => { const v = lerReais(t); if (v !== valor) aoMudar(v); setT(mostrarReais(v)); }} className={cx(CLASSE_CAMPO, 'h-11 pl-10')} {...p} />
+    </span>
+  );
+}
+
+/** Bolinha colorida com nome (classificação: crítica, intermediária, simples…). */
+export function Ponto({ cor, nome, mostrarNome = true, className }: { cor: string; nome: string; mostrarNome?: boolean; className?: string }) {
+  return (
+    <span className={cx('inline-flex items-center gap-1.5 text-xs font-bold text-texto2', className)} title={nome}>
+      <span className="size-2.5 shrink-0 rounded-full ring-2 ring-sup" style={{ background: cor }} aria-hidden />
+      {mostrarNome ? nome : <span className="sr-only">{nome}</span>}
     </span>
   );
 }

@@ -13,6 +13,9 @@ import { Editor } from './paginas/editor/Editor';
 import { Configuracoes } from './paginas/config/Configuracoes';
 import { Usuarios } from './paginas/admin/Usuarios';
 import { VerLaudo } from './paginas/publico/VerLaudo';
+import { VerObra } from './paginas/publico/VerObra';
+import { ListaObras } from './paginas/obras/ListaObras';
+import { ObraTela } from './paginas/obras/ObraTela';
 import { Privacidade, Sobre, Termos } from './paginas/site/Legal';
 
 function Tema() {
@@ -47,12 +50,15 @@ export function App() {
           <Route path="/cadastrar" element={<Entrar modo="criar" />} />
           <Route path="/esqueci" element={<Entrar modo="esqueci" />} />
           <Route path="/ver/:token" element={<VerLaudo />} />
+          <Route path="/acompanhar/:token" element={<VerObra />} />
           <Route path="/termos" element={<Termos />} />
           <Route path="/privacidade" element={<Privacidade />} />
           <Route path="/sobre" element={<Sobre />} />
           <Route element={<Protegido><Casco /></Protegido>}>
             <Route path="/painel" element={<Painel />} />
             <Route path="/laudo/:id" element={<Editor />} />
+            <Route path="/obras" element={<ListaObras />} />
+            <Route path="/obra/:id" element={<ObraTela />} />
             <Route path="/configuracoes" element={<Configuracoes />} />
             <Route path="/usuarios" element={<Protegido admin><Usuarios /></Protegido>} />
           </Route>

@@ -4,6 +4,8 @@
  */
 
 export type TipoLaudo = 'cautelar' | 'entrega' | 'locacao' | 'inspecao' | 'extrajudicial' | 'estrutural' | 'reforma' | 'pericia' | 'avaliacao' | 'contabil';
+import type { EtapaModelo } from './etapas';
+
 export type StatusLaudo = 'rascunho' | 'conferencia' | 'concluido';
 export type Papel = 'admin' | 'engenheiro';
 
@@ -126,6 +128,8 @@ export interface Configuracao {
   geminiModelo?: string;
   servidorUrl?: string;    // API LaudoTech (backend Go); a chave da IA fica no servidor
   tema: 'claro' | 'escuro' | 'sistema';
+  /** Etapas de obra configuradas (vazio = padrão de consenso). Ordem = ordem do cronograma. */
+  etapasObra?: EtapaModelo[];
 }
 
 export const GRAVIDADE: Record<Gravidade, { nome: string; prioridade: string; texto: string; cor: string }> = {
