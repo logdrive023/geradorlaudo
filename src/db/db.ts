@@ -74,7 +74,14 @@ db.on('populate', (tx) => {
 });
 
 export async function lerConfig(): Promise<Configuracao> {
-  return { ...CONFIG_PADRAO, ...(await db.config.get('app')) };
+  const c = { ...CONFIG_PADRAO, ...(await db.config.get('app')) };
+  // logado no servidor: a demonstração nunca vale; a IA é a do servidor (Gemini)
+  if (c.motorIA === 'demo' && logadoNaNuvem()) c.motorIA = 'servidor';
+  return c;
+}
+
+function logadoNaNuvem(): boolean {
+  try { return !!localStorage.getItem('laudotech.token'); } catch { return false; }
 }
 
 export async function salvarConfig(parcial: Partial<Configuracao>) {
