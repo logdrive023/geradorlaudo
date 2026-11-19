@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
-import { Copy, Mail, MessageCircle, RotateCw, Shield, UserCheck, UserPlus, UserX } from 'lucide-react';
+import { Copy, FileText, Mail, Sparkles, Users, MessageCircle, RotateCw, Shield, UserCheck, UserPlus, UserX } from 'lucide-react';
 import { PAPEIS, alterarUsuario, auditoria, convidar, lerOrg, listarConvites, listarUsuarios, type ConviteOrg, type EventoOrg, type Org, type UsuarioOrg } from '../../db/organizacao';
 import { Botao, Campo, Cartao, Dica, Entrada, Modal, Selo, useAviso } from '../../componentes/ui';
 import { Atividades } from './Atividades';
+import { Indicador } from '../../componentes/Pecas';
 import { cx } from '../../lib/util';
 import type { Papel } from '../../dominio/modelo';
 
@@ -78,9 +79,9 @@ export function EquipeOrganizacao({ euId }: { euId: string }) {
 
       {/* o mês em números */}
       <div className="mt-5 grid grid-cols-3 gap-2">
-        {[['Pessoas', org.uso.usuarios], ['Laudos no mês', org.uso.laudosMes], ['Análises de IA no mês', org.uso.analisesIA]].map(([r, v]) => (
-          <Cartao key={r} className="p-3"><span className="block text-[11px] font-extrabold uppercase tracking-wider text-texto3">{r}</span><b className="font-display text-2xl">{v}</b></Cartao>
-        ))}
+        <Indicador ic={Users} valor={org.uso.usuarios} rotulo={org.uso.usuarios === 1 ? 'pessoa' : 'pessoas'} />
+        <Indicador ic={FileText} tom="obra" valor={org.uso.laudosMes} rotulo="laudos no mês" />
+        <Indicador ic={Sparkles} tom="ok" valor={org.uso.analisesIA} rotulo="fotos com IA" dica="Fotos analisadas pela IA neste mês, somando toda a equipe." />
       </div>
 
       {/* pessoas */}
