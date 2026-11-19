@@ -56,7 +56,7 @@ export function Casco() {
         <button onClick={() => { sair(); nav('/entrar'); }} className="flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm font-bold text-texto2"><LogOut className="size-4" />Sair</button>
       </header>
 
-      <main className={noLaudo ? 'md:pb-0' : 'pb-24 md:pb-0'}><Outlet /></main>
+      <main className={noLaudo ? 'md:pb-0' : 'pb-36 md:pb-16'}><Outlet /></main>
 
       <nav style={{ gridTemplateColumns: `repeat(${itens.length + 1}, 1fr)` }} className={cx(noLaudo ? 'hidden' : 'grid', 'nao-imprimir fixed inset-x-0 bottom-0 z-30 border-t border-borda bg-sup/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden')}>
         {itens.slice(0, 1).map(({ para, rotulo, ic: Ic }) => (

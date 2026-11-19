@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { BookOpen, CheckCircle2, Copy, FileDown, FileText, Link2, Link2Off, Maximize2, Minimize2, Pencil, Printer, Share2, Sparkles, Wand2 } from 'lucide-react';
+import { BookOpen, CheckCircle2, FileDown, FileText, Maximize2, Minimize2, Pencil, Printer, Sparkles, Wand2 } from 'lucide-react';
+import { LinkPublico } from '../../componentes/Pecas';
 import { PlanoAcao } from '../../componentes/PlanoAcao';
 import { criarLinkCliente, desligarLinkCliente, logadoNaNuvem } from '../../db/nuvem';
 import { Prontidao } from '../../componentes/Prontidao';
@@ -61,46 +62,12 @@ function DocumentoAjustado({ docRef, children, real = false, editando = false }:
 }
 
 /** Link só de leitura para o cliente acompanhar o laudo (sem conta, sem instalar nada). */
-// o estado do link fica na aba (o cartão Entregar é recriado a cada atualização da tela)
 function LinkCliente({ laudoId, avisar, link, setLink }: { laudoId: string; avisar: (t: string, tom?: 'ok' | 'erro') => void; link: string | null; setLink: (l: string | null) => void }) {
-  const [ocupado, setOcupado] = useState(false);
   if (!logadoNaNuvem()) return null;
-  const gerar = async () => {
-    setOcupado(true);
-    try {
-      const l = await criarLinkCliente(laudoId);
-      setLink(l);
-      try { await navigator.clipboard.writeText(l); avisar('Link copiado! Mande para o cliente.'); } catch { avisar('Link pronto. Copie e mande para o cliente.'); }
-    } catch (e) { avisar((e as Error).message, 'erro'); }
-    setOcupado(false);
-  };
-  const compartilhar = async () => {
-    if (!link) return;
-    if (navigator.share) { try { await navigator.share({ title: 'Laudo técnico', text: 'Seu laudo está pronto para leitura:', url: link }); return; } catch { /* cancelou */ } }
-    try { await navigator.clipboard.writeText(link); avisar('Link copiado!'); } catch { /* sem permissão */ }
-  };
-  const desligar = async () => {
-    setOcupado(true);
-    try { await desligarLinkCliente(laudoId); setLink(null); avisar('Link desligado: quem tinha não vê mais.'); } catch (e) { avisar((e as Error).message, 'erro'); }
-    setOcupado(false);
-  };
   return (
-    <div className="grid gap-2 rounded-2xl border border-borda bg-sup2 p-3">
-      <p className="flex items-center gap-1.5 text-sm font-extrabold"><Link2 className="size-4 text-obra" />Link para o cliente
-        <Dica texto="O cliente abre o laudo no celular, só para ler e baixar o PDF, sem conta. Você pode desligar o link quando quiser." /></p>
-      {link ? (
-        <>
-          <div className="flex items-center gap-1 rounded-xl border border-borda bg-sup px-2 py-1.5">
-            <span className="min-w-0 flex-1 truncate text-xs text-texto2">{link}</span>
-            <button onClick={() => void navigator.clipboard?.writeText(link).then(() => avisar('Link copiado!'))} className="grid size-8 place-items-center rounded-lg hover:bg-sup2" aria-label="Copiar link"><Copy className="size-4" /></button>
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <Botao tam="p" variante="claro" onClick={compartilhar}><Share2 className="size-4" />Enviar</Botao>
-            <Botao tam="p" variante="fantasma" carregando={ocupado} onClick={desligar}><Link2Off className="size-4" />Desligar</Botao>
-          </div>
-        </>
-      ) : <Botao tam="p" variante="claro" carregando={ocupado} onClick={gerar}><Link2 className="size-4" />Gerar link do cliente</Botao>}
-    </div>
+    <LinkPublico titulo="Link para o cliente" textoCompartilhar="Seu laudo está pronto para leitura:" link={link} setLink={setLink} avisar={avisar}
+      dica="O cliente abre o laudo no celular, só para ler e baixar o PDF, sem conta. Você pode desligar o link quando quiser."
+      gerar={() => criarLinkCliente(laudoId)} desligar={() => desligarLinkCliente(laudoId)} />
   );
 }
 

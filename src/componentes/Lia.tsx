@@ -107,9 +107,9 @@ export function PergunteLia({ ajuda = AJUDA, site = false, subir = false }: { aj
   return (
     <>
       <button onClick={() => setAberto(!aberto)} aria-expanded={aberto}
-        className={cx(naConferencia && !aberto && 'max-lg:hidden', 'nao-imprimir fixed bottom-24 right-4 z-40 flex items-center gap-2 rounded-full border-[1.5px] border-[#121A2B] bg-sup py-1 pl-1 pr-4 font-extrabold shadow-[0_3px_0_#121A2B] transition-all duration-300 active:translate-y-0.5 md:bottom-6 md:right-6', subir && '-translate-y-14')}>
+        className={cx(naConferencia && !aberto && 'max-lg:hidden', 'nao-imprimir fixed bottom-24 right-4 z-40 flex items-center gap-2 rounded-full border-[1.5px] border-[#121A2B] bg-sup p-1 font-extrabold sm:pr-4 shadow-[0_3px_0_#121A2B] transition-all duration-300 active:translate-y-0.5 md:bottom-6 md:right-6', subir && '-translate-y-14')}>
         <RostoLia humor={aberto ? 'feliz' : 'normal'} tam={38} />
-        <span className="hidden sm:inline">Pergunte à Lia</span><span className="sm:hidden">Ajuda</span>
+        <span className="hidden sm:inline">Pergunte à Lia</span><span className="sr-only sm:hidden">Ajuda</span>
       </button>
       {aberto && (
         <section role="dialog" aria-label="Ajuda da Lia"

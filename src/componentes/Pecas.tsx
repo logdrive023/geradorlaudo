@@ -1,9 +1,51 @@
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { ChevronDown, Copy, Link2, Link2Off, Share2 } from 'lucide-react';
-import { Botao, Dica } from './ui';
+import { Botao, CLASSE_CAMPO, Dica } from './ui';
 import { cx } from '../lib/util';
 
 /** Peças compartilhadas entre laudo e obra (abas, números, link público, item que abre). */
+
+/** Select de pares valor/rótulo, no mesmo visual dos campos. */
+export function Escolha<T extends string>({ valor, aoMudar, opcoes, vazio, className, ...p }: { valor: T | ''; aoMudar: (v: T) => void; opcoes: { v: T; r: string }[]; vazio?: string; className?: string; 'aria-label'?: string }) {
+  return (
+    <select value={valor} onChange={(e) => aoMudar(e.target.value as T)} className={cx(CLASSE_CAMPO, 'h-11 pr-8', className)} {...p}>
+      {vazio != null && <option value="">{vazio}</option>}
+      {opcoes.map((o) => <option key={o.v} value={o.v}>{o.r}</option>)}
+    </select>
+  );
+}
+
+/** Lê "1.234,56" ou "1234.5" como número (vazio = undefined). */
+export function lerReais(t: string): number | undefined {
+  const s = t.trim();
+  if (!s) return undefined;
+  const v = Number(s.includes(',') ? s.replace(/\./g, '').replace(',', '.') : s);
+  return Number.isFinite(v) && v >= 0 ? v : undefined;
+}
+const mostrarReais = (v?: number) => (v == null ? '' : v.toFixed(2).replace('.', ','));
+
+/** Campo em R$: digita à vontade e grava ao sair do campo. */
+export function EntradaReais({ valor, aoMudar, placeholder = '0,00', className, ...p }: { valor?: number; aoMudar: (v: number | undefined) => void; placeholder?: string; className?: string; 'aria-label'?: string }) {
+  const [t, setT] = useState(mostrarReais(valor));
+  useEffect(() => { setT(mostrarReais(valor)); }, [valor]);
+  return (
+    <span className={cx('relative block', className)}>
+      <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-texto3">R$</span>
+      <input inputMode="decimal" value={t} placeholder={placeholder} onChange={(e) => setT(e.target.value.replace(/[^\d.,]/g, ''))}
+        onBlur={() => { const v = lerReais(t); if (v !== valor) aoMudar(v); setT(mostrarReais(v)); }} className={cx(CLASSE_CAMPO, 'h-11 pl-10')} {...p} />
+    </span>
+  );
+}
+
+/** Dado com rótulo pequeno em cima (deixa claro o que é cada número numa lista). */
+export function Rotulado({ rotulo, children, className, alerta }: { rotulo: string; children: ReactNode; className?: string; alerta?: boolean }) {
+  return (
+    <span className={cx('grid min-w-0', className)}>
+      <span className="text-[10px] font-extrabold uppercase tracking-wider text-texto3">{rotulo}</span>
+      <span className={cx('truncate text-sm font-bold', alerta ? 'text-critico-texto' : 'text-texto')}>{children}</span>
+    </span>
+  );
+}
 
 /** Abas em pílula, com rolagem lateral no celular. */
 export function Abas<T extends string>({ abas, ativa, aoMudar, rotulo }: { abas: { id: T; rotulo: string; ic?: React.ComponentType<{ className?: string }>; conta?: number }[]; ativa: T; aoMudar: (a: T) => void; rotulo: string }) {

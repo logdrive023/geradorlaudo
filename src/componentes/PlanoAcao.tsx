@@ -4,6 +4,7 @@ import { db } from '../db/db';
 import type { Acompanhamento, Foto, Laudo, StatusAcao } from '../dominio/modelo';
 import { STATUS_ACAO, dataCurta, itensPlano, planilhaPlano, reais, resumoPlano, type ItemPlano } from '../dominio/plano';
 import { Botao, Cartao, Dica, Entrada, SeloGravidade } from './ui';
+import { Rotulado } from './Pecas';
 import { baixar, cx } from '../lib/util';
 
 /** Grava o acompanhamento dentro do achado (sobe para o servidor junto com a foto). */
@@ -46,11 +47,10 @@ function Item({ i, aberto, alternar }: { i: ItemPlano; aberto: boolean; alternar
           <span className={cx('whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-extrabold', COR[i.acomp.status])}>{STATUS_ACAO[i.acomp.status].nome}</span>
           <ChevronDown className={cx('size-4 text-texto3 transition', aberto && 'rotate-180')} />
         </span>
-        <span className="col-start-2 col-end-4 mt-2 flex items-center justify-between gap-2 border-t border-dashed border-borda pt-2 text-sm">
-          <span className={cx('flex items-center gap-1.5', i.atrasado ? 'font-extrabold text-critico-texto' : 'text-texto2')}>
-            <AlarmClock className="size-4" />{dataCurta(i.prazo)}{i.atrasado && <span className="rounded-full bg-critico-suave px-1.5 text-[11px]">atrasado</span>}
-          </span>
-          <span className={cx('font-extrabold', i.acomp.custo != null ? 'text-texto' : 'font-bold text-texto3')}>{i.acomp.custo != null ? reais(i.acomp.custo) : 'sem custo'}</span>
+        <span className="col-start-2 col-end-4 mt-2 grid grid-cols-[auto_minmax(0,1fr)_auto] gap-x-4 gap-y-2 border-t border-dashed border-borda pt-2">
+          <Rotulado rotulo={i.atrasado ? 'Prazo · atrasado' : 'Prazo'} alerta={i.atrasado}><span className="flex items-center gap-1"><AlarmClock className="size-3.5 shrink-0" />{dataCurta(i.prazo)}</span></Rotulado>
+          <Rotulado rotulo="Responsável">{i.acomp.responsavel || <span className="font-normal text-texto3">—</span>}</Rotulado>
+          <Rotulado rotulo="Custo est.">{i.acomp.custo != null ? reais(i.acomp.custo) : <span className="font-normal text-texto3">—</span>}</Rotulado>
         </span>
       </button>
       {aberto && (

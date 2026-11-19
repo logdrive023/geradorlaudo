@@ -60,8 +60,10 @@ export function Campo({ rotulo, dica, ajuda, erro, children, className }: { rotu
   );
 }
 
-const INPUT = 'w-full rounded-xl border border-borda-forte bg-sup px-3.5 text-[15px] text-texto placeholder:text-texto3 outline-none transition focus:border-tinta focus:ring-3 focus:ring-tinta/10';
+/** Classe dos campos (para selects e campos especiais seguirem o mesmo visual). */
+export const CLASSE_CAMPO = 'w-full rounded-xl border border-borda-forte bg-sup px-3.5 text-[15px] text-texto placeholder:text-texto3 outline-none transition focus:border-tinta focus:ring-3 focus:ring-tinta/10';
 
+const INPUT = CLASSE_CAMPO;
 export const Entrada = (p: InputHTMLAttributes<HTMLInputElement>) => <input {...p} className={cx(INPUT, 'h-11', p.className)} />;
 export const AreaTexto = (p: TextareaHTMLAttributes<HTMLTextAreaElement>) => <textarea rows={3} {...p} className={cx(INPUT, 'py-2.5 leading-relaxed resize-y', p.className)} />;
 export const Selecao = ({ opcoes, vazio = 'Selecione…', ...p }: SelectHTMLAttributes<HTMLSelectElement> & { opcoes: string[]; vazio?: string }) => (
