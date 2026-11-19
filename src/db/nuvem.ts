@@ -92,6 +92,19 @@ export async function sairNuvem() {
   gravarToken(null);
 }
 
+// ---------- laudos que o servidor já conhece ----------
+// Sumiu do servidor e está nesta lista = foi apagado lá: some do aparelho também (o banco manda).
+// Fora da lista = criado aqui e ainda não enviado: sobe.
+const CHAVE_CONHECIDOS = 'laudotech.nuvem.laudos';
+function lerConhecidos(): Set<string> {
+  try { return new Set(JSON.parse(localStorage.getItem(CHAVE_CONHECIDOS) || '[]') as string[]); } catch { return new Set(); }
+}
+function gravarConhecidos(ids: Set<string>) {
+  try { localStorage.setItem(CHAVE_CONHECIDOS, JSON.stringify([...ids])); } catch { /* modo privado */ }
+}
+const conhecer = (id: string) => { const c = lerConhecidos(); if (!c.has(id)) { c.add(id); gravarConhecidos(c); } };
+const esquecer = (id: string) => { const c = lerConhecidos(); if (c.delete(id)) gravarConhecidos(c); };
+
 // ---------- envio (o que mudou no aparelho sobe) ----------
 
 const laudosPend = new Set<string>();
@@ -162,7 +175,7 @@ async function enviar() {
   try {
     for (const id of [...laudosDel]) {
       laudosDel.delete(id);
-      await passo(() => api(`/api/laudos/${id}`, { method: 'DELETE' }), () => laudosDel.add(id));
+      await passo(async () => { await api(`/api/laudos/${id}`, { method: 'DELETE' }); esquecer(id); }, () => laudosDel.add(id));
     }
     for (const [id, lid] of [...fotosDel]) {
       fotosDel.delete(id);
@@ -173,7 +186,7 @@ async function enviar() {
       laudosPend.delete(id);
       const l = await db.laudos.get(id);
       if (!l) continue;
-      await passo(() => api(`/api/laudos/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(registroLaudo(l)) }), () => laudosPend.add(id));
+      await passo(async () => { await api(`/api/laudos/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(registroLaudo(l)) }); conhecer(id); }, () => laudosPend.add(id));
     }
     for (const id of [...fotosPend]) {
       const f = await db.fotos.get(id);
@@ -217,6 +230,7 @@ async function baixarLaudo(id: string, usuarioId: string) {
     if (sobrando.length) await db.fotos.bulkDelete(sobrando);
     await db.fotos.bulkPut(novas);
   });
+  conhecer(id);
 }
 
 let sincronizando: Promise<void> | null = null;
@@ -237,11 +251,26 @@ export function sincronizar(usuarioId: string): Promise<void> {
         }
       }
       const noServidor = new Set(laudos.map((l) => l.id));
+      // 1ª vez nesta versão: a versão anterior já enviava tudo de quem estava logado, então tudo aqui já foi ao servidor
+      let primeiraVez = false;
+      try { primeiraVez = localStorage.getItem(CHAVE_CONHECIDOS) === null; } catch { /* modo privado */ }
+      const conhecidos = primeiraVez ? new Set(locais.keys()) : lerConhecidos();
+      const apagadosLa: string[] = [];
       for (const l of locais.values()) {
         if (noServidor.has(l.id) || l.usuarioId !== usuarioId) continue;
+        if (conhecidos.has(l.id)) { apagadosLa.push(l.id); continue; } // apagado no servidor: não volta
         laudosPend.add(l.id);
         (await db.fotos.where('laudoId').equals(l.id).primaryKeys()).forEach((fid) => fotosPend.add(fid as string));
       }
+      if (apagadosLa.length) {
+        await db.transaction('rw', db.laudos, db.fotos, async (tx) => {
+          (tx as unknown as Record<symbol, boolean>)[DA_NUVEM] = true; // apagar aqui não manda nada ao servidor
+          await db.fotos.where('laudoId').anyOf(apagadosLa).delete();
+          await db.laudos.bulkDelete(apagadosLa);
+        });
+        apagadosLa.forEach((id) => { esquecer(id); laudosPend.delete(id); });
+      }
+      laudos.forEach((l) => conhecer(l.id));
       agendar(300);
     } catch (e) {
       if (!(e instanceof ErroServidor && e.status === 401)) emitir({ tipo: 'erro', mensagem: 'Não deu para sincronizar com o servidor agora. Seus laudos continuam salvos aqui.' });
