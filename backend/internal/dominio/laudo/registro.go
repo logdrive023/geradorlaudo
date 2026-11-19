@@ -1,6 +1,7 @@
 package laudo
 
 import (
+	"regexp"
 	"encoding/json"
 	"errors"
 )
@@ -62,6 +63,8 @@ type AnaliseSalva struct {
 	Achados       []AchadoSalvo `json:"achados"`
 	Origem        string        `json:"origem"`
 	AnalisadoEm   int64         `json:"analisadoEm"`
+	// resumo de cada IA que analisou (legenda, ambiente, elemento, modelo ou erro); o app define o formato, até 8 KB
+	PorIA json.RawMessage `json:"porIA,omitempty"`
 }
 
 type AchadoSalvo struct {
@@ -77,6 +80,7 @@ type AchadoSalvo struct {
 	Regiao        *Regiao  `json:"regiao,omitempty"`
 	Aceito        *bool    `json:"aceito"`
 	Origem        string   `json:"origem"`
+	IA            string   `json:"ia,omitempty"` // qual IA escreveu (gemini, claude, openai…); vazio = manual ou antiga
 	// plano de ação: status, prazo, responsável, custo (o app define o formato; até 4 KB)
 	Acompanhamento json.RawMessage `json:"acompanhamento,omitempty"`
 }
@@ -108,6 +112,8 @@ func (r *Registro) Validar() error {
 	return nil
 }
 
+var nomeIA = regexp.MustCompile(`^[a-z0-9-]{1,20}$`)
+
 // Validar confere a foto antes de gravar e corrige o que dá para corrigir.
 func (f *FotoRegistro) Validar() error {
 	if !statusFoto[f.Status] {
@@ -123,6 +129,9 @@ func (f *FotoRegistro) Validar() error {
 		if !origens[a.Origem] {
 			a.Origem = "manual"
 		}
+		if len(a.PorIA) > 8<<10 || (len(a.PorIA) > 0 && !json.Valid(a.PorIA)) {
+			a.PorIA = nil
+		}
 		if len(a.Achados) > 50 {
 			return errors.New("achados demais na foto")
 		}
@@ -137,6 +146,9 @@ func (f *FotoRegistro) Validar() error {
 			}
 			if x.Tipo == "" {
 				x.Tipo = "Outro"
+			}
+			if !nomeIA.MatchString(x.IA) {
+				x.IA = ""
 			}
 			if x.Sistema == "" {
 				x.Sistema = "Vedações"

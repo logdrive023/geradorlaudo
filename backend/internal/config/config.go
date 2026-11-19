@@ -14,6 +14,10 @@ type Config struct {
 	GeminiModelo   string   // GEMINI_MODELO
 	GeminiReserva  string   // GEMINI_MODELO_RESERVA: usado quando o principal está lotado ("nenhum" desliga)
 	GeminiPensar   string   // GEMINI_PENSAMENTO: minimal | low | medium | high | padrao
+	ClaudeKey      string   // ANTHROPIC_API_KEY (vazio = Claude desligado)
+	ClaudeModelo   string   // CLAUDE_MODELO
+	OpenAIKey      string   // OPENAI_API_KEY (vazio = OpenAI desligada)
+	OpenAIModelo   string   // OPENAI_MODELO
 	OrigensCORS    []string // CORS_ORIGINS separado por vírgula
 	TimeoutIA      time.Duration
 	LimitePorMinut int // pedidos de IA por IP por minuto
@@ -31,6 +35,10 @@ func Ler() Config {
 		GeminiModelo:   env("GEMINI_MODELO", "gemini-3.8-flash"),
 		GeminiReserva:  reserva(env("GEMINI_MODELO_RESERVA", "gemini-3.1-flash-lite")),
 		GeminiPensar:   pensamento(env("GEMINI_PENSAMENTO", "low")),
+		ClaudeKey:      strings.TrimSpace(os.Getenv("ANTHROPIC_API_KEY")),
+		ClaudeModelo:   env("CLAUDE_MODELO", "claude-opus-5-5"),
+		OpenAIKey:      strings.TrimSpace(os.Getenv("OPENAI_API_KEY")),
+		OpenAIModelo:   env("OPENAI_MODELO", "gpt-5-mini"),
 		OrigensCORS:    lista(env("CORS_ORIGINS", "http://localhost:5180,https://laudotech.pages.dev,https://laudotech.onrender.com,https://logdrive023.github.io")),
 		TimeoutIA:      time.Duration(numero("TIMEOUT_IA_SEGUNDOS", 120)) * time.Second,
 		LimitePorMinut: numero("LIMITE_IA_POR_MINUTO", 20),

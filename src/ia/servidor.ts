@@ -24,8 +24,9 @@ async function chamar<T>(base: string, caminho: string, init: RequestInit): Prom
   return corpo as T;
 }
 
-export async function analisarServidor(p: PedidoAnalise, base: string): Promise<Envelope> {
+export async function analisarServidor(p: PedidoAnalise, base: string, motor?: string): Promise<Envelope> {
   const f = new FormData();
+  if (motor) f.append('motor', motor);
   f.append('imagem', p.imagem, 'foto');
   f.append('tipoLaudo', p.tipoLaudo);
   f.append('contexto', p.contexto);
@@ -48,6 +49,7 @@ export async function conversarServidor(instrucao: string, conversa: { de: 'voce
   return r.texto;
 }
 
-export async function saudeServidor(base: string): Promise<{ ia: string; modelo: string; versao: string }> {
+export interface MotorServidor { nome: string; modelo: string; pronta: boolean }
+export async function saudeServidor(base: string): Promise<{ ia: string; modelo: string; versao: string; motores?: MotorServidor[] }> {
   return chamar(base, '/api/health', { method: 'GET' });
 }

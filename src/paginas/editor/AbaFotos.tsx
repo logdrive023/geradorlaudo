@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState, type DragEvent } from 'react';
+import { SeloIA } from '../config/IasServidor';
+import { nomeIA } from '../../dominio/modelo';
 import { Link } from 'react-router';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { AlertCircle, ArrowLeft, ArrowRight, Camera, Check, Eye, ImagePlus, LoaderCircle, MoreHorizontal, RotateCw, Sparkles, Trash2, Upload } from 'lucide-react';
@@ -39,6 +41,7 @@ function MiniFoto({ f, n, primeira, ultima, aoAbrir, aoMover, aoReanalisar }: { 
             {f.status === 'conferida' ? <Check className="size-3" /> : f.status === 'analisando' ? <LoaderCircle className="size-3 girando" /> : f.status === 'erro' ? <AlertCircle className="size-3" /> : n}
           </span>
           <span className="min-w-0 flex-1 truncate text-sm font-bold">{f.analise?.ambiente ?? (f.status === 'pendente' ? 'Aguardando análise' : f.status === 'analisando' ? 'Analisando…' : 'Erro na análise')}</span>
+          {(f.analise?.porIA?.length ?? 0) > 1 && <span className="flex -space-x-1" title={`Analisada por ${f.analise!.porIA!.filter((p) => !p.erro).map((p) => nomeIA(p.ia)).join(' e ')}`}>{f.analise!.porIA!.filter((p) => !p.erro).map((p) => <SeloIA key={p.ia} id={p.ia} tam={16} />)}</span>}
           {criticos > 0 && <span className="rounded-full bg-critico px-1.5 text-[11px] font-extrabold text-white">{criticos}</span>}
         </div>
       </button>

@@ -10,6 +10,8 @@ export interface AchadoIA {
   confianca: number;
   aberturaMm?: number;
   regiao?: Regiao;
+  /** qual IA escreveu (quando várias analisam a mesma foto) */
+  ia?: string;
 }
 
 export interface ResultadoIA {

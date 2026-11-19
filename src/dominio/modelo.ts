@@ -32,6 +32,8 @@ export interface Achado {
   /** null = ainda não conferido; true = aceito; false = descartado pelo engenheiro */
   aceito: boolean | null;
   origem: OrigemAnalise;
+  /** Qual IA escreveu (gemini, claude, openai). Só aparece na tela quando a foto teve 2+ IAs. */
+  ia?: string;
   /** Plano de ação (opcional): acompanhamento do reparo depois do laudo. */
   acompanhamento?: Acompanhamento;
 }
@@ -54,7 +56,28 @@ export interface Analise {
   achados: Achado[];
   origem: OrigemAnalise;
   analisadoEm: number;
+  /** Uma linha por IA que analisou a foto (só quando há 2+ IAs ligadas). */
+  porIA?: ResumoIA[];
 }
+
+/** O que cada IA disse da foto (para comparar a legenda e saber de onde veio cada achado). */
+export interface ResumoIA {
+  ia: string;
+  modelo?: string;
+  ambiente?: string;
+  elemento?: string;
+  legenda?: string;
+  achados?: number;
+  erro?: string;
+}
+
+/** IAs que o servidor sabe usar. Nome bonito e cor de cada uma (a cor só aparece com 2+ IAs). */
+export const IAS: Record<string, { nome: string; empresa: string; cor: string }> = {
+  gemini: { nome: 'Gemini', empresa: 'Google', cor: '#3B82F6' },
+  claude: { nome: 'Claude', empresa: 'Anthropic', cor: '#D97757' },
+  openai: { nome: 'ChatGPT', empresa: 'OpenAI', cor: '#10A37F' },
+};
+export const nomeIA = (id?: string) => (id && IAS[id]?.nome) || id || 'IA';
 
 export interface Foto {
   id: string;
@@ -127,6 +150,8 @@ export interface Configuracao {
   geminiKey?: string;      // chave do Google AI Studio (Gemini)
   geminiModelo?: string;
   servidorUrl?: string;    // API LaudoTech (backend Go); a chave da IA fica no servidor
+  /** IAs do servidor ligadas pela pessoa (vazio = só a principal do servidor). */
+  iasLigadas?: string[];
   tema: 'claro' | 'escuro' | 'sistema';
   /** Etapas de obra configuradas (vazio = padrão de consenso). Ordem = ordem do cronograma. */
   etapasObra?: EtapaModelo[];

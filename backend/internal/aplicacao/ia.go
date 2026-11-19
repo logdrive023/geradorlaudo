@@ -26,13 +26,46 @@ func (e *ErroEntrada) Error() string { return e.Mensagem }
 
 // ServicoIA reúne os casos de uso de IA.
 type ServicoIA struct {
-	IA      portas.IA
+	IA      portas.IA   // principal: conclusão, Lia e análise sem IA escolhida
+	Extras  []portas.IA // outras IAs com chave no servidor (o app escolhe quais usar)
+	Catalog []MotorInfo // todas as IAs que o servidor conhece, ligadas ou não (para o app mostrar)
 	Timeout time.Duration
+}
+
+// MotorInfo: uma IA que o servidor conhece. Pronta = tem chave e está ligada no servidor.
+type MotorInfo struct {
+	Nome   string `json:"nome"`
+	Modelo string `json:"modelo"`
+	Pronta bool   `json:"pronta"`
+}
+
+// Motor devolve a IA pelo nome ("" = principal). Pedir uma IA sem chave no servidor é erro de entrada.
+func (s ServicoIA) Motor(nome string) (portas.IA, error) {
+	nome = strings.ToLower(strings.TrimSpace(nome))
+	if nome == "" || nome == s.IA.Nome() {
+		return s.IA, nil
+	}
+	for _, m := range s.Extras {
+		if m.Nome() == nome {
+			return m, nil
+		}
+	}
+	return nil, &ErroEntrada{"A IA \"" + nome + "\" não está ligada no servidor."}
 }
 
 // AnalisarFoto: confere a foto, pede a análise e limpa a resposta.
 // instrucao: prompt editado pelo usuário (Ajustes › Prompts da IA). Vazio = padrão do domínio.
-func (s ServicoIA) AnalisarFoto(ctx context.Context, dados []byte, tipo, contexto, instrucao string) (laudo.Analise, error) {
+// motor: nome da IA ("" = principal).
+func (s ServicoIA) AnalisarFoto(ctx context.Context, motor string, dados []byte, tipo, contexto, instrucao string) (laudo.Analise, string, error) {
+	ia, err := s.Motor(motor)
+	if err != nil {
+		return laudo.Analise{}, "", err
+	}
+	a, err := s.analisarCom(ctx, ia, dados, tipo, contexto, instrucao)
+	return a, ia.Nome(), err
+}
+
+func (s ServicoIA) analisarCom(ctx context.Context, ia portas.IA, dados []byte, tipo, contexto, instrucao string) (laudo.Analise, error) {
 	t, err := laudo.ValidarTipo(tipo)
 	if err != nil {
 		return laudo.Analise{}, &ErroEntrada{err.Error()}
@@ -49,7 +82,7 @@ func (s ServicoIA) AnalisarFoto(ctx context.Context, dados []byte, tipo, context
 	}
 	ctx, cancel := context.WithTimeout(ctx, s.Timeout)
 	defer cancel()
-	a, err := s.IA.AnalisarFoto(ctx, portas.Foto{Dados: dados, MimeType: mime, Tipo: t, Contexto: cortar(contexto, 1000), Instrucao: escolher(instrucao, laudo.InstrucaoAnalise(t))})
+	a, err := ia.AnalisarFoto(ctx, portas.Foto{Dados: dados, MimeType: mime, Tipo: t, Contexto: cortar(contexto, 1000), Instrucao: escolher(instrucao, laudo.InstrucaoAnalise(t))})
 	if err != nil {
 		return laudo.Analise{}, err
 	}

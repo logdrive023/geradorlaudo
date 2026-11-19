@@ -12,6 +12,8 @@ import { Modelos } from './Modelos';
 import { EtapasObra } from './EtapasObra';
 import { SERVIDOR_PADRAO } from '../../ia/servidor';
 import { Prompts } from './Prompts';
+import { IasServidor } from './IasServidor';
+import { Recolhivel } from '../../componentes/Wizard';
 
 // lista dos modelos sem carregar o SDK do Gemini nesta tela
 const MODELOS_GEMINI_UI = [
@@ -146,8 +148,17 @@ function IA({ cfg }: { cfg: Configuracao }) {
     { id: 'gemini', t: 'Gemini (Google)', selo: 'tem faixa grátis', d: 'IA de verdade com a faixa grátis do Google AI Studio. Ótimo para começar.' },
     { id: 'claude', t: 'Claude (Anthropic)', selo: 'pago por uso', d: 'IA de verdade, a mais precisa em patologia. Cobra por foto analisada.' },
   ] as const;
+  const nomeModo = opcoes.find((o) => o.id === cfg.motorIA)?.t ?? cfg.motorIA;
   return (
     <div className="grid gap-5">
+      {cfg.motorIA === 'servidor' ? <IasServidor cfg={cfg} /> : (
+        <Cartao className="flex flex-wrap items-center justify-between gap-3 p-5">
+          <div><h2 className="text-lg font-bold">IA em uso: {nomeModo}</h2><p className="text-sm text-texto2">Para escolher entre Gemini, Claude e ChatGPT, use o Servidor LaudoTech.</p></div>
+          <Botao variante="obra" onClick={() => salvarConfig({ motorIA: 'servidor' })}>Usar o servidor</Botao>
+        </Cartao>
+      )}
+      <Recolhivel titulo="Avançado" resumo="Endereço do servidor, chave no navegador ou modo demonstração">
+      <div className="grid gap-5">
       <div className="grid gap-3 sm:grid-cols-2">
         {opcoes.map((o) => (
           <button key={o.id} onClick={() => salvarConfig({ motorIA: o.id })}
@@ -207,6 +218,8 @@ function IA({ cfg }: { cfg: Configuracao }) {
           <p className="text-sm text-texto2">Modelo: <b>Claude Opus 5.5</b> · cada foto é uma chamada.</p>
         </Cartao>
       )}
+      </div>
+      </Recolhivel>
       {el}
     </div>
   );

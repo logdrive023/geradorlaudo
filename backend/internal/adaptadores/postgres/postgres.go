@@ -213,7 +213,7 @@ func (b *Banco) LerLaudo(ctx context.Context, u conta.Usuario, id string) (laudo
 // fotosDoLaudo lê as fotos com análise e achados (sem conferir dono: quem chama já conferiu).
 func (b *Banco) fotosDoLaudo(ctx context.Context, id string) ([]laudo.FotoRegistro, error) {
 	rows, err := b.pool.Query(ctx, `select id::text, ordem, nome_arquivo, largura, altura, tirada_em, gps[0], gps[1], status,
-			ambiente, elemento, legenda, sem_anomalia, qualidade_foto, contrato_ia, origem_analise, analisado_em, observacao, erro, criado_em
+			ambiente, elemento, legenda, sem_anomalia, qualidade_foto, contrato_ia, origem_analise, analisado_em, observacao, erro, criado_em, analises_ia
 		from fotos where laudo_id = $1 order by ordem`, id)
 	if err != nil {
 		return nil, err
@@ -228,8 +228,9 @@ func (b *Banco) fotosDoLaudo(ctx context.Context, id string) ([]laudo.FotoRegist
 		var amb, elem, leg, qual, contrato, origem, obs, erro *string
 		var sem *bool
 		var criado time.Time
+		var porIA []byte
 		if err := rows.Scan(&f.ID, &f.Ordem, &f.NomeArquivo, &f.Largura, &f.Altura, &tirada, &lng, &lat, &f.Status,
-			&amb, &elem, &leg, &sem, &qual, &contrato, &origem, &analisado, &obs, &erro, &criado); err != nil {
+			&amb, &elem, &leg, &sem, &qual, &contrato, &origem, &analisado, &obs, &erro, &criado, &porIA); err != nil {
 			return nil, err
 		}
 		f.LaudoID, f.CriadoEm = id, ms(criado)
@@ -243,7 +244,7 @@ func (b *Banco) fotosDoLaudo(ctx context.Context, id string) ([]laudo.FotoRegist
 		f.Observacao, f.Erro = val(obs), val(erro)
 		if analisado != nil {
 			f.Analise = &laudo.AnaliseSalva{Ambiente: val(amb), Elemento: val(elem), Legenda: val(leg), SemAnomalia: sem != nil && *sem,
-				QualidadeFoto: val(qual), Contrato: val(contrato), Origem: val(origem), AnalisadoEm: ms(*analisado), Achados: []laudo.AchadoSalvo{}}
+				QualidadeFoto: val(qual), Contrato: val(contrato), Origem: val(origem), AnalisadoEm: ms(*analisado), Achados: []laudo.AchadoSalvo{}, PorIA: porIA}
 		}
 		idx[f.ID] = len(fotos)
 		fotos = append(fotos, f)
@@ -252,7 +253,7 @@ func (b *Banco) fotosDoLaudo(ctx context.Context, id string) ([]laudo.FotoRegist
 		return nil, err
 	}
 	ach, err := b.pool.Query(ctx, `select a.foto_id::text, a.id::text, a.tipo, a.sistema, a.descricao, a.gravidade, a.abertura_mm::float8,
-			a.causa_provavel, a.recomendacao, a.confianca, a.regiao, a.aceito, a.origem, a.acompanhamento
+			a.causa_provavel, a.recomendacao, a.confianca, a.regiao, a.aceito, a.origem, a.acompanhamento, coalesce(a.ia, '')
 		from achados a join fotos f on f.id = a.foto_id where f.laudo_id = $1 order by a.prioridade, a.id`, id)
 	if err != nil {
 		return nil, err
@@ -264,7 +265,7 @@ func (b *Banco) fotosDoLaudo(ctx context.Context, id string) ([]laudo.FotoRegist
 		var regiao []byte
 		var conf float32
 		if err := ach.Scan(&fotoID, &a.ID, &a.Tipo, &a.Sistema, &a.Descricao, &a.Gravidade, &a.AberturaMm,
-			&a.CausaProvavel, &a.Recomendacao, &conf, &regiao, &a.Aceito, &a.Origem, &a.Acompanhamento); err != nil {
+			&a.CausaProvavel, &a.Recomendacao, &conf, &regiao, &a.Aceito, &a.Origem, &a.Acompanhamento, &a.IA); err != nil {
 			return nil, err
 		}
 		a.Confianca = float64(conf)
@@ -396,6 +397,14 @@ func (b *Banco) SalvarFoto(ctx context.Context, u conta.Usuario, f laudo.FotoReg
 		return traduzir(err)
 	}
 
+	var porIA any
+	if f.Analise != nil {
+		porIA = jsonOuNulo(f.Analise.PorIA)
+	}
+	if _, err := tx.Exec(ctx, `update fotos set analises_ia = $2 where id = $1`, f.ID, porIA); err != nil {
+		return traduzir(err)
+	}
+
 	// achados: troca todos (a conferência mexe em vários de uma vez)
 	if _, err := tx.Exec(ctx, `delete from achados where foto_id = $1`, f.ID); err != nil {
 		return err
@@ -407,10 +416,10 @@ func (b *Banco) SalvarFoto(ctx context.Context, u conta.Usuario, f laudo.FotoReg
 				regiao, _ = json.Marshal(a.Regiao)
 			}
 			_, err := tx.Exec(ctx, `insert into achados (id, foto_id, tipo, sistema, descricao, gravidade, prioridade, abertura_mm,
-					causa_provavel, recomendacao, confianca, regiao, aceito, origem, acompanhamento)
-				values (coalesce($1::uuid, gen_random_uuid()), $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)`,
+					causa_provavel, recomendacao, confianca, regiao, aceito, origem, acompanhamento, ia)
+				values (coalesce($1::uuid, gen_random_uuid()), $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, nullif($16, ''))`,
 				uuidOuNulo(a.ID), f.ID, a.Tipo, a.Sistema, a.Descricao, a.Gravidade, laudo.PrioridadeDe(a.Gravidade), a.AberturaMm,
-				a.CausaProvavel, a.Recomendacao, a.Confianca, regiao, a.Aceito, a.Origem, jsonOuNulo(a.Acompanhamento))
+				a.CausaProvavel, a.Recomendacao, a.Confianca, regiao, a.Aceito, a.Origem, jsonOuNulo(a.Acompanhamento), a.IA)
 			if err != nil {
 				return traduzir(err)
 			}

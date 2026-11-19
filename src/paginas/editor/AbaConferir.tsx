@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState, type PointerEvent } from 'react';
 import { CalendarDays, Check, CheckCheck, ChevronLeft, ChevronRight, Crosshair, Eye, MapPin, Mic, MicOff, Pencil, Plus, RotateCw, Search, Sparkles, Wrench, X } from 'lucide-react';
 import { db, tocarLaudo } from '../../db/db';
-import { GRAVIDADE, SISTEMAS, TIPOS_ANOMALIA, type Achado, type Analise, type Foto, type Gravidade, type Laudo, type Regiao } from '../../dominio/modelo';
+import { GRAVIDADE, IAS, SISTEMAS, TIPOS_ANOMALIA, nomeIA, type Achado, type Analise, type Foto, type Gravidade, type Laudo, type Regiao } from '../../dominio/modelo';
 import { analisarFoto } from '../../ia/motor';
 import { AreaTexto, Barra, Botao, Campo, Cartao, COR_GRAVIDADE, Dica, Entrada, SeloGravidade, Vazio, useAviso, useUrl } from '../../componentes/ui';
 import { Recolhivel } from '../../componentes/Wizard';
 import { FotoMarcada } from '../../componentes/FotoMarcada';
 import { Lia } from '../../componentes/Lia';
+import { SeloIA } from '../config/IasServidor';
 import { cx, dois, novoId } from '../../lib/util';
 import type { Aba } from './Editor';
 
@@ -73,7 +74,7 @@ export function SeloLia({ texto = 'Escrito pela Lia' }: { texto?: string }) {
  * Um achado: por padrão mostra o TEXTO PRONTO que a IA escreveu, em 3 blocos
  * (o que é · por quê · o que fazer). "Editar" (✎) abre os campos.
  */
-function CartaoAchado({ a, n, sel, aoSel, aoMudar, aoMarcar }: { a: Achado; n: number; sel: boolean; aoSel: () => void; aoMudar: (p: Partial<Achado>) => void; aoMarcar: () => void }) {
+function CartaoAchado({ a, n, sel, aoSel, aoMudar, aoMarcar, mostrarIA }: { a: Achado; n: number; sel: boolean; aoSel: () => void; aoMudar: (p: Partial<Achado>) => void; aoMarcar: () => void; mostrarIA?: boolean }) {
   const daIA = a.origem !== 'manual';
   const cor = COR_GRAVIDADE[a.gravidade];
   const blocos = [
@@ -97,10 +98,10 @@ function CartaoAchado({ a, n, sel, aoSel, aoMudar, aoMarcar }: { a: Achado; n: n
 
       <div className="px-3.5 pt-2.5">
         {daIA ? (
-          <div className="flex items-center gap-2 text-[11px] font-extrabold text-obra-texto">
-            <Sparkles className="size-3.5" />Escrito pela Lia
-            <span className="h-1.5 w-14 overflow-hidden rounded-full bg-sup2"><span className="block h-full rounded-full bg-obra" style={{ width: `${Math.round(a.confianca * 100)}%` }} /></span>
-            <span className="text-texto3">{Math.round(a.confianca * 100)}% de certeza</span>
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] font-extrabold text-obra-texto">
+            <span className="inline-flex items-center gap-1 whitespace-nowrap"><Sparkles className="size-3.5" />Escrito pela Lia{mostrarIA && a.ia && <span style={{ color: IAS[a.ia]?.cor }}> · via {nomeIA(a.ia)}</span>}</span>
+            <span className="inline-flex items-center gap-2 whitespace-nowrap"><span className="h-1.5 w-14 overflow-hidden rounded-full bg-sup2"><span className="block h-full rounded-full bg-obra" style={{ width: `${Math.round(a.confianca * 100)}%` }} /></span>
+            <span className="text-texto3">{Math.round(a.confianca * 100)}% de certeza</span></span>
           </div>
         ) : <span className="text-[11px] font-extrabold text-texto3">Adicionado por você</span>}
         {/* onde está na foto: deixa claro se falta marcar */}
@@ -160,7 +161,13 @@ function CartaoAchado({ a, n, sel, aoSel, aoMudar, aoMarcar }: { a: Achado; n: n
 export function AbaConferir({ laudo, fotos, irPara, fotoInicial }: { laudo: Laudo; fotos: Foto[]; irPara: (a: Aba) => void; fotoInicial?: string }) {
   const [certeza, setCerteza] = useState<FaixaCerteza>('todos');
   const todas = fotos.filter((f) => f.analise || f.status === 'analisando' || f.status === 'erro');
-  const lista = certeza === 'todos' ? todas : todas.filter((f) => (f.analise?.achados ?? []).some((a) => a.origem !== 'manual' && naFaixa(a.confianca, certeza)));
+  // várias IAs: só quando alguma foto deste laudo foi analisada por 2+ IAs (com 1 IA a tela fica igual)
+  const [iaSel, setIaSel] = useState('todas');
+  const iasLaudo = [...new Set(todas.flatMap((f) => ((f.analise?.porIA?.length ?? 0) > 1 ? f.analise!.achados.map((a) => a.ia ?? '') : [])).filter(Boolean))];
+  const mostrarIA = iasLaudo.length > 1;
+  const daIA = (a: Achado, ia = iaSel) => !mostrarIA || ia === 'todas' || a.ia === ia;
+  const casa = (a: Achado) => a.origem !== 'manual' && naFaixa(a.confianca, certeza) && daIA(a);
+  const lista = certeza === 'todos' && (!mostrarIA || iaSel === 'todas') ? todas : todas.filter((f) => (f.analise?.achados ?? []).some(casa));
   const primeira = lista.find((f) => f.id === fotoInicial) ?? lista.find((f) => f.status === 'analisada') ?? lista[0];
   const [fotoId, setFotoId] = useState(primeira?.id);
   const foto = lista.find((f) => f.id === fotoId) ?? primeira;
@@ -236,7 +243,7 @@ export function AbaConferir({ laudo, fotos, irPara, fotoInicial }: { laudo: Laud
 
   const conferidas = lista.filter((f) => f.status === 'conferida').length;
   const todosAchados = an?.achados ?? [];
-  const achados = certeza === 'todos' ? todosAchados : todosAchados.filter((a) => a.origem === 'manual' || naFaixa(a.confianca, certeza));
+  const achados = todosAchados.filter((a) => a.origem === 'manual' || (naFaixa(a.confianca, certeza) && daIA(a)));
   const foraDoFiltro = todosAchados.length - achados.length;
   const semDecisao = achados.filter((a) => a.aceito === null);
   const decididos = achados.length - semDecisao.length;
@@ -276,6 +283,23 @@ export function AbaConferir({ laudo, fotos, irPara, fotoInicial }: { laudo: Laud
               );
             })}
           </div>
+          {mostrarIA && (
+            <div className="mt-2.5 border-t border-borda pt-2.5">
+              <div className="mb-2 flex items-center gap-1.5 px-1 text-xs font-extrabold uppercase tracking-wider text-texto3">Qual IA<Dica texto="Cada IA ligada analisou as mesmas fotos. Filtre para ver só o que uma delas achou; aceite o que procede e descarte o resto." /></div>
+              <div className="flex flex-wrap gap-1" role="tablist" aria-label="Filtrar pela IA">
+                {['todas', ...iasLaudo].map((ia) => {
+                  const n = todas.reduce((t, f) => t + (f.analise?.achados ?? []).filter((a) => a.origem !== 'manual' && naFaixa(a.confianca, certeza) && daIA(a, ia)).length, 0);
+                  const ativo = iaSel === ia;
+                  return (
+                    <button key={ia} role="tab" aria-selected={ativo} onClick={() => setIaSel(ia)}
+                      className={cx('flex h-9 items-center gap-1.5 rounded-xl px-3 text-[13px] font-extrabold transition', ativo ? 'bg-[#121A2B] text-white dark:bg-tinta dark:text-[#0E1320]' : 'bg-sup2 text-texto2 hover:text-texto')}>
+                      {ia === 'todas' ? 'Todas' : <><SeloIA id={ia} tam={18} />{nomeIA(ia)}</>}<span className={cx('text-[11px]', ativo ? 'text-white/70' : 'text-texto3')}>{n}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
           {certeza !== 'todos' && (
             <div className={cx('mt-2 flex items-center gap-2 rounded-xl border px-3 py-2 text-[13px]', faixaAtual.caixa)}>
               <span className="flex-1"><b>Mostrando {lista.length} de {todas.length} fotos:</b> só as {faixaAtual.explica}.</span>
@@ -351,13 +375,27 @@ export function AbaConferir({ laudo, fotos, irPara, fotoInicial }: { laudo: Laud
             )}
             {todosAchados.length === 0 && <Cartao className="p-4 text-sm text-ok-texto"><b>Sem anomalia aparente.</b> A foto entra no laudo como registro do ambiente.</Cartao>}
             {achados.map((a, i) => (
-              <CartaoAchado key={a.id} a={a} n={i + 1} sel={sel === a.id} aoSel={() => setSel(sel === a.id ? undefined : a.id)} aoMudar={(p) => mudarAchado(a.id, p)} aoMarcar={() => { setSel(a.id); setMarcando(a.id); }} />
+              <CartaoAchado key={a.id} a={a} n={i + 1} sel={sel === a.id} aoSel={() => setSel(sel === a.id ? undefined : a.id)} aoMudar={(p) => mudarAchado(a.id, p)} aoMarcar={() => { setSel(a.id); setMarcando(a.id); }} mostrarIA={mostrarIA} />
             ))}
             <button onClick={novoAchado} className="flex h-11 items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-borda-forte font-extrabold text-texto2 hover:border-obra hover:text-obra-texto"><Plus className="size-4" />Adicionar achado</button>
 
             <Cartao className="grid gap-1.5 p-3.5">
               <div className="flex flex-wrap items-center gap-1.5"><b className="text-sm">{an.ambiente || 'Ambiente'}{an.elemento ? ` · ${an.elemento}` : ''}</b>{an.origem !== 'manual' && <SeloLia texto="Legenda escrita pela Lia" />}</div>
               <p className="text-sm text-texto2">{an.legenda || 'Sem legenda.'}</p>
+              {(an.porIA?.length ?? 0) > 1 && (
+                <div className="mt-1 grid gap-1.5 border-t border-borda pt-2">
+                  <span className="text-[11px] font-extrabold uppercase tracking-wider text-texto3">Legenda de cada IA</span>
+                  {an.porIA!.map((p) => (
+                    <div key={p.ia} className="flex items-start gap-2 rounded-xl bg-sup2 px-2.5 py-2">
+                      <SeloIA id={p.ia} tam={20} />
+                      <p className="min-w-0 flex-1 text-xs leading-snug text-texto2">{p.erro ? <span className="text-critico-texto">Não respondeu: {p.erro}</span> : p.legenda || 'Sem legenda.'}</p>
+                      {!p.erro && p.legenda && (p.legenda === an.legenda
+                        ? <span className="shrink-0 text-[11px] font-extrabold text-ok-texto">Em uso</span>
+                        : <button onClick={() => mudarAn({ legenda: p.legenda!, ambiente: p.ambiente || an.ambiente, elemento: p.elemento || an.elemento })} className="shrink-0 text-[11px] font-extrabold text-tinta underline underline-offset-2">Usar esta</button>)}
+                    </div>
+                  ))}
+                </div>
+              )}
             </Cartao>
             <Recolhivel titulo="Editar legenda e observação" resumo={obs ? 'Com observação sua' : 'Opcional: mude o texto ou dite uma observação'}>
               <div className="grid gap-3">

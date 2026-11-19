@@ -53,7 +53,7 @@ func (s *Servidor) saude(w http.ResponseWriter, r *http.Request) {
 	if s.Arquivos != nil {
 		storage = s.Arquivos.Nome()
 	}
-	json200(w, map[string]any{"ok": true, "versao": s.Versao, "ia": s.IA.IA.Nome(), "modelo": s.IA.IA.Modelo(), "banco": banco, "storage": storage})
+	json200(w, map[string]any{"ok": true, "versao": s.Versao, "ia": s.IA.IA.Nome(), "modelo": s.IA.IA.Modelo(), "motores": s.IA.Catalog, "banco": banco, "storage": storage})
 }
 
 // POST /api/ia/analisar  (multipart: imagem, tipoLaudo, contexto)
@@ -74,7 +74,7 @@ func (s *Servidor) analisar(w http.ResponseWriter, r *http.Request) {
 		erro(w, http.StatusBadRequest, "Não deu para ler a imagem.")
 		return
 	}
-	a, err := s.IA.AnalisarFoto(r.Context(), dados, r.FormValue("tipoLaudo"), r.FormValue("contexto"), r.FormValue("instrucao"))
+	a, nome, err := s.IA.AnalisarFoto(r.Context(), r.FormValue("motor"), dados, r.FormValue("tipoLaudo"), r.FormValue("contexto"), r.FormValue("instrucao"))
 	if err != nil {
 		responderErro(w, err)
 		return
@@ -82,9 +82,11 @@ func (s *Servidor) analisar(w http.ResponseWriter, r *http.Request) {
 	// envelope padrão: versão do contrato + quem analisou + a análise no formato do contrato
 	modelo := a.Modelo
 	if modelo == "" {
-		modelo = s.IA.IA.Modelo()
+		if m, e := s.IA.Motor(nome); e == nil {
+			modelo = m.Modelo()
+		}
 	}
-	json200(w, map[string]any{"versao": contratos.VersaoAnaliseFoto, "origem": s.IA.IA.Nome(), "modelo": modelo, "analise": a})
+	json200(w, map[string]any{"versao": contratos.VersaoAnaliseFoto, "origem": nome, "modelo": modelo, "analise": a})
 }
 
 // POST /api/ia/conclusao  {"resumo": "..."}

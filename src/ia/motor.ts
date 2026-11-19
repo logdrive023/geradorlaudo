@@ -1,13 +1,33 @@
 import { db, fotosDoLaudo, lerConfig, tocarLaudo } from '../db/db';
-import type { Analise, Foto, Laudo } from '../dominio/modelo';
+import type { Analise, Foto, Laudo, ResumoIA } from '../dominio/modelo';
 import { TIPOS } from '../dominio/tipos';
 import { conclusaoPadrao, porAmbiente, resumoAchados, achadosValidos } from '../dominio/regras';
 import { novoId } from '../lib/util';
 import { analisarDemo } from './demo';
 import type { ResultadoIA } from './tipos';
 
+type Saida = { r: ResultadoIA; origem: Analise['origem']; contrato?: string; ia?: string; modelo?: string };
+
+/**
+ * Várias IAs no servidor: cada uma ligada analisa a mesma foto e os achados vêm juntos, marcados com a IA.
+ * Com 1 IA (o normal) é exatamente a chamada de sempre.
+ */
+async function analisarVarias(pedido: Parameters<typeof import('./servidor').analisarServidor>[0], base: string, ias: string[]) {
+  const { analisarServidor } = await import('./servidor');
+  const res = await Promise.allSettled(ias.map((ia) => analisarServidor(pedido, base, ia)));
+  const ok = res.flatMap((x, i) => (x.status === 'fulfilled' ? [{ ia: ias[i], env: x.value }] : []));
+  if (!ok.length) throw new Error((res[0] as PromiseRejectedResult).reason?.message ?? 'Nenhuma IA respondeu.');
+  const porIA: ResumoIA[] = res.map((x, i) => x.status === 'fulfilled'
+    ? { ia: ias[i], modelo: x.value.modelo, ambiente: x.value.analise.ambiente, elemento: x.value.analise.elemento, legenda: x.value.analise.legenda, achados: x.value.analise.achados.length }
+    : { ia: ias[i], erro: (x.reason as Error)?.message ?? 'falhou' });
+  const base0 = ok[0].env.analise;
+  const achados = ok.flatMap(({ ia, env }) => env.analise.achados.map((a) => ({ ...a, ia })));
+  const r: ResultadoIA = { ...base0, achados, semAnomalia: achados.length === 0 };
+  return { r, porIA, contrato: ok[0].env.versao };
+}
+
 /** Ponto único de entrada da IA: escolhe o motor pela configuração. */
-async function analisar(laudo: Laudo, foto: Foto): Promise<{ r: ResultadoIA; origem: Analise['origem']; contrato?: string }> {
+async function analisar(laudo: Laudo, foto: Foto): Promise<Saida & { porIA?: ResumoIA[] }> {
   const cfg = await lerConfig();
   const contexto = [
     laudo.dados.endereco && `Imóvel: ${laudo.dados.endereco}`,
@@ -16,8 +36,12 @@ async function analisar(laudo: Laudo, foto: Foto): Promise<{ r: ResultadoIA; ori
   ].filter(Boolean).join('. ');
   if (cfg.motorIA === 'servidor') {
     const { analisarServidor, SERVIDOR_PADRAO } = await import('./servidor');
-    const env = await analisarServidor({ imagem: foto.imagem, tipoLaudo: laudo.tipo, contexto }, cfg.servidorUrl || SERVIDOR_PADRAO);
-    return { r: env.analise, origem: 'servidor', contrato: env.versao };
+    const base = cfg.servidorUrl || SERVIDOR_PADRAO;
+    const pedido = { imagem: foto.imagem, tipoLaudo: laudo.tipo, contexto };
+    const ias = cfg.iasLigadas ?? [];
+    if (ias.length > 1) return { ...(await analisarVarias(pedido, base, ias)), origem: 'servidor' };
+    const env = await analisarServidor(pedido, base, ias[0]);
+    return { r: env.analise, origem: 'servidor', contrato: env.versao, ia: (env as { origem?: string }).origem };
   }
   if (cfg.motorIA === 'gemini' && cfg.geminiKey) {
     const { analisarGemini } = await import('./gemini'); // só carrega o SDK quando usado
@@ -35,12 +59,12 @@ export async function analisarFoto(laudo: Laudo, fotoId: string) {
   if (!foto) return;
   await db.fotos.update(fotoId, { status: 'analisando', erro: undefined });
   try {
-    const { r, origem, contrato } = await analisar(laudo, foto);
+    const { r, origem, contrato, ia, porIA } = await analisar(laudo, foto);
     const analise: Analise = {
       ambiente: r.ambiente, elemento: r.elemento, legenda: r.legenda, semAnomalia: r.semAnomalia,
       qualidadeFoto: r.qualidadeFoto, contrato: contrato ?? 'analise-foto.v1',
-      achados: r.achados.map((a) => ({ ...a, id: novoId(), aceito: null, origem })),
-      origem, analisadoEm: Date.now(),
+      achados: r.achados.map((a) => ({ ...a, id: novoId(), aceito: null, origem, ia: a.ia ?? ia })),
+      origem, analisadoEm: Date.now(), ...(porIA ? { porIA } : {}),
     };
     await db.fotos.update(fotoId, { status: 'analisada', analise });
   } catch (e) {

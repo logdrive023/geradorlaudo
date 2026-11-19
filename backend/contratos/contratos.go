@@ -5,6 +5,7 @@ package contratos
 import (
 	_ "embed"
 	"encoding/json"
+	"strings"
 )
 
 // VersaoAnaliseFoto é a versão do contrato em uso.
@@ -22,4 +23,18 @@ func AnaliseFoto() map[string]any {
 	delete(m, "$id")
 	delete(m, "title")
 	return m
+}
+
+// PedidoJSON: texto para IAs sem esquema forçado (Claude, OpenAI) responderem no contrato.
+func PedidoJSON() string {
+	return "\n\nFORMATO DA RESPOSTA: responda SOMENTE com um objeto JSON válido (sem texto antes ou depois, sem cercas de código), seguindo este JSON Schema:\n" + string(analiseFotoV1)
+}
+
+// ExtrairJSON tira cercas de código e texto em volta, deixando só o objeto JSON.
+func ExtrairJSON(s string) string {
+	ini, fim := strings.Index(s, "{"), strings.LastIndex(s, "}")
+	if ini < 0 || fim < ini {
+		return s
+	}
+	return s[ini : fim+1]
 }

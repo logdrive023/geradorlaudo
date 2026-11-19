@@ -4,6 +4,8 @@
 //	GEMINI_MODELO   padrão gemini-3.8-flash
 //	GEMINI_MODELO_RESERVA padrão gemini-3.1-flash-lite (quando o principal lota)
 //	GEMINI_PENSAMENTO padrão low (minimal|low|medium|high|padrao)
+//	ANTHROPIC_API_KEY / CLAUDE_MODELO  liga o Claude (opcional; padrão claude-opus-5-5)
+//	OPENAI_API_KEY / OPENAI_MODELO     liga a OpenAI (opcional; padrão gpt-5-mini)
 //	PORT            padrão 8080
 //	CORS_ORIGINS    origens do app separadas por vírgula
 //	DATABASE_URL    Postgres (Supabase, session pooler 5432) — login e laudos
@@ -21,9 +23,11 @@ import (
 	"time"
 
 	"github.com/logdrive023/geradorlaudo/backend/internal/adaptadores/arquivos"
+	"github.com/logdrive023/geradorlaudo/backend/internal/adaptadores/claude"
 	"github.com/logdrive023/geradorlaudo/backend/internal/adaptadores/demo"
 	"github.com/logdrive023/geradorlaudo/backend/internal/adaptadores/gemini"
 	web "github.com/logdrive023/geradorlaudo/backend/internal/adaptadores/http"
+	"github.com/logdrive023/geradorlaudo/backend/internal/adaptadores/openai"
 	"github.com/logdrive023/geradorlaudo/backend/internal/adaptadores/postgres"
 	"github.com/logdrive023/geradorlaudo/backend/internal/aplicacao"
 	"github.com/logdrive023/geradorlaudo/backend/internal/config"
@@ -49,6 +53,24 @@ func main() {
 	} else {
 		slog.Warn("GEMINI_API_KEY vazia: IA em modo demonstração")
 	}
+
+	// outras IAs: só ligam com a chave no servidor. Sem Gemini, a 1ª com chave vira a principal.
+	geminiPronta := ia.Nome() == "gemini"
+	catalogo := []aplicacao.MotorInfo{{Nome: "gemini", Modelo: cfg.GeminiModelo, Pronta: geminiPronta}}
+	var extras []portas.IA
+	adicionar := func(m portas.IA, pronta bool) {
+		catalogo = append(catalogo, aplicacao.MotorInfo{Nome: m.Nome(), Modelo: m.Modelo(), Pronta: pronta})
+		if !pronta {
+			return
+		}
+		if ia.Nome() == "demo" {
+			ia = m
+		} else {
+			extras = append(extras, m)
+		}
+	}
+	adicionar(claude.Novo(cfg.ClaudeKey, cfg.ClaudeModelo), cfg.ClaudeKey != "")
+	adicionar(openai.Novo(cfg.OpenAIKey, cfg.OpenAIModelo), cfg.OpenAIKey != "")
 
 	// banco (Supabase Postgres). Sem DATABASE_URL a API só faz IA.
 	var banco portas.Banco
@@ -85,7 +107,7 @@ func main() {
 	}
 
 	srv := &web.Servidor{
-		IA:           aplicacao.ServicoIA{IA: ia, Timeout: cfg.TimeoutIA},
+		IA:           aplicacao.ServicoIA{IA: ia, Extras: extras, Catalog: catalogo, Timeout: cfg.TimeoutIA},
 		Origens:      cfg.OrigensCORS,
 		LimitePorMin: cfg.LimitePorMinut,
 		Versao:       versao,
