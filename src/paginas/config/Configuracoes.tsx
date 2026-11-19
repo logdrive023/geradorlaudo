@@ -11,6 +11,7 @@ import type { Configuracao, Usuario } from '../../dominio/modelo';
 import { Modelos } from './Modelos';
 import { EtapasObra } from './EtapasObra';
 import { BibliotecaTextos } from './BibliotecaTextos';
+import { CabecalhoTela } from '../../componentes/CabecalhoTela';
 import { SERVIDOR_PADRAO } from '../../ia/servidor';
 import { Prompts } from './Prompts';
 import { IasServidor } from './IasServidor';
@@ -335,7 +336,13 @@ export function Configuracoes() {
   if (!usuario || !cfg) return null;
   return (
     <div className="mx-auto max-w-5xl px-3 py-5 sm:px-4 md:px-8 md:py-9 pb-28">
-      <h1 className="text-3xl font-extrabold md:text-4xl"><span className="grifo">Ajustes</span></h1>
+      <CabecalhoTela sobre={usuario.nome} titulo="Seus" grifo="ajustes" humor="feliz"
+        lia={usuario.papel === 'assistente' ? 'Aqui ficam o seu perfil, a aparência e a sua senha.' : 'Seu perfil fica em "Você". Modelos, biblioteca, etapas e IA valem para o escritório todo.'}
+        numeros={[
+          { n: usuario.papel === 'admin' ? 'Admin' : usuario.papel === 'assistente' ? 'Assistente' : 'Engenheiro', t: 'seu papel' },
+          { n: cfg.motorIA === 'servidor' ? 'Servidor' : cfg.motorIA === 'demo' ? 'Demo' : cfg.motorIA === 'gemini' ? 'Gemini' : 'Claude', t: 'IA em uso' },
+          { n: cfg.tema === 'escuro' ? 'Escuro' : cfg.tema === 'claro' ? 'Claro' : 'Auto', t: 'tema' },
+        ]} />
       {/* dois grupos curtos: o que é seu e o que é do escritório */}
       <nav className="mt-5 grid gap-3" role="tablist" aria-label="Ajustes">
         {([['Você', ['perfil', 'aparencia', 'seguranca', 'dados']], ['Escritório', ['modelos', 'biblioteca', 'etapas', 'ia', 'prompts']]] as const).map(([grupo, ids]) => {

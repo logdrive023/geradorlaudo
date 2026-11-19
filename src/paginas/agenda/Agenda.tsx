@@ -8,6 +8,7 @@ import type { TipoLaudo } from '../../dominio/modelo';
 import { dataISO, feriadoEm, rotuloFeriado, type Feriado, type Local } from '../../lib/feriados';
 import { LegendaFeriados, corDe, lerLocal } from './LegendaFeriados';
 import { Botao, Cartao, Vazio, useAviso } from '../../componentes/ui';
+import { CabecalhoTela } from '../../componentes/CabecalhoTela';
 import { cx } from '../../lib/util';
 import { MarcarVistoria, type Agendamento, type Rascunho } from './MarcarVistoria';
 
@@ -176,17 +177,24 @@ export function Agenda() {
     );
   };
 
+  // números do topo e a próxima vistoria
+  const futuras = (lista ?? []).filter((a) => a.status === 'marcado' && new Date(a.inicio).getTime() >= Date.now() - 3600e3).sort((x, y) => x.inicio.localeCompare(y.inicio));
+  const proxima = futuras[0];
+  const contar = (de: number, dias: number) => { const a = mais(noDia(new Date()), de), b = mais(a, dias); const ka = dataISO(a), kb = dataISO(b); return futuras.filter((x) => { const k = dataISO(new Date(x.inicio)); return k >= ka && k < kb; }).length; };
+  const feitasMes = (lista ?? []).filter((a) => a.status === 'feito' && new Date(a.inicio).getMonth() === new Date().getMonth() && new Date(a.inicio).getFullYear() === new Date().getFullYear()).length;
+  const rotuloProx = proxima ? (() => { const d = new Date(proxima.inicio); const k = dataISO(d); return k === hojeK ? 'hoje' : k === dataISO(mais(noDia(new Date()), 1)) ? 'amanhã' : d.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: '2-digit' }); })() : '';
+  const feriadoProx = proxima ? feriadoEm(dataISO(new Date(proxima.inicio)), local) : undefined;
   const proximos = (() => { const h = new Date(); return [...porDia.entries()].filter(([k]) => k >= hojeK).reduce((s, [, as]) => s + as.filter((a) => a.status === 'marcado' && new Date(a.inicio) >= h).length, 0); })();
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-6 md:px-8 md:py-9">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <p className="font-bold text-texto3">{admin ? 'Toda a equipe' : 'Suas vistorias'}{lista && ` · ${proximos} pela frente`}</p>
-          <h1 className="mt-1 text-3xl font-extrabold md:text-4xl"><span className="grifo">Agenda</span></h1>
-        </div>
-        <Botao variante="obra" onClick={() => novaEm(visao === 'dia' ? foco : mais(noDia(new Date()), 1))}><CalendarPlus className="size-4" />Marcar vistoria</Botao>
-      </div>
+      <CabecalhoTela sobre={admin ? 'Agenda de toda a equipe' : 'Suas vistorias'} titulo="Sua" grifo="agenda"
+        acao={<button onClick={() => novaEm(visao === 'dia' ? foco : mais(noDia(new Date()), 1))} className="pilula pilula-obra"><CalendarPlus className="size-5" />Marcar vistoria</button>}
+        humor={proxima ? 'normal' : 'feliz'}
+        lia={!lista ? 'Abrindo a agenda…' : proxima
+          ? <>Próxima vistoria: <b>{rotuloProx}</b> às <b>{hora(new Date(proxima.inicio))}</b>{proxima.clienteNome && <> com {proxima.clienteNome}</>}.{feriadoProx && <> Atenção: é {rotuloFeriado(feriadoProx).toLowerCase()} ({feriadoProx.nome}).</>}</>
+          : 'Nenhuma vistoria marcada. Toque em "Marcar vistoria" para agendar a próxima.'}
+        numeros={[{ n: contar(0, 1), t: 'hoje' }, { n: contar(0, 7), t: 'próximos 7 dias' }, { n: proximos, t: 'pela frente' }, { n: feitasMes, t: 'feitas no mês' }]} />
 
       {/* visão e navegação */}
       <div className="mt-5 flex flex-wrap items-center gap-2">

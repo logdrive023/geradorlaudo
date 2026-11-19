@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
-import { Camera, Check, ChevronDown, Copy, FileText, HardHat, Mail, Sparkles, Users, MessageCircle, RotateCw, Shield, UserCheck, UserPlus, UserX } from 'lucide-react';
+import { Camera, Check, ChevronDown, Copy, HardHat, Mail, MessageCircle, RotateCw, Shield, UserCheck, UserPlus, UserX } from 'lucide-react';
 import { PAPEIS, alterarUsuario, auditoria, convidar, lerOrg, listarConvites, listarUsuarios, type ConviteOrg, type EventoOrg, type Org, type UsuarioOrg } from '../../db/organizacao';
 import { Botao, Campo, Cartao, Entrada, Modal, useAviso } from '../../componentes/ui';
 import { Atividades } from './Atividades';
+import { CabecalhoTela } from '../../componentes/CabecalhoTela';
 import { cx } from '../../lib/util';
 import type { Papel } from '../../dominio/modelo';
 
@@ -75,27 +76,11 @@ export function EquipeOrganizacao({ euId }: { euId: string }) {
   const ativos = pessoas.filter((p) => p.ativo).length;
   return (
     <div className="mx-auto max-w-4xl px-3 py-4 sm:px-4 md:px-8 md:py-8">
-      {/* topo no padrão das outras telas */}
-      <section className="relative overflow-hidden rounded-[24px] bg-[#121A2B] p-5 text-white md:p-7">
-        <div className="pointer-events-none absolute -right-20 -top-24 size-72 rounded-full bg-obra/25 blur-3xl" aria-hidden />
-        <div className="relative flex flex-wrap items-end justify-between gap-4">
-          <div className="min-w-0">
-            <p className="truncate text-sm font-bold text-[#A9B1C1]">{org.organizacao.nome}</p>
-            <h1 className="mt-1 text-[28px] font-extrabold leading-tight md:text-4xl">Sua <span className="grifo">equipe</span></h1>
-          </div>
-          {admin && <button onClick={() => { setNovo({ nome: '', email: '', papel: 'engenheiro' }); setLink(''); }} className="pilula pilula-obra"><UserPlus className="size-5" />Convidar</button>}
-        </div>
-        <div className="relative mt-5 grid grid-cols-3 gap-2">
-          {[{ n: ativos, t: ativos === 1 ? 'pessoa ativa' : 'pessoas ativas', ic: Users }, { n: org.uso.laudosMes, t: 'laudos no mês', ic: FileText }, { n: org.uso.analisesIA, t: 'fotos com IA', ic: Sparkles }].map(({ n, t, ic: Ic }) => (
-            <div key={t} className="rounded-2xl bg-white/[.07] px-2 py-3 text-center ring-1 ring-white/10">
-              <Ic className="mx-auto size-4 text-obra" />
-              <div className="mt-1 font-display text-2xl font-extrabold md:text-3xl">{n}</div>
-              <div className="text-[11px] font-bold text-[#A9B1C1] md:text-sm">{t}</div>
-            </div>
-          ))}
-        </div>
-        <div className="fita absolute inset-x-0 bottom-0 h-1.5" aria-hidden />
-      </section>
+      <CabecalhoTela sobre={org.organizacao.nome} titulo="Sua" grifo="equipe"
+        acao={admin && <button onClick={() => { setNovo({ nome: '', email: '', papel: 'engenheiro' }); setLink(''); }} className="pilula pilula-obra"><UserPlus className="size-5" />Convidar</button>}
+        humor={convites.length ? 'atenta' : 'feliz'}
+        lia={convites.length ? `${convites.length} convite${convites.length > 1 ? 's' : ''} esperando a pessoa entrar.` : admin ? 'Convide quem trabalha com você. Cada um vê só o que o papel permite.' : 'Esta é a equipe do seu escritório.'}
+        numeros={[{ n: ativos, t: ativos === 1 ? 'pessoa ativa' : 'pessoas ativas' }, { n: org.uso.laudosMes, t: 'laudos no mês' }, { n: org.uso.analisesIA, t: 'fotos com IA' }]} />
 
       {/* pessoas */}
       <h2 className="mt-6 text-lg font-extrabold">Pessoas</h2>
