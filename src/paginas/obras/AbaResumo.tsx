@@ -9,7 +9,7 @@ import { reais } from '../../dominio/plano';
 import { STATUS_LAUDO } from '../../dominio/modelo';
 import { criarLinkObra, desligarLinkObra, logadoNaNuvem } from '../../db/nuvem';
 import { AreaTexto, Botao, Cartao, Dica, Modal } from '../../componentes/ui';
-import { Anel, Escolha, Indicador, LinkPublico, Rotulado } from '../../componentes/Pecas';
+import { Anel, Escolha, Indicador, LinkPublico, Rotulado, ValorAjustado } from '../../componentes/Pecas';
 import { cx, dataBR } from '../../lib/util';
 import { CamposObra, ICONE_OBRA, type ValoresObra } from './CamposObra';
 import type { AbaObra } from './ObraTela';
@@ -94,7 +94,7 @@ export function AbaResumo({ obra, irPara, avisar }: { obra: Obra; irPara: (a: Ab
           {/* dinheiro */}
           <button onClick={() => irPara('financeiro')} className="group grid gap-2 rounded-[22px] border border-borda bg-sup p-4 text-left transition hover:border-obra">
             <span className="flex items-center justify-between"><span className="flex items-center gap-1.5 text-sm font-bold text-texto2"><Wallet className="size-4 text-obra" />Orçado × gasto</span><ChevronRight className="size-4 text-texto3 transition group-hover:translate-x-0.5" /></span>
-            <span className="font-display text-2xl font-extrabold leading-none">{reais(r.fin.realizado)}</span>
+            <ValorAjustado className="font-display text-2xl font-extrabold leading-none">{reais(r.fin.realizado)}</ValorAjustado>
             {usoOrc != null ? <>
               <div className="h-2 overflow-hidden rounded-full bg-sup2"><div className={cx('h-full rounded-full', usoOrc > 100 ? 'bg-critico' : 'bg-obra')} style={{ width: `${Math.min(100, usoOrc)}%` }} /></div>
               <span className="text-xs text-texto2"><b className={usoOrc > 100 ? 'text-critico-texto' : 'text-texto'}>{usoOrc}%</b> de {reais(r.fin.orcado)}{r.fin.aPagar > 0 && <> · <b className="text-medio-texto">{reais(r.fin.aPagar)} a pagar</b></>}</span>

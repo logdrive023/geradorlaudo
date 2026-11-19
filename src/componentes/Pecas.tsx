@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { ChevronDown, Copy, Link2, Link2Off, Share2 } from 'lucide-react';
 import { Botao, CLASSE_CAMPO, Dica } from './ui';
 import { cx } from '../lib/util';
@@ -52,7 +52,9 @@ export function Rotulado({ rotulo, children, className, alerta, inteiro }: { rot
   return (
     <span className={cx('grid min-w-0', className)}>
       <span className="text-[10px] font-extrabold uppercase tracking-wider text-texto3">{rotulo}</span>
-      <span className={cx('text-sm font-bold', inteiro ? 'whitespace-nowrap' : 'truncate', alerta ? 'text-critico-texto' : 'text-texto')}>{children}</span>
+      {inteiro
+        ? <ValorAjustado className={cx('text-sm font-bold', alerta ? 'text-critico-texto' : 'text-texto')}>{children}</ValorAjustado>
+        : <span className={cx('truncate text-sm font-bold', alerta ? 'text-critico-texto' : 'text-texto')}>{children}</span>}
     </span>
   );
 }
@@ -80,11 +82,44 @@ export function Indicador({ valor, rotulo, tom = 'neutro', dica, ic: Ic }: { val
   return (
     <div className={cx('grid min-w-0 content-between gap-1 rounded-2xl p-3', cls)}>
       {/* valor ocupa a largura toda e diminui se for longo (nunca fica embaixo do ícone) */}
-      <div className={cx('min-w-0 whitespace-nowrap font-display font-extrabold leading-tight tabular-nums', tamanhoValor(valor))}>{valor}</div>
+      <ValorAjustado className={cx('font-display font-extrabold leading-tight tabular-nums', tamanhoValor(valor))}>{valor}</ValorAjustado>
       <div className="flex min-w-0 items-center gap-1.5 text-xs font-bold opacity-80">
         {Ic && <Ic className="size-3.5 shrink-0" />}<span className="min-w-0">{rotulo}</span>{dica && <Dica texto={dica} />}
       </div>
     </div>
+  );
+}
+
+/**
+ * Valor que NUNCA quebra linha: fica numa linha só e diminui a fonte até caber na largura disponível
+ * (R$ 0,00 ou R$ 1.250.000.000,00, tanto faz).
+ */
+export function ValorAjustado({ children, className, min = 7 }: { children: ReactNode; className?: string; min?: number }) {
+  const caixa = useRef<HTMLSpanElement>(null);
+  const texto = useRef<HTMLSpanElement>(null);
+  const atual = useRef(1);
+  const [escala, setEscala] = useState(1);
+  useLayoutEffect(() => {
+    const c = caixa.current, t = texto.current;
+    if (!c || !t) return;
+    const ajustar = () => {
+      // largura natural = largura medida / escala aplicada agora (sem "resetar" o estilo)
+      const natural = t.getBoundingClientRect().width / atual.current;
+      const base = parseFloat(getComputedStyle(c).fontSize) || 16;
+      const e = natural > c.clientWidth ? Math.max(min / base, c.clientWidth / natural) : 1;
+      if (Math.abs(e - atual.current) > 0.005) { atual.current = e; setEscala(e); }
+    };
+    ajustar();
+    const ro = new ResizeObserver(ajustar);
+    ro.observe(c);
+    ro.observe(t);
+    void document.fonts?.ready.then(ajustar); // a fonte de título carrega depois e muda a largura
+    return () => ro.disconnect();
+  }, [children, min]);
+  return (
+    <span ref={caixa} className={cx('block min-w-0 overflow-hidden', className)}>
+      <span ref={texto} className="inline-block whitespace-nowrap" style={escala < 1 ? { fontSize: `${escala}em` } : undefined}>{children}</span>
+    </span>
   );
 }
 

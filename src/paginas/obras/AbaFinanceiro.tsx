@@ -4,7 +4,7 @@ import { mudarObra } from '../../db/db';
 import { CATEGORIA, financeiro, type CategoriaGasto, type Lancamento, type Obra } from '../../dominio/obra';
 import { reais } from '../../dominio/plano';
 import { Botao, Cartao, Dica, Entrada } from '../../componentes/ui';
-import { Anel, EntradaReais, Escolha, Indicador } from '../../componentes/Pecas';
+import { Anel, EntradaReais, Escolha, Indicador, ValorAjustado } from '../../componentes/Pecas';
 import { baixar, cx, dataBR, hoje, novoId } from '../../lib/util';
 
 /** Planilha do financeiro (CSV com ; e BOM, abre certo no Excel). */
@@ -42,10 +42,10 @@ export function AbaFinanceiro({ obra }: { obra: Obra }) {
             <Anel pct={pct ?? 0} tam={96} espessura={10}>
               <span><b className="block font-display text-2xl font-extrabold leading-none">{pct ?? 0}%</b><span className="text-[10px] font-bold uppercase tracking-wider text-texto3">usado</span></span>
             </Anel>
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1">
               <h2 className="flex items-center gap-1.5 text-lg font-bold">Orçamento<Dica texto="Quanto do orçado já foi gasto. O orçado é a soma das etapas; sem valor nas etapas, vale o orçamento da ficha da obra." /></h2>
-              <p className="font-display text-2xl font-extrabold">{reais(f.realizado)}</p>
-              <p className="text-sm text-texto2">de {reais(f.orcado)} orçados</p>
+              <ValorAjustado className="font-display text-2xl font-extrabold">{reais(f.realizado)}</ValorAjustado>
+              <ValorAjustado className="text-sm text-texto2">de {reais(f.orcado)} orçados</ValorAjustado>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">

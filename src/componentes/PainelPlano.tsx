@@ -4,7 +4,7 @@ import { AlarmClock, ChevronRight, ClipboardList, Search } from 'lucide-react';
 import type { Foto, Laudo } from '../dominio/modelo';
 import { STATUS_ACAO, dataCurta, itensPlano, planoPreenchido, reais, type ItemPlano } from '../dominio/plano';
 import { SeloGravidade } from './ui';
-import { Rotulado } from './Pecas';
+import { Rotulado, ValorAjustado } from './Pecas';
 import { cx } from '../lib/util';
 
 type Filtro = 'emAberto' | 'aberta' | 'andamento' | 'resolvida' | 'atrasadas' | 'todas';
@@ -50,7 +50,7 @@ export function PainelPlano({ laudos, porLaudo, buscaExterna }: { laudos: Laudo[
         {buscaExterna == null ? <h2 className="flex items-center gap-1.5 text-lg font-extrabold"><ClipboardList className="size-5 text-obra" />Plano de ação</h2>
           : <span className="text-sm font-bold text-texto2">Total da seleção</span>}
         <p className="text-right text-sm text-texto2">
-          <b className="font-display text-lg text-texto">{reais(valor)}</b>
+          <ValorAjustado className="font-display text-lg font-bold text-texto">{reais(valor)}</ValorAjustado>
           <span className="block text-xs">{FILTROS.find((f) => f.id === filtro)!.rotulo.toLowerCase()}{termo && ' · na busca'} · {visiveis.length} {visiveis.length === 1 ? 'item' : 'itens'}</span>
         </p>
       </div>

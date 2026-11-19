@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router';
-import { AlarmClock, ArrowRight, ArrowUp, Camera, Check, ClipboardCheck, ClipboardList, Cloud, Crosshair, FileDown, FileSpreadsheet, Link2, MapPin, Mic, ScanSearch, Share2, ShieldCheck, Smartphone, Sparkles, TriangleAlert, X } from 'lucide-react';
+import { AlarmClock, ArrowRight, BookOpenText, HardHat, Wallet, ArrowUp, Camera, Check, ClipboardCheck, ClipboardList, Cloud, Crosshair, FileDown, FileSpreadsheet, Link2, MapPin, Mic, ScanSearch, Share2, ShieldCheck, Smartphone, Sparkles, TriangleAlert, X } from 'lucide-react';
 import { Logo } from '../../componentes/ui';
 import { RodapeSite } from './Legal';
 import { LISTA_TIPOS } from '../../dominio/tipos';
@@ -87,6 +87,9 @@ const RECURSOS = [
   { ic: Cloud, t: 'Salvo na nuvem', d: 'Seus laudos no servidor e no aparelho. Trocou de celular? Entre e eles voltam.' },
   { ic: ClipboardList, t: 'Plano de ação', d: 'Cada anomalia com prazo, responsável e custo estimado do reparo.' },
   { ic: Link2, t: 'Link do cliente', d: 'O cliente lê o laudo no celular e baixa o PDF, sem criar conta.' },
+  { ic: HardHat, t: 'Gestão de obras', d: 'Cronograma com medição, diário de obra (RDO), financeiro e compras com cotação.' },
+  { ic: BookOpenText, t: 'Diário com a Lia', d: 'Anote rápido no canteiro; a Lia passa a limpo em linguagem técnica.' },
+  { ic: Wallet, t: 'Orçado × gasto', d: 'Despesas por etapa, o que falta pagar e planilha para o Excel.' },
 ];
 
 const DUVIDAS = [
@@ -94,6 +97,7 @@ const DUVIDAS = [
   ['Para onde vão as minhas fotos?', 'Para o servidor do LaudoTech: a IA analisa e as fotos ficam guardadas com o seu laudo, no seu aparelho e na nuvem, num armazenamento privado.'],
   ['Preciso instalar alguma coisa?', 'Não. Abre no navegador do computador ou do celular, e dá para instalar como app na tela inicial, sem loja.'],
   ['Como o meu cliente recebe o laudo?', 'Além do PDF, você gera um link e manda no WhatsApp. O cliente lê no celular e baixa o PDF, sem conta. Você desliga o link quando quiser.'],
+  ['Dá para gerir a obra também?', 'Dá: cada obra tem cronograma com medição e classificação das etapas, diário de obra (RDO) com fotos e PDF, financeiro orçado × gasto e compras com cotação. O cliente acompanha por um link.'],
   ['E depois da vistoria?', 'O plano de ação transforma cada anomalia em tarefa com prazo (sugerido pela gravidade), responsável e custo estimado. Sai no PDF e em planilha Excel.'],
   ['Quais tipos de laudo?', 'Vistoria cautelar, entrega de imóvel, locação, inspeção predial, vícios construtivos, estrutural, reforma (NBR 16280), perícia judicial, avaliação (NBR 14653) e contábil. Cada um com seu padrão, que você pode personalizar.'],
   ['Quais normas o laudo cita?', 'ABNT NBR 13752 (perícias), NBR 16747 (inspeção predial), NBR 15575 (desempenho), NBR 5674 (manutenção), conforme o tipo de laudo.'],
@@ -193,7 +197,7 @@ export function Site() {
         {/* FITA DE OBRA */}
         <div className="fita relative overflow-hidden py-3" aria-hidden>
           <div className="flex w-max animate-[rolar_28s_linear_infinite] gap-10 whitespace-nowrap font-display text-lg font-extrabold uppercase tracking-wider text-white [text-shadow:0_1px_0_#121A2B]">
-            {[...Array(2)].map((_, k) => <span key={k} className="flex gap-10">{['Suba as fotos', 'A IA analisa', 'Você confere', 'O laudo sai pronto', 'Plano de ação', 'Link do cliente', 'NBR 13752', 'NBR 16747'].map((t) => <span key={t} className="rounded bg-[#121A2B] px-3">{t}</span>)}</span>)}
+            {[...Array(2)].map((_, k) => <span key={k} className="flex gap-10">{['Suba as fotos', 'A IA analisa', 'Você confere', 'O laudo sai pronto', 'Plano de ação', 'Link do cliente', 'Gestão de obras', 'Diário de obra', 'NBR 13752', 'NBR 16747'].map((t) => <span key={t} className="rounded bg-[#121A2B] px-3">{t}</span>)}</span>)}
           </div>
         </div>
 

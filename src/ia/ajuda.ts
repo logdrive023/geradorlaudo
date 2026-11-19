@@ -82,6 +82,20 @@ export const AJUDA: Categoria[] = [
     ],
   },
   {
+    id: 'obras', nome: 'Gestão de obras',
+    perguntas: [
+      { p: 'Como cadastro uma obra?', r: 'Na tela Obras, toque em "Nova obra". Só o nome é obrigatório; tipo, prazo, área e orçamento ajudam no cronograma e no financeiro.', ir: { tipo: 'rota', para: '/obras', rotulo: 'Ir para Obras' }, chaves: 'obra cadastrar nova criar gestão' },
+      { p: 'Como preencho o diário de obra (RDO)?', r: 'Dentro da obra, aba Diário › "Registrar hoje". Marque o clima, a equipe, as etapas do dia, escreva as atividades e ocorrências e ponha fotos. A equipe e as etapas do último dia já vêm preenchidas.', ir: { tipo: 'rota', para: '/obras', rotulo: 'Ir para Obras' }, chaves: 'diário rdo dia relatório diário obra clima equipe' },
+      { p: 'A Lia escreve o diário?', r: 'Escreve: anote rápido (ex.: "concretagem laje 8m3") e toque em "Lia escreve". Ela passa a limpo em linguagem técnica, sem inventar nada.', chaves: 'lia escreve diário texto técnico' },
+      { p: 'Como atualizo o avanço das etapas?', r: 'Aba Cronograma: abra a etapa e arraste a medição (%). O avanço da obra é calculado sozinho e comparado com o previsto pelas datas.', ir: { tipo: 'rota', para: '/obras', rotulo: 'Ir para Obras' }, chaves: 'medição avanço etapa cronograma percentual' },
+      { p: 'O que é etapa crítica, intermediária e simples?', r: 'É a classificação da etapa: crítica (vermelha) quando um erro afeta segurança ou estrutura; intermediária (amarela) quando afeta desempenho; simples (verde) para acabamento e rotina.', chaves: 'crítica intermediária simples bolinha classificação cor' },
+      { p: 'Como mudo as etapas que vêm em toda obra?', r: 'Em Ajustes › Etapas de obra: cadastre, reordene, classifique, edite o checklist e escolha os tipos de obra. O padrão de fábrica é um consenso SINAPI/NBR 12721, UniFormat II e MasterFormat.', ir: AJ('etapas', 'Abrir Etapas de obra'), chaves: 'etapas configurar ordem padrão sinapi uniformat masterformat' },
+      { p: 'Como controlo o dinheiro da obra?', r: 'Aba Financeiro: orçado × gasto por etapa, lançamentos de despesas e receitas, o que falta pagar e planilha para o Excel.', chaves: 'financeiro orçamento gasto despesa custo dinheiro' },
+      { p: 'Como faço cotação de material?', r: 'Aba Compras: peça o material, ponha as cotações dos fornecedores (o menor preço ganha um troféu), aprove e marque como comprada; ela entra sozinha no financeiro.', chaves: 'compras cotação fornecedor material pedido' },
+      { p: 'O cliente pode acompanhar a obra?', r: 'Pode: no Resumo da obra, "Gerar link". Ele vê avanço, cronograma e diário com fotos, sem conta. O financeiro só aparece se você marcar.', chaves: 'cliente acompanhar obra link proprietário' },
+    ],
+  },
+  {
     id: 'cadastro', nome: 'Cadastro e perfil',
     perguntas: [
       { p: 'Onde coloco meu CREA / CAU?', r: 'Em Ajustes › Perfil, campo "Registro profissional". Sem ele o laudo não fica pronto para assinar.', ir: AJ('perfil', 'Abrir meu perfil'), chaves: 'crea cau crc registro' },
