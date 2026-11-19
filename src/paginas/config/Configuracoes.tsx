@@ -28,7 +28,7 @@ const ABAS: { id: Aba; rotulo: string; ic: typeof User }[] = [
   { id: 'perfil', rotulo: 'Perfil', ic: User },
   { id: 'modelos', rotulo: 'Modelos', ic: FileStack },
   { id: 'biblioteca', rotulo: 'Biblioteca', ic: BookMarked },
-  { id: 'etapas', rotulo: 'Etapas de obra', ic: ListOrdered },
+  { id: 'etapas', rotulo: 'Etapas', ic: ListOrdered },
   { id: 'ia', rotulo: 'IA', ic: Sparkles },
   { id: 'prompts', rotulo: 'Prompts', ic: MessageSquareText },
   { id: 'aparencia', rotulo: 'Aparência', ic: Palette },
@@ -336,14 +336,25 @@ export function Configuracoes() {
   return (
     <div className="mx-auto max-w-5xl px-3 py-5 sm:px-4 md:px-8 md:py-9 pb-28">
       <h1 className="text-3xl font-extrabold md:text-4xl"><span className="grifo">Ajustes</span></h1>
-      <p className="mt-1 text-texto2">Seu perfil, os modelos de laudo, a IA e os seus dados.</p>
-      <nav className="mt-5 grid grid-cols-4 gap-1 rounded-2xl border border-borda bg-sup p-1 sm:flex sm:w-fit" role="tablist">
-        {abas.map(({ id, rotulo, ic: Ic }) => (
-          <button key={id} role="tab" aria-selected={aba === id} onClick={() => setBusca({ aba: id }, { replace: true })}
-            className={cx('flex flex-col items-center gap-1 rounded-xl px-1 py-2 text-[11px] font-extrabold transition sm:flex-row sm:gap-2 sm:px-4 sm:text-sm', aba === id ? 'bg-[#121A2B] text-white dark:bg-tinta dark:text-[#0E1320]' : 'text-texto2 hover:bg-sup2 hover:text-texto')}>
-            <Ic className="size-5 sm:size-4" />{rotulo}
-          </button>
-        ))}
+      {/* dois grupos curtos: o que é seu e o que é do escritório */}
+      <nav className="mt-5 grid gap-3" role="tablist" aria-label="Ajustes">
+        {([['Você', ['perfil', 'aparencia', 'seguranca', 'dados']], ['Escritório', ['modelos', 'biblioteca', 'etapas', 'ia', 'prompts']]] as const).map(([grupo, ids]) => {
+          const itens = abas.filter((a) => (ids as readonly string[]).includes(a.id));
+          if (!itens.length) return null;
+          return (
+            <div key={grupo} className="grid gap-1.5">
+              <span className="text-[11px] font-extrabold uppercase tracking-wider text-texto3">{grupo}</span>
+              <div className="-mx-3 flex gap-1.5 overflow-x-auto px-3 pb-1 sm:mx-0 sm:flex-wrap sm:px-0">
+                {itens.map(({ id, rotulo, ic: Ic }) => (
+                  <button key={id} role="tab" aria-selected={aba === id} onClick={() => setBusca({ aba: id }, { replace: true })}
+                    className={cx('flex h-10 shrink-0 items-center gap-2 rounded-full px-4 text-sm font-extrabold transition', aba === id ? 'bg-[#121A2B] text-white dark:bg-tinta dark:text-[#0E1320]' : 'bg-sup text-texto2 ring-1 ring-borda hover:text-texto')}>
+                    <Ic className="size-4" />{rotulo}
+                  </button>
+                ))}
+              </div>
+            </div>
+          );
+        })}
       </nav>
       <div className="mt-5">
         {aba === 'perfil' && <Perfil u={usuario} />}

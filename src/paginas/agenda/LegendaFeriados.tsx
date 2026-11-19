@@ -50,10 +50,12 @@ export function LegendaFeriados({ local, aoMudar }: { local: Local; aoMudar: (l:
       {proximos.length > 0 && (
         <ul className="grid gap-1.5 sm:grid-cols-2">
           {proximos.map((f) => (
-            <li key={f.data + f.nome} className="flex items-center gap-2 rounded-xl bg-sup2 px-3 py-2 text-sm">
-              <b className="w-12 shrink-0 tabular-nums">{f.data.slice(8)}/{f.data.slice(5, 7)}</b>
-              <span className="min-w-0 flex-1 truncate">{f.nome}</span>
-              <span className={cx('shrink-0 rounded-full px-2 py-0.5 text-[10px] font-extrabold', corDe(f).selo)}>{f.tipo === 'facultativo' ? 'facultativo' : f.escopo}</span>
+            <li key={f.data + f.nome} className="flex items-start gap-3 rounded-xl bg-sup2 px-3 py-2.5 text-sm">
+              <b className="w-11 shrink-0 pt-px tabular-nums">{f.data.slice(8)}/{f.data.slice(5, 7)}</b>
+              <span className="min-w-0 flex-1">
+                <span className="block leading-snug">{f.nome}</span>
+                <span className="mt-0.5 flex items-center gap-1.5 text-[11px] font-bold text-texto3"><span className={cx('size-2 rounded-full', corDe(f).ponto)} />{f.tipo === 'facultativo' ? 'Ponto facultativo' : `Feriado ${f.escopo}`}</span>
+              </span>
             </li>
           ))}
         </ul>
