@@ -92,7 +92,7 @@ create table if not exists fotos (
   sem_anomalia    boolean,
   qualidade_foto  text check (qualidade_foto in ('boa','regular','ruim')),
   contrato_ia     text,                         -- ex.: analise-foto.v1
-  origem_analise  text check (origem_analise in ('gemini','claude','demo','manual')),
+  origem_analise  text check (origem_analise in ('gemini','claude','servidor','demo','manual')),
   analisado_em    timestamptz,
   observacao      text,
   erro            text,
@@ -114,7 +114,7 @@ create table if not exists achados (
   confianca      real not null check (confianca between 0 and 1),
   regiao         jsonb,                          -- {x,y,w,h} em %
   aceito         boolean,                        -- null = ainda não conferido
-  origem         text not null check (origem in ('gemini','claude','demo','manual'))
+  origem         text not null check (origem in ('gemini','claude','servidor','demo','manual'))
 );
 create index if not exists achados_foto on achados (foto_id);
 
@@ -138,7 +138,7 @@ create table if not exists eventos (
 create index if not exists eventos_laudo on eventos (laudo_id, criado_em desc);
 
 -- espaço usado por organização (para avisar antes de estourar a cota do plano)
-create or replace view uso_por_organizacao as
+create or replace view uso_por_organizacao with (security_invoker = true) as
 select l.organizacao_id,
        count(distinct l.id)            as laudos,
        count(f.id)                     as fotos,
@@ -148,5 +148,22 @@ left join fotos f on f.laudo_id = l.id
 where l.excluido_em is null
 group by l.organizacao_id;
 
--- A API acessa com o usuário do banco; a Data API (PostgREST) do Supabase fica desligada.
--- Se um dia ligar, ative RLS em todas as tabelas antes.
+-- A API acessa com o usuário dono das tabelas (não é afetada pelo RLS).
+-- RLS ligado e sem políticas: se a Data API (PostgREST) do Supabase for ligada, ninguém de fora lê nada.
+alter table organizacoes  enable row level security;
+alter table usuarios      enable row level security;
+alter table modelos_texto enable row level security;
+alter table prompts       enable row level security;
+alter table laudos        enable row level security;
+alter table fotos         enable row level security;
+alter table achados       enable row level security;
+alter table analises_fila enable row level security;
+alter table eventos       enable row level security;
+
+-- controle de versões do esquema
+create table if not exists schema_migrations (
+  versao      text primary key,
+  aplicada_em timestamptz not null default now()
+);
+alter table schema_migrations enable row level security;
+insert into schema_migrations (versao) values ('0001_inicial') on conflict do nothing;
