@@ -18,6 +18,10 @@ type Config struct {
 	TimeoutIA      time.Duration
 	LimitePorMinut int // pedidos de IA por IP por minuto
 	DatabaseURL    string
+	SupabaseURL    string // SUPABASE_URL: storage das imagens
+	SupabaseChave  string // SUPABASE_SERVICE_KEY: chave secreta, só no servidor
+	Balde          string // STORAGE_BALDE
+	PastaArquivos  string // ARQUIVOS_PASTA: sem Supabase, guarda no disco (só desenvolvimento)
 }
 
 func Ler() Config {
@@ -31,6 +35,10 @@ func Ler() Config {
 		TimeoutIA:      time.Duration(numero("TIMEOUT_IA_SEGUNDOS", 120)) * time.Second,
 		LimitePorMinut: numero("LIMITE_IA_POR_MINUTO", 20),
 		DatabaseURL:    strings.TrimSpace(os.Getenv("DATABASE_URL")),
+		SupabaseURL:    strings.TrimSpace(os.Getenv("SUPABASE_URL")),
+		SupabaseChave:  strings.TrimSpace(os.Getenv("SUPABASE_SERVICE_KEY")),
+		Balde:          env("STORAGE_BALDE", "fotos"),
+		PastaArquivos:  strings.TrimSpace(os.Getenv("ARQUIVOS_PASTA")),
 	}
 }
 

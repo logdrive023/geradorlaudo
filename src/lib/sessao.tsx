@@ -3,6 +3,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db/db';
 import type { Usuario } from '../dominio/modelo';
 import { novoId, resumoSenha } from './util';
+import { entrarNuvem, lerToken, ouvirNuvem, sairNuvem, sincronizar } from '../db/nuvem';
 
 const CHAVE = 'laudotech.sessao';
 
@@ -31,8 +32,16 @@ export function SessaoProvider({ children }: { children: ReactNode }) {
   // conta apagada ou desativada: encerra a sessão
   useEffect(() => { if (id && r?.id === id && (!r.u || !r.u.ativo)) { gravarSessao(null); setId(null); } }, [r, id]);
 
+  // logado na nuvem: ao abrir o app, sincroniza; sessão vencida no servidor encerra aqui também
+  useEffect(() => ouvirNuvem((e) => { if (e.tipo === 'sair') { gravarSessao(null); setId(null); } }), []);
+  const logadoId = usuario?.id;
+  useEffect(() => { if (logadoId && lerToken()) void sincronizar(logadoId); }, [logadoId]);
+
   const entrar = async (login: string, senha: string) => {
     const l = login.trim().toLowerCase();
+    // 1º o servidor (laudos salvos no banco); fora do ar, entra só neste aparelho
+    const nuvem = await entrarNuvem(l, senha);
+    if (nuvem !== 'sem-servidor') { gravarSessao(nuvem.id); setId(nuvem.id); return; }
     const u = await db.usuarios.where('email').equals(l).first();
     if (!u || (await resumoSenha(u.sal, senha)) !== u.senhaHash) throw new Error('Usuário ou senha não conferem.');
     if (!u.ativo) throw new Error('Esta conta está desativada. Fale com o administrador.');
@@ -54,7 +63,7 @@ export function SessaoProvider({ children }: { children: ReactNode }) {
     gravarSessao(u.id); setId(u.id);
   };
 
-  const sair = () => { gravarSessao(null); setId(null); };
+  const sair = () => { void sairNuvem(); gravarSessao(null); setId(null); };
 
   return <SessaoCtx.Provider value={{ usuario: id ? usuario : null, entrar, cadastrar, sair }}>{children}</SessaoCtx.Provider>;
 }

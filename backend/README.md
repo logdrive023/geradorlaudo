@@ -53,3 +53,21 @@ migrations/        SQL do Postgres (fase 2)
 ## Espaço no banco (500 MB do Supabase grátis)
 O banco **não guarda imagem**: só a chave do arquivo no storage. As fotos já chegam comprimidas do app
 (WebP 1280 px ≈ 100–180 KB; miniatura 320 px ≈ 10 KB).
+
+## Login e laudos no banco (fase 2)
+Com `DATABASE_URL`, a API aplica as migrations ao subir e liga:
+
+| Método | Rota | Para quê |
+|---|---|---|
+| POST | `/api/auth/entrar` | `{email, senha}` → `{token, usuario}` (senha argon2id; token vale 30 dias) |
+| GET/POST | `/api/auth/eu` · `/api/auth/sair` | quem sou · encerrar sessão |
+| GET | `/api/laudos` | laudos da organização |
+| GET/PUT/DELETE | `/api/laudos/{id}` | laudo completo (com fotos e achados) · gravar · apagar |
+| PUT/DELETE | `/api/laudos/{id}/fotos/{foto}` | multipart `foto` (JSON) + `imagem`/`miniatura` na 1ª vez (428 se faltar) |
+| GET | `/api/laudos/{id}/fotos/{foto}/arquivo?tam=mini` | a imagem (vem do storage) |
+
+- **Fase de teste: no máximo 5 fotos por laudo** (409 na 6ª).
+- Imagens no **Supabase Storage** (balde privado `fotos`, criado sozinho): `SUPABASE_URL` + `SUPABASE_SERVICE_KEY`.
+  Em desenvolvimento, `ARQUIVOS_PASTA=./arquivos` guarda no disco.
+- Criar/atualizar usuário sem a senha passar por SQL:
+  `DATABASE_URL=... SENHA=... go run ./cmd/criar-usuario -email admin@admin -papel admin`

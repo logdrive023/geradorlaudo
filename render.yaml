@@ -42,3 +42,7 @@ services:
         value: "20"
       - key: DATABASE_URL
         sync: false
+      - key: SUPABASE_URL
+        value: https://zzxwaqhhywifbmkikkzy.supabase.co
+      - key: SUPABASE_SERVICE_KEY
+        sync: false

@@ -13,6 +13,7 @@ import { FotoMarcada } from '../../componentes/FotoMarcada';
 import { BarraWizard } from '../../componentes/Wizard';
 import { Lia } from '../../componentes/Lia';
 import { cx, dois, novoId } from '../../lib/util';
+import { MAX_FOTOS_POR_LAUDO, ouvirNuvem } from '../../db/nuvem';
 import type { Aba } from './Editor';
 
 type Filtro = 'todas' | 'conferir' | 'conferidas' | 'erro';
@@ -71,6 +72,9 @@ export function AbaFotos({ laudo, fotos, irPara }: { laudo: Laudo; fotos: Foto[]
   const [filtro, setFiltro] = useState<Filtro>('todas');
   const motor = useLiveQuery(async () => { const c = await lerConfig(); return c.motorIA === 'claude' && c.apiKey ? 'claude' : c.motorIA === 'gemini' && c.geminiKey ? 'gemini' : c.motorIA === 'servidor' ? 'servidor' : 'demo'; }, [], 'demo');
   const { avisar, el } = useAviso();
+  const cheio = fotos.length >= MAX_FOTOS_POR_LAUDO;
+  // o servidor recusou algo (ex.: limite de fotos): mostra aqui
+  useEffect(() => ouvirNuvem((e) => { if (e.tipo === 'erro') avisar(e.mensagem, 'erro'); }), [avisar]);
   const p = progressoFotos(fotos);
   const paraConferir = fotos.filter((f) => f.status === 'analisada');
   const achadosNovos = paraConferir.flatMap((f) => f.analise?.achados ?? []);
@@ -78,8 +82,12 @@ export function AbaFotos({ laudo, fotos, irPara }: { laudo: Laudo; fotos: Foto[]
   const docs = TIPOS[laudo.tipo].foco === 'documento';
 
   const adicionar = async (lista: FileList | File[]) => {
-    const arqs = [...lista].filter((f) => f.type.startsWith('image/'));
-    if (!arqs.length) return;
+    const imagens = [...lista].filter((f) => f.type.startsWith('image/'));
+    if (!imagens.length) return;
+    const vagas = Math.max(0, MAX_FOTOS_POR_LAUDO - fotos.length);
+    if (!vagas) { avisar(`Na fase de teste cada laudo aceita até ${MAX_FOTOS_POR_LAUDO} fotos.`, 'erro'); return; }
+    const arqs = imagens.slice(0, vagas);
+    if (imagens.length > vagas) avisar(`Só ${vagas === 1 ? 'cabia mais 1 foto' : `cabiam mais ${vagas} fotos`} (limite de ${MAX_FOTOS_POR_LAUDO} no teste).`, 'erro');
     setSubindo({ feitas: 0, total: arqs.length });
     let ordem = fotos.length ? Math.max(...fotos.map((f) => f.ordem)) + 1 : 0;
     for (const [i, a] of arqs.entries()) {
@@ -159,7 +167,8 @@ export function AbaFotos({ laudo, fotos, irPara }: { laudo: Laudo; fotos: Foto[]
               </li>
             ))}
           </ol>
-          <div className="mt-5 grid gap-2 sm:flex sm:justify-center">
+          <p className="mt-3 text-center text-xs font-bold text-texto3">Fase de teste: até {MAX_FOTOS_POR_LAUDO} fotos por laudo.</p>
+          <div className="mt-3 grid gap-2 sm:flex sm:justify-center">
             <button onClick={escolher} className="pilula pilula-obra"><ImagePlus className="size-5" />Escolher fotos</button>
             <button onClick={tirar} className="pilula pilula-clara"><Camera className="size-5" />Tirar foto agora</button>
           </div>
@@ -167,9 +176,12 @@ export function AbaFotos({ laudo, fotos, irPara }: { laudo: Laudo; fotos: Foto[]
       ) : (
         <>
           <div className={cx('flex items-center gap-2 rounded-2xl border border-dashed p-2 transition', arrastando ? 'border-obra bg-obra-suave' : 'border-borda-forte')}>
-            <button onClick={escolher} className="flex h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-sup font-extrabold text-texto2 hover:text-texto"><ImagePlus className="size-5" />Adicionar fotos</button>
-            <button onClick={tirar} className="flex h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-sup font-extrabold text-texto2 hover:text-texto"><Camera className="size-5" />Câmera</button>
+            <button onClick={escolher} disabled={cheio} className="flex h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-sup font-extrabold text-texto2 hover:text-texto disabled:opacity-45"><ImagePlus className="size-5" />Adicionar fotos</button>
+            <button onClick={tirar} disabled={cheio} className="flex h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-sup font-extrabold text-texto2 hover:text-texto disabled:opacity-45"><Camera className="size-5" />Câmera</button>
           </div>
+          <p className={cx('-mt-1 text-center text-xs font-bold', cheio ? 'text-obra-forte' : 'text-texto3')}>
+            {fotos.length} de {MAX_FOTOS_POR_LAUDO} fotos{cheio ? ' — limite da fase de teste' : ''}
+          </p>
 
           {p.analisadas > 0 && (
             <div className="-mx-3 flex gap-1.5 overflow-x-auto px-3 sm:mx-0 sm:px-0" role="tablist">

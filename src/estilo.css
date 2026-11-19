@@ -75,6 +75,8 @@ html { -webkit-text-size-adjust: 100%; }
 body { background: var(--papel); color: var(--texto); font-family: var(--font-sans); -webkit-font-smoothing: antialiased; }
 h1, h2, h3 { font-family: var(--font-display); letter-spacing: -0.02em; }
 :focus-visible { outline: 2.5px solid var(--obra); outline-offset: 2px; border-radius: 6px; }
+/* campo dentro de moldura: o foco aparece na moldura (focus-within), não um contorno laranja dentro */
+:focus-visible:is(input, textarea, select).outline-none { outline: none; }
 
 /* grifo: uma palavra por título */
 .grifo { position: relative; white-space: nowrap; z-index: 0; }

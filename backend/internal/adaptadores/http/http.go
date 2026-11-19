@@ -2,6 +2,7 @@
 package http
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"io"
@@ -15,6 +16,7 @@ import (
 	"github.com/logdrive023/geradorlaudo/backend/contratos"
 	"github.com/logdrive023/geradorlaudo/backend/internal/aplicacao"
 	"github.com/logdrive023/geradorlaudo/backend/internal/dominio/laudo"
+	"github.com/logdrive023/geradorlaudo/backend/internal/portas"
 )
 
 type Servidor struct {
@@ -22,7 +24,8 @@ type Servidor struct {
 	Origens      []string
 	LimitePorMin int
 	Versao       string
-	BancoOK      func() bool
+	Banco        portas.Banco    // nil = sem banco (só IA)
+	Arquivos     portas.Arquivos // nil = sem storage de imagens
 }
 
 // Rotas monta o roteador com CORS envolvendo TUDO (o preflight OPTIONS também passa por ele).
@@ -33,19 +36,24 @@ func (s *Servidor) Rotas() http.Handler {
 	mux.Handle("POST /api/ia/analisar", limite.envolver(http.HandlerFunc(s.analisar)))
 	mux.Handle("POST /api/ia/conclusao", limite.envolver(http.HandlerFunc(s.conclusao)))
 	mux.Handle("POST /api/ia/lia", limite.envolver(http.HandlerFunc(s.lia)))
+	s.rotasDados(mux, novoLimitador(10)) // login: no máximo 10 tentativas por minuto por IP
 	return s.cors(registrar(mux))
 }
 
-func (s *Servidor) saude(w http.ResponseWriter, _ *http.Request) {
-	banco := "não configurado"
-	if s.BancoOK != nil {
-		if s.BancoOK() {
-			banco = "ok"
-		} else {
+func (s *Servidor) saude(w http.ResponseWriter, r *http.Request) {
+	banco, storage := "não configurado", "não configurado"
+	if s.Banco != nil {
+		ctx, cancel := context.WithTimeout(r.Context(), 3*time.Second)
+		defer cancel()
+		banco = "ok"
+		if s.Banco.Ping(ctx) != nil {
 			banco = "fora"
 		}
 	}
-	json200(w, map[string]any{"ok": true, "versao": s.Versao, "ia": s.IA.IA.Nome(), "modelo": s.IA.IA.Modelo(), "banco": banco})
+	if s.Arquivos != nil {
+		storage = s.Arquivos.Nome()
+	}
+	json200(w, map[string]any{"ok": true, "versao": s.Versao, "ia": s.IA.IA.Nome(), "modelo": s.IA.IA.Modelo(), "banco": banco, "storage": storage})
 }
 
 // POST /api/ia/analisar  (multipart: imagem, tipoLaudo, contexto)
@@ -166,8 +174,8 @@ func (s *Servidor) cors(next http.Handler) http.Handler {
 			h := w.Header()
 			h.Set("Access-Control-Allow-Origin", o)
 			h.Set("Vary", "Origin")
-			h.Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-			h.Set("Access-Control-Allow-Headers", "Content-Type")
+			h.Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+			h.Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 			h.Set("Access-Control-Max-Age", "600")
 		}
 		if r.Method == http.MethodOptions {
