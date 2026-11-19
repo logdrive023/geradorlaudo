@@ -6,6 +6,8 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"log/slog"
+	"strings"
 	"time"
 
 	"google.golang.org/genai"
@@ -16,16 +18,26 @@ import (
 )
 
 type Gemini struct {
-	cliente *genai.Client
-	modelo  string
+	cliente    *genai.Client
+	modelo     string
+	pensamento genai.ThinkingLevel // "" = padrão do modelo
 }
 
-func Novo(ctx context.Context, apiKey, modelo string) (*Gemini, error) {
+// Novo cria o cliente. pensamento: minimal | low | medium | high ("" = padrão do modelo).
+// Para olhar foto e preencher o contrato, "low" responde bem mais rápido e basta.
+func Novo(ctx context.Context, apiKey, modelo, pensamento string) (*Gemini, error) {
 	c, err := genai.NewClient(ctx, &genai.ClientConfig{APIKey: apiKey, Backend: genai.BackendGeminiAPI})
 	if err != nil {
 		return nil, err
 	}
-	return &Gemini{cliente: c, modelo: modelo}, nil
+	return &Gemini{cliente: c, modelo: modelo, pensamento: genai.ThinkingLevel(strings.ToUpper(strings.TrimSpace(pensamento)))}, nil
+}
+
+func (g *Gemini) configPensamento() *genai.ThinkingConfig {
+	if g.pensamento == "" {
+		return nil
+	}
+	return &genai.ThinkingConfig{ThinkingLevel: g.pensamento}
 }
 
 func (g *Gemini) Nome() string   { return "gemini" }
@@ -38,10 +50,12 @@ var esquemaAnalise = contratos.AnaliseFoto()
 func comRepeticao[T any](ctx context.Context, fn func() (T, error)) (T, error) {
 	pausas := []time.Duration{4 * time.Second, 12 * time.Second}
 	for i := 0; ; i++ {
+		inicio := time.Now()
 		v, err := fn()
 		if err == nil {
 			return v, nil
 		}
+		slog.Warn("gemini falhou", "tentativa", i+1, "ms", time.Since(inicio).Milliseconds(), "erro", err.Error())
 		var api genai.APIError
 		repetir := errors.As(err, &api) && (api.Code == 429 || api.Code >= 500)
 		if !repetir || i >= len(pausas) {
@@ -79,21 +93,7 @@ func traduzir(err error) error {
 }
 
 func containsKey(m string) bool {
-	for _, k := range []string{"API key", "API_KEY", "api key"} {
-		if len(m) >= len(k) && (indexOf(m, k) >= 0) {
-			return true
-		}
-	}
-	return false
-}
-
-func indexOf(s, sub string) int {
-	for i := 0; i+len(sub) <= len(s); i++ {
-		if s[i:i+len(sub)] == sub {
-			return i
-		}
-	}
-	return -1
+	return strings.Contains(strings.ToLower(m), "api key") || strings.Contains(m, "API_KEY")
 }
 
 func (g *Gemini) AnalisarFoto(ctx context.Context, f portas.Foto) (laudo.Analise, error) {
@@ -106,6 +106,7 @@ func (g *Gemini) AnalisarFoto(ctx context.Context, f portas.Foto) (laudo.Analise
 		ResponseMIMEType:   "application/json",
 		ResponseJsonSchema: esquemaAnalise,
 		Temperature:        genai.Ptr[float32](0.2),
+		ThinkingConfig:     g.configPensamento(),
 	}
 	resp, err := comRepeticao(ctx, func() (*genai.GenerateContentResponse, error) {
 		return g.cliente.Models.GenerateContent(ctx, g.modelo, conteudo, cfg)

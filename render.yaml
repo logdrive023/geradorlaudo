@@ -33,7 +33,9 @@ services:
       - key: GEMINI_API_KEY
         sync: false
       - key: GEMINI_MODELO
-        value: gemini-2.5-flash
+        value: gemini-3.8-flash
+      - key: GEMINI_PENSAMENTO
+        value: low
       - key: CORS_ORIGINS
         value: https://laudotech.pages.dev,https://laudotech.onrender.com,https://logdrive023.github.io,http://localhost:5180
       - key: LIMITE_IA_POR_MINUTO

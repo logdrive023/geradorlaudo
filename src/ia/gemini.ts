@@ -13,11 +13,11 @@ import type { PedidoAnalise, ResultadoIA } from './tipos';
  */
 
 export const MODELOS_GEMINI = [
-  { id: 'gemini-2.5-flash', nome: 'Gemini 2.5 Flash', nota: 'recomendado no grátis' },
-  { id: 'gemini-2.5-flash-lite', nome: 'Gemini 2.5 Flash-Lite', nota: 'mais rápido, mais limite' },
-  { id: 'gemini-3.5-flash', nome: 'Gemini 3.5 Flash', nota: 'mais novo (confira se o seu plano cobre)' },
+  { id: 'gemini-3.8-flash', nome: 'Gemini 3.8 Flash', nota: 'recomendado' },
+  { id: 'gemini-3.1-flash-lite', nome: 'Gemini 3.1 Flash-Lite', nota: 'mais rápido, mais limite' },
+  { id: 'gemini-3.5-flash', nome: 'Gemini 3.5 Flash', nota: 'alternativa' },
 ];
-export const MODELO_GEMINI_PADRAO = 'gemini-2.5-flash';
+export const MODELO_GEMINI_PADRAO = 'gemini-3.8-flash';
 
 const GRAUS: Gravidade[] = ['critico', 'medio', 'minimo'];
 

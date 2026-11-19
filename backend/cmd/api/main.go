@@ -1,7 +1,8 @@
 // API do LaudoTech: sobe o HTTP com a IA escolhida pelo ambiente.
 //
 //	GEMINI_API_KEY  chave do Google AI Studio (sem ela, modo demonstração)
-//	GEMINI_MODELO   padrão gemini-2.5-flash
+//	GEMINI_MODELO   padrão gemini-3.8-flash
+//	GEMINI_PENSAMENTO padrão low (minimal|low|medium|high|padrao)
 //	PORT            padrão 8080
 //	CORS_ORIGINS    origens do app separadas por vírgula
 package main
@@ -34,7 +35,7 @@ func main() {
 
 	var ia portas.IA = demo.Demo{}
 	if cfg.GeminiKey != "" {
-		g, err := gemini.Novo(ctx, cfg.GeminiKey, cfg.GeminiModelo)
+		g, err := gemini.Novo(ctx, cfg.GeminiKey, cfg.GeminiModelo, cfg.GeminiPensar)
 		if err != nil {
 			slog.Error("não deu para iniciar o Gemini; seguindo em modo demonstração", "erro", err)
 		} else {
@@ -58,7 +59,7 @@ func main() {
 		WriteTimeout:      cfg.TimeoutIA + 30*time.Second,
 	}
 	go func() {
-		slog.Info("api no ar", "porta", cfg.Porta, "ia", ia.Nome(), "modelo", ia.Modelo())
+		slog.Info("api no ar", "porta", cfg.Porta, "ia", ia.Nome(), "modelo", ia.Modelo(), "pensamento", cfg.GeminiPensar)
 		if err := h.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			slog.Error("servidor parou", "erro", err)
 			os.Exit(1)

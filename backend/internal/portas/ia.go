@@ -20,7 +20,7 @@ type Foto struct {
 // IA é qualquer motor que analisa fotos e escreve textos.
 type IA interface {
 	Nome() string   // "gemini", "demo"…
-	Modelo() string // ex.: gemini-2.5-flash
+	Modelo() string // ex.: gemini-3.8-flash
 	AnalisarFoto(ctx context.Context, f Foto) (laudo.Analise, error)
 	EscreverConclusao(ctx context.Context, instrucao, resumo string) (string, error)
 	Conversar(ctx context.Context, instrucao string, conversa []laudo.Mensagem) (string, error)

@@ -12,6 +12,7 @@ type Config struct {
 	Porta          string
 	GeminiKey      string   // GEMINI_API_KEY (vazio = modo demonstração)
 	GeminiModelo   string   // GEMINI_MODELO
+	GeminiPensar   string   // GEMINI_PENSAMENTO: minimal | low | medium | high | padrao
 	OrigensCORS    []string // CORS_ORIGINS separado por vírgula
 	TimeoutIA      time.Duration
 	LimitePorMinut int // pedidos de IA por IP por minuto
@@ -22,9 +23,10 @@ func Ler() Config {
 	return Config{
 		Porta:          env("PORT", "8080"),
 		GeminiKey:      strings.TrimSpace(os.Getenv("GEMINI_API_KEY")),
-		GeminiModelo:   env("GEMINI_MODELO", "gemini-2.5-flash"),
+		GeminiModelo:   env("GEMINI_MODELO", "gemini-3.8-flash"),
+		GeminiPensar:   pensamento(env("GEMINI_PENSAMENTO", "low")),
 		OrigensCORS:    lista(env("CORS_ORIGINS", "http://localhost:5180,https://laudotech.pages.dev,https://laudotech.onrender.com,https://logdrive023.github.io")),
-		TimeoutIA:      time.Duration(numero("TIMEOUT_IA_SEGUNDOS", 90)) * time.Second,
+		TimeoutIA:      time.Duration(numero("TIMEOUT_IA_SEGUNDOS", 120)) * time.Second,
 		LimitePorMinut: numero("LIMITE_IA_POR_MINUTO", 20),
 		DatabaseURL:    strings.TrimSpace(os.Getenv("DATABASE_URL")),
 	}
@@ -52,4 +54,12 @@ func lista(s string) []string {
 		}
 	}
 	return out
+}
+
+// pensamento: "padrao" (ou "default") deixa o modelo decidir.
+func pensamento(v string) string {
+	if v = strings.ToLower(v); v == "padrao" || v == "default" {
+		return ""
+	}
+	return v
 }

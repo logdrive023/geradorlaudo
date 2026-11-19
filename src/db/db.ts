@@ -30,6 +30,12 @@ db.version(4).stores({}).upgrade(async (tx) => {
   await tx.table('usuarios').where('id').equals('admin').modify((u: Usuario) => {
     if (u.email === 'admin') { u.email = 'admin@admin'; u.sal = ADMIN.sal; u.senhaHash = ADMIN.senhaHash; }
   });
+// v5: o Google tirou o gemini-2.5-flash de contas novas; quem tinha salvo passa para o 3.8
+db.version(5).stores({}).upgrade(async (tx) => {
+  await tx.table('config').where('chave').equals('app').modify((c: Configuracao) => {
+    if (!c.geminiModelo || c.geminiModelo.startsWith('gemini-2.5')) c.geminiModelo = 'gemini-3.8-flash';
+  });
+});
 });
 
 /** Admin de fábrica (login admin@admin). A senha fica só como resumo com sal. */
@@ -50,7 +56,7 @@ const ADMIN: Usuario = {
   criadoEm: 0,
 };
 
-const CONFIG_PADRAO: Configuracao = { chave: 'app', motorIA: 'demo', apiKey: '', geminiKey: '', geminiModelo: 'gemini-2.5-flash', tema: 'claro' };
+const CONFIG_PADRAO: Configuracao = { chave: 'app', motorIA: 'demo', apiKey: '', geminiKey: '', geminiModelo: 'gemini-3.8-flash', tema: 'claro' };
 
 db.on('populate', (tx) => {
   void tx.table('usuarios').add(ADMIN);

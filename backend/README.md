@@ -16,11 +16,12 @@ No app: Ajustes › IA › **Servidor LaudoTech** › `http://localhost:8080`.
 | Variável | Padrão | Para quê |
 |---|---|---|
 | `GEMINI_API_KEY` | — | chave do Google AI Studio (sem ela: demonstração) |
-| `GEMINI_MODELO` | `gemini-2.5-flash` | modelo do Gemini |
+| `GEMINI_MODELO` | `gemini-3.8-flash` | modelo do Gemini |
+| `GEMINI_PENSAMENTO` | `low` | quanto o modelo "pensa" na análise (`minimal`, `low`, `medium`, `high`, `padrao`) — `low` é bem mais rápido |
 | `PORT` | `8080` | porta |
 | `CORS_ORIGINS` | app local + Pages + Render | origens permitidas |
 | `LIMITE_IA_POR_MINUTO` | `20` | pedidos de IA por IP por minuto |
-| `TIMEOUT_IA_SEGUNDOS` | `90` | tempo máximo de cada chamada de IA |
+| `TIMEOUT_IA_SEGUNDOS` | `120` | tempo máximo de cada chamada de IA |
 | `DATABASE_URL` | — | Postgres (Supabase, session pooler) — usado na fase 2 |
 
 ## Rotas
