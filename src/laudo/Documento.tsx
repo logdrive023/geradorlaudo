@@ -1,5 +1,6 @@
 import { createContext, useContext, type ReactNode } from 'react';
 import { STATUS_ACAO, dataCurta, itensPlano, planoPreenchido, reais, resumoPlano } from '../dominio/plano';
+import { PERIODO, RESPONSAVEL, lerPlano, proxima } from '../dominio/manutencao';
 import { GRAVIDADE, type Achado, type Foto, type Gravidade, type Laudo, type Usuario } from '../dominio/modelo';
 import { TIPOS } from '../dominio/tipos';
 import { achadosValidos, porAmbiente, resumoAchados } from '../dominio/regras';
@@ -104,7 +105,10 @@ export function Documento({ laudo, fotos, autor, editar }: Props) {
   const plano = itensPlano(laudo, fotos);
   const comPlano = imovel && planoPreenchido(plano);
   const rp = resumoPlano(plano);
-  const nConclusao = comPlano ? 7 : 6;
+  const manut = lerPlano(laudo);
+  const itensManut = imovel ? manut?.itens.filter((i) => i.ativo) ?? [] : [];
+  const nManut = comPlano ? 7 : 6;
+  const nConclusao = nManut + (itensManut.length ? 1 : 0);
 
   let n = 0;
   return (
@@ -252,6 +256,21 @@ export function Documento({ laudo, fotos, autor, editar }: Props) {
                     <td>{i.acomp.responsavel || '—'}</td>
                     <td>{i.acomp.custo != null ? reais(i.acomp.custo) : '—'}</td>
                     <td>{STATUS_ACAO[i.acomp.status].nome}</td>
+                  </tr>
+                ))}</tbody>
+              </table>
+            </div>
+          )}
+          {itensManut.length > 0 && (
+            <div style={{ marginBottom: '7mm' }}>
+              <h2>{nManut}. Plano de manutenção (ABNT NBR 5674)</h2>
+              <p>Programa de manutenção preventiva recomendado. Deve ser compatibilizado com o manual de uso, operação e manutenção da edificação (ABNT NBR 14037) e com as recomendações dos fabricantes, mantendo-se o registro das atividades realizadas.</p>
+              <table>
+                <thead><tr><th>Sistema</th><th>Atividade</th><th>Periodicidade</th><th>Responsável</th><th>Próxima</th></tr></thead>
+                <tbody>{itensManut.map((i) => (
+                  <tr key={i.id}>
+                    <td><b>{i.sistema}</b></td><td>{i.atividade}</td><td>{PERIODO[i.periodicidade].nome}</td>
+                    <td>{RESPONSAVEL[i.responsavel].nome}</td><td>{dataCurta(proxima(i, manut!.criadoEm))}</td>
                   </tr>
                 ))}</tbody>
               </table>

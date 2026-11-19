@@ -4,6 +4,7 @@ import { emitirLaudo, respostasDoLaudo, urlVerificacao, type RespostaCliente } f
 import { useSessao } from '../../lib/sessao';
 import { LinkPublico } from '../../componentes/Pecas';
 import { PlanoAcao } from '../../componentes/PlanoAcao';
+import { PlanoManutencao } from '../../componentes/PlanoManutencao';
 import { criarLinkCliente, desligarLinkCliente, logadoNaNuvem } from '../../db/nuvem';
 import { Prontidao } from '../../componentes/Prontidao';
 import { BarraWizard } from '../../componentes/Wizard';
@@ -12,6 +13,7 @@ import { db, tocarLaudo } from '../../db/db';
 import type { Foto, Laudo, Usuario } from '../../dominio/modelo';
 import { conclusaoPadrao, revisarLaudo, type ItemRevisao } from '../../dominio/regras';
 import { gerarConclusao } from '../../ia/motor';
+import { TIPOS } from '../../dominio/tipos';
 import { Documento, type Edicao } from '../../laudo/Documento';
 import { AreaTexto, Botao, Cartao, Dica, useAviso } from '../../componentes/ui';
 import { baixar, cx } from '../../lib/util';
@@ -231,6 +233,7 @@ export function AbaLaudo({ laudo, fotos, autor, irPara }: { laudo: Laudo; fotos:
         </Cartao>
 
         <PlanoAcao className="nao-imprimir mt-4" laudo={laudo} fotos={fotos} />
+        {TIPOS[laudo.tipo]?.foco === 'imovel' && <PlanoManutencao className="nao-imprimir mt-4" laudo={laudo} fotos={fotos} />}
 
         <Entregar className="nao-imprimir mt-4 xl:hidden" />
         <div className="xl:hidden">
