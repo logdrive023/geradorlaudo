@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { CheckCircle2, Download, FileStack, ImagePlus, KeyRound, Monitor, Moon, Palette, ShieldCheck, Sparkles, Sun, Trash2, Upload, User } from 'lucide-react';
+import { CheckCircle2, Download, FileStack, MessageSquareText, ImagePlus, KeyRound, Monitor, Moon, Palette, ShieldCheck, Sparkles, Sun, Trash2, Upload, User } from 'lucide-react';
 import { db, lerConfig, salvarConfig } from '../../db/db';
 import { useSessao } from '../../lib/sessao';
 import { Botao, Campo, Cartao, Entrada, Modal, useAviso, useUrl } from '../../componentes/ui';
@@ -9,6 +9,8 @@ import { baixar, cx, novoId, resumoSenha } from '../../lib/util';
 import { prepararFoto } from '../../lib/imagem';
 import type { Configuracao, Usuario } from '../../dominio/modelo';
 import { Modelos } from './Modelos';
+import { SERVIDOR_PADRAO } from '../../ia/servidor';
+import { Prompts } from './Prompts';
 
 // lista dos modelos sem carregar o SDK do Gemini nesta tela
 const MODELOS_GEMINI_UI = [
@@ -17,11 +19,12 @@ const MODELOS_GEMINI_UI = [
   { id: 'gemini-3.5-flash', nome: 'Gemini 3.5 Flash', nota: 'mais novo (confira se o seu plano cobre)' },
 ];
 
-type Aba = 'perfil' | 'modelos' | 'ia' | 'aparencia' | 'seguranca' | 'dados';
+type Aba = 'perfil' | 'modelos' | 'prompts' | 'ia' | 'aparencia' | 'seguranca' | 'dados';
 const ABAS: { id: Aba; rotulo: string; ic: typeof User }[] = [
   { id: 'perfil', rotulo: 'Perfil', ic: User },
   { id: 'modelos', rotulo: 'Modelos', ic: FileStack },
   { id: 'ia', rotulo: 'IA', ic: Sparkles },
+  { id: 'prompts', rotulo: 'Prompts', ic: MessageSquareText },
   { id: 'aparencia', rotulo: 'Aparência', ic: Palette },
   { id: 'seguranca', rotulo: 'Segurança', ic: ShieldCheck },
   { id: 'dados', rotulo: 'Dados', ic: Download },
@@ -114,7 +117,15 @@ function IA({ cfg }: { cfg: Configuracao }) {
   const [chave, setChave] = useState(cfg.apiKey);
   const [gKey, setGKey] = useState(cfg.geminiKey ?? '');
   const [testando, setTestando] = useState(false);
+  const [url, setUrl] = useState(cfg.servidorUrl || SERVIDOR_PADRAO);
+  const [saude, setSaude] = useState<{ ia: string; modelo: string } | null>(null);
   const { avisar, el } = useAviso();
+  const testarServidor = async () => {
+    setTestando(true); setSaude(null);
+    try { const { saudeServidor } = await import('../../ia/servidor'); const s = await saudeServidor(url.trim()); setSaude(s); await salvarConfig({ servidorUrl: url.trim(), motorIA: 'servidor' }); avisar('Servidor conectado!'); }
+    catch (e) { avisar((e as Error).message, 'erro'); }
+    setTestando(false);
+  };
   const testarClaude = async () => {
     setTestando(true);
     try { const { testarChave } = await import('../../ia/claude'); await testarChave(chave.trim()); await salvarConfig({ apiKey: chave.trim(), motorIA: 'claude' }); avisar('Chave válida. Claude ligado!'); }
@@ -129,12 +140,13 @@ function IA({ cfg }: { cfg: Configuracao }) {
   };
   const opcoes = [
     { id: 'demo', t: 'Demonstração', selo: 'grátis', d: 'Sem chave e sem internet. A análise é simulada, só para testar o fluxo.' },
+    { id: 'servidor', t: 'Servidor LaudoTech', selo: 'recomendado', d: 'A IA roda no nosso servidor (Gemini). A chave fica lá, nunca no navegador.' },
     { id: 'gemini', t: 'Gemini (Google)', selo: 'tem faixa grátis', d: 'IA de verdade com a faixa grátis do Google AI Studio. Ótimo para começar.' },
     { id: 'claude', t: 'Claude (Anthropic)', selo: 'pago por uso', d: 'IA de verdade, a mais precisa em patologia. Cobra por foto analisada.' },
   ] as const;
   return (
     <div className="grid gap-5">
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-2">
         {opcoes.map((o) => (
           <button key={o.id} onClick={() => salvarConfig({ motorIA: o.id })}
             className={cx('rounded-2xl border p-4 text-left transition', cfg.motorIA === o.id ? 'border-tinta bg-tinta/5 ring-2 ring-tinta/15' : 'border-borda bg-sup hover:border-borda-forte')}>
@@ -144,6 +156,19 @@ function IA({ cfg }: { cfg: Configuracao }) {
           </button>
         ))}
       </div>
+
+      {cfg.motorIA === 'servidor' && (
+        <Cartao className="grid gap-4 p-5">
+          <Campo rotulo="Endereço do servidor" ajuda="A API Go do LaudoTech (pasta backend/). Localmente: http://localhost:8080. No Render: o endereço do serviço laudotech-api.">
+            <Entrada value={url} onChange={(e) => setUrl(e.target.value)} placeholder={SERVIDOR_PADRAO} inputMode="url" />
+          </Campo>
+          <div className="flex flex-wrap gap-2">
+            <Botao onClick={testarServidor} carregando={testando}><KeyRound className="size-4" />Testar e salvar</Botao>
+          </div>
+          {saude && <p className="rounded-xl bg-ok-suave p-3 text-sm font-bold text-ok-texto">Servidor no ar · IA: {saude.ia} ({saude.modelo})</p>}
+          <p className="text-sm text-texto2">O prompt que você editar em Ajustes › Prompts da IA vai junto em cada pedido.</p>
+        </Cartao>
+      )}
 
       {cfg.motorIA === 'gemini' && (
         <Cartao className="grid gap-4 p-5">
@@ -292,7 +317,7 @@ export function Configuracoes() {
     <div className="mx-auto max-w-5xl px-3 py-5 sm:px-4 md:px-8 md:py-9 pb-28">
       <h1 className="text-3xl font-extrabold md:text-4xl"><span className="grifo">Ajustes</span></h1>
       <p className="mt-1 text-texto2">Seu perfil, os modelos de laudo, a IA e os seus dados.</p>
-      <nav className="mt-5 grid grid-cols-3 gap-1 rounded-2xl border border-borda bg-sup p-1 sm:flex sm:w-fit" role="tablist">
+      <nav className="mt-5 grid grid-cols-4 gap-1 rounded-2xl border border-borda bg-sup p-1 sm:flex sm:w-fit" role="tablist">
         {ABAS.map(({ id, rotulo, ic: Ic }) => (
           <button key={id} role="tab" aria-selected={aba === id} onClick={() => setBusca({ aba: id }, { replace: true })}
             className={cx('flex flex-col items-center gap-1 rounded-xl px-1 py-2 text-[11px] font-extrabold transition sm:flex-row sm:gap-2 sm:px-4 sm:text-sm', aba === id ? 'bg-[#121A2B] text-white dark:bg-tinta dark:text-[#0E1320]' : 'text-texto2 hover:bg-sup2 hover:text-texto')}>
@@ -303,6 +328,7 @@ export function Configuracoes() {
       <div className="mt-5">
         {aba === 'perfil' && <Perfil u={usuario} />}
         {aba === 'modelos' && <Modelos />}
+        {aba === 'prompts' && <Prompts />}
         {aba === 'ia' && <IA cfg={cfg} />}
         {aba === 'aparencia' && (
           <Cartao className="p-5">

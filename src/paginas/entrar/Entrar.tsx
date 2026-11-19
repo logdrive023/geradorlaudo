@@ -2,11 +2,9 @@ import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router';
 import { ArrowLeft, Camera, ClipboardCheck, Eye, EyeOff, KeyRound, Lock, Mail, ScanSearch, Sparkles, User } from 'lucide-react';
 import { useSessao } from '../../lib/sessao';
-import { db } from '../../db/db';
-import { criarLaudoExemplo } from '../../db/exemplo';
 import { Logo } from '../../componentes/ui';
 import { Lia } from '../../componentes/Lia';
-import { cx, novoId, resumoSenha } from '../../lib/util';
+import { cx } from '../../lib/util';
 
 type Modo = 'entrar' | 'criar' | 'esqueci';
 
@@ -39,7 +37,7 @@ export function Entrar({ modo }: { modo: Modo }) {
   const [f, setF] = useState({ login: '', senha: '', nome: '', profissao: 'Engenheiro Civil', registro: '' });
   const [ver, setVer] = useState(false);
   const [erro, setErro] = useState('');
-  const [ocupado, setOcupado] = useState<'' | 'form' | 'demo'>('');
+  const [ocupado, setOcupado] = useState<'' | 'form'>('');
   const set = (k: keyof typeof f) => (e: { target: { value: string } }) => setF((x) => ({ ...x, [k]: e.target.value }));
 
   useEffect(() => { if (usuario) nav(destino, { replace: true }); }, [usuario]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -53,22 +51,6 @@ export function Entrar({ modo }: { modo: Modo }) {
       else if (modo === 'criar') await cadastrar({ nome: f.nome, email: f.login, senha: f.senha, profissao: f.profissao, registro: f.registro });
     } catch (x) { setErro((x as Error).message); }
     setOcupado('');
-  };
-
-  /** Demonstração: conta "demo" com um laudo de exemplo já analisado. */
-  const demo = async () => {
-    setOcupado('demo'); setErro('');
-    try {
-      let u = await db.usuarios.where('email').equals('demo@laudotech').first();
-      if (!u) {
-        const sal = novoId();
-        u = { id: novoId(), email: 'demo@laudotech', nome: 'Eng. Ana Ribeiro (demo)', papel: 'engenheiro', sal, senhaHash: await resumoSenha(sal, 'demo1234'),
-          profissao: 'Engenheira Civil', registro: 'CREA-SP 000000000-0', telefone: '(11) 90000-0000', endereco: 'Av. Paulista, 1000', cidade: 'São Paulo', uf: 'SP', ativo: true, criadoEm: Date.now() };
-        await db.usuarios.add(u);
-        await criarLaudoExemplo(u.id);
-      }
-      await entrar('demo@laudotech', 'demo1234');
-    } catch (x) { setErro((x as Error).message); setOcupado(''); }
   };
 
   const cena = CENA[modo];
@@ -102,21 +84,8 @@ export function Entrar({ modo }: { modo: Modo }) {
       <main className="flex flex-1 flex-col items-center px-4 pb-8 md:justify-center md:px-8 md:py-10">
         <div className="relative z-10 -mt-4 flex w-full max-w-[440px] flex-col gap-4 md:mt-0">
           {modo !== 'esqueci' && (
-            <section className="grid gap-3 rounded-[18px] border border-borda bg-sup p-4 shadow-[0_6px_20px_rgba(18,26,43,.07)] md:shadow-none">
-              <div>
-                <strong className="block text-[15px]">Conhecer sem cadastro</strong>
-                <span className="mt-0.5 block text-[13px] text-texto2">Um laudo de exemplo já analisado pela IA, pronto para você conferir.</span>
-              </div>
-              <button onClick={demo} disabled={!!ocupado} className="pilula pilula-obra w-full disabled:opacity-60">
-                {ocupado === 'demo' ? 'Preparando o exemplo…' : 'Ver funcionando agora'}
-              </button>
-            </section>
-          )}
-
-          {modo !== 'esqueci' && (
             <>
-              <div className="flex items-center gap-3 text-xs font-bold text-texto3 before:h-px before:flex-1 before:bg-borda-forte after:h-px after:flex-1 after:bg-borda-forte">ou com a sua conta</div>
-              <div className="grid grid-cols-2 gap-1 rounded-[14px] border border-borda bg-sup p-1" role="tablist">
+                            <div className="grid grid-cols-2 gap-1 rounded-[14px] border border-borda bg-sup p-1" role="tablist">
                 {(['entrar', 'criar'] as const).map((m) => (
                   <Link key={m} to={m === 'entrar' ? '/entrar' : '/cadastrar'} replace role="tab" aria-selected={modo === m}
                     className={cx('rounded-[10px] py-2.5 text-center text-sm font-extrabold transition', modo === m ? 'bg-[#121A2B] text-white' : 'text-texto2 hover:bg-sup2')}>
@@ -142,8 +111,8 @@ export function Entrar({ modo }: { modo: Modo }) {
                   <input className={INP} value={f.nome} onChange={set('nome')} autoComplete="name" placeholder="Eng. Fulano de Tal" required />
                 </CampoLogin>
               )}
-              <CampoLogin rotulo={modo === 'entrar' ? 'Usuário ou e-mail' : 'E-mail'} ic={Mail}>
-                <input className={INP} value={f.login} onChange={set('login')} autoComplete={modo === 'entrar' ? 'username' : 'email'} inputMode="email" placeholder={modo === 'entrar' ? 'admin ou voce@email.com' : 'voce@email.com'} required />
+              <CampoLogin rotulo="E-mail" ic={Mail}>
+                <input className={INP} value={f.login} onChange={set('login')} autoComplete={modo === 'entrar' ? 'username' : 'email'} inputMode="email" placeholder="voce@email.com" required />
               </CampoLogin>
               <CampoLogin rotulo="Senha" ic={Lock} dica={modo === 'criar' ? 'Pelo menos 6 caracteres.' : undefined}>
                 <input className={INP} type={ver ? 'text' : 'password'} value={f.senha} onChange={set('senha')} autoComplete={modo === 'entrar' ? 'current-password' : 'new-password'} required />

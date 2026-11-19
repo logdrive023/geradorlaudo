@@ -116,7 +116,7 @@ function desenhar(nome: string): Promise<Blob> {
   const c = document.createElement('canvas');
   c.width = W; c.height = H;
   DESENHOS[nome](c.getContext('2d')!);
-  return new Promise((ok) => c.toBlob((b) => ok(b!), 'image/jpeg', 0.8));
+  return new Promise((ok) => c.toBlob((b) => ok(b!), 'image/webp', 0.74));
 }
 
 async function miniatura(b: Blob): Promise<Blob> {
@@ -124,7 +124,7 @@ async function miniatura(b: Blob): Promise<Blob> {
   const c = document.createElement('canvas');
   c.width = 360; c.height = 270;
   c.getContext('2d')!.drawImage(bmp, 0, 0, 360, 270);
-  return new Promise((ok) => c.toBlob((x) => ok(x!), 'image/jpeg', 0.7));
+  return new Promise((ok) => c.toBlob((x) => ok(x!), 'image/webp', 0.6));
 }
 
 export async function criarLaudoExemplo(usuarioId: string): Promise<string> {

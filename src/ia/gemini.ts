@@ -1,7 +1,8 @@
 import { ApiError, GoogleGenAI } from '@google/genai';
-import { SISTEMAS, TIPOS_ANOMALIA, type Gravidade } from '../dominio/modelo';
-import { TIPOS } from '../dominio/tipos';
-import { blobParaBase64 } from '../lib/imagem';
+import contratoV1 from '../../backend/contratos/analise-foto.v1.schema.json';
+import { type Gravidade } from '../dominio/modelo';
+import { instrucaoAnalise, lerPrompt } from './instrucoes';
+import { blobParaBase64, tipoImagem } from '../lib/imagem';
 import type { PedidoAnalise, ResultadoIA } from './tipos';
 
 /**
@@ -20,52 +21,9 @@ export const MODELO_GEMINI_PADRAO = 'gemini-2.5-flash';
 
 const GRAUS: Gravidade[] = ['critico', 'medio', 'minimo'];
 
-/** Formato da resposta (JSON Schema): o Gemini devolve exatamente isto. */
-const ESQUEMA = {
-  type: 'object',
-  properties: {
-    ambiente: { type: 'string', description: 'Ambiente: Sala, Cozinha, Banheiro, Fachada, Garagem… ou "Documento"' },
-    elemento: { type: 'string', description: 'Elemento principal: Parede, Teto, Piso, Viga, Esquadria…' },
-    legenda: { type: 'string', description: 'Legenda técnica curta para a foto no laudo' },
-    semAnomalia: { type: 'boolean', description: 'true se não há anomalia aparente' },
-    achados: {
-      type: 'array',
-      items: {
-        type: 'object',
-        properties: {
-          tipo: { type: 'string', description: `Um destes: ${TIPOS_ANOMALIA.join(', ')}` },
-          sistema: { type: 'string', description: `Um destes: ${SISTEMAS.join(', ')}` },
-          descricao: { type: 'string', description: 'O que se vê: forma, direção, extensão, abertura estimada' },
-          gravidade: { type: 'string', enum: GRAUS },
-          causaProvavel: { type: 'string' },
-          recomendacao: { type: 'string' },
-          confianca: { type: 'number', description: '0 a 1: certeza vendo só a foto' },
-          regiao: {
-            type: 'object',
-            description: 'Caixa aproximada do achado em % da imagem (0–100); x,y = canto superior esquerdo',
-            properties: { x: { type: 'number' }, y: { type: 'number' }, w: { type: 'number' }, h: { type: 'number' } },
-            required: ['x', 'y', 'w', 'h'],
-          },
-        },
-        required: ['tipo', 'sistema', 'descricao', 'gravidade', 'causaProvavel', 'recomendacao', 'confianca'],
-      },
-    },
-  },
-  required: ['ambiente', 'elemento', 'legenda', 'semAnomalia', 'achados'],
-};
-
-function instrucao(tipoLaudo: PedidoAnalise['tipoLaudo']) {
-  const t = TIPOS[tipoLaudo];
-  return [
-    'Você é um engenheiro civil perito que ajuda a montar laudos técnicos no Brasil.',
-    `Tipo de laudo: ${t.nome}. Normas de referência: ${t.normas.join('; ')}.`,
-    'Analise UMA foto da vistoria e devolva o que se vê, em português do Brasil, com vocabulário técnico de patologia das construções.',
-    'Grau de risco: "critico" = risco à segurança, saúde ou funcionamento (Prioridade 1); "medio" = perda parcial de desempenho (Prioridade 2); "minimo" = estético/manutenção (Prioridade 3).',
-    'Descreva apenas o que é visível. Não invente medidas: quando estimar, diga "estimada". Se não houver anomalia aparente, use semAnomalia=true e achados=[].',
-    'Foto de documento (laudo contábil): ambiente="Documento", descreva o documento na legenda e deixe achados vazio.',
-    'O engenheiro vai conferir tudo; seja objetivo e não exagere a gravidade.',
-  ].join('\n');
-}
+/** Contrato analise-foto.v1: o MESMO arquivo que o backend Go usa (backend/contratos). */
+const { $id: _id, title: _t, ...ESQUEMA } = contratoV1;
+void _id; void _t;
 
 function erroLegivel(e: unknown): Error {
   if (e instanceof ApiError) {
@@ -114,26 +72,29 @@ function limpar(bruto: unknown): ResultadoIA {
       gravidade: g, causaProvavel: texto(a.causaProvavel), recomendacao: texto(a.recomendacao),
       confianca: Math.max(0, Math.min(1, numero(a.confianca, 0.5))),
       regiao: regiao && regiao.w > 1 && regiao.h > 1 ? regiao : undefined,
+      aberturaMm: numero(a.aberturaMm) > 0 ? Math.min(100, numero(a.aberturaMm)) : undefined,
     };
   }).filter((a) => a.descricao || a.tipo !== 'Outro');
   return {
     ambiente: texto(o.ambiente) || 'Ambiente', elemento: texto(o.elemento), legenda: texto(o.legenda),
     semAnomalia: lista.length === 0, achados: lista,
+    qualidadeFoto: (['boa', 'regular', 'ruim'] as const).find((q) => q === o.qualidadeFoto) ?? 'boa',
   };
 }
 
 export async function analisarGemini(p: PedidoAnalise, apiKey: string, modelo = MODELO_GEMINI_PADRAO): Promise<ResultadoIA> {
   const data = await blobParaBase64(p.imagem);
+  const sistemaAnalise = await instrucaoAnalise(p.tipoLaudo);
   const r = await comRepeticao(() => cliente(apiKey).models.generateContent({
     model: modelo,
     contents: [{
       role: 'user',
       parts: [
-        { inlineData: { mimeType: 'image/jpeg', data } },
+        { inlineData: { mimeType: tipoImagem(p.imagem), data } },
         { text: `Contexto do engenheiro: ${p.contexto || '—'}\nAnalise a foto.` },
       ],
     }],
-    config: { systemInstruction: instrucao(p.tipoLaudo), responseMimeType: 'application/json', responseJsonSchema: ESQUEMA, temperature: 0.2 },
+    config: { systemInstruction: sistemaAnalise, responseMimeType: 'application/json', responseJsonSchema: ESQUEMA, temperature: 0.2 },
   }));
   const bruto = r.text;
   if (!bruto) throw new Error('O Gemini não respondeu sobre esta foto (pode ter sido bloqueada pelo filtro de segurança). Preencha manualmente.');
@@ -141,10 +102,11 @@ export async function analisarGemini(p: PedidoAnalise, apiKey: string, modelo = 
 }
 
 export async function conclusaoGemini(resumo: string, apiKey: string, modelo = MODELO_GEMINI_PADRAO): Promise<string> {
+  const sistemaConclusao = await lerPrompt('conclusao');
   const r = await comRepeticao(() => cliente(apiKey).models.generateContent({
     model: modelo,
     contents: `Escreva a conclusão do laudo a partir deste resumo:\n\n${resumo}`,
-    config: { systemInstruction: 'Você redige a conclusão de laudos técnicos de engenharia no Brasil: texto corrido, formal, impessoal, 1 a 3 parágrafos, sem títulos nem listas, sem inventar fatos além do resumo dado.', temperature: 0.3 },
+    config: { systemInstruction: sistemaConclusao, temperature: 0.3 },
   }));
   const t = r.text?.trim();
   if (!t) throw new Error('O Gemini não gerou a conclusão. Escreva manualmente.');

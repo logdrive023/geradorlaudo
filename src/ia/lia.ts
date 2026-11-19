@@ -1,3 +1,4 @@
+import { instrucaoLia } from './instrucoes';
 import { db, fotosDoLaudo, lerConfig } from '../db/db';
 import { GRAVIDADE } from '../dominio/modelo';
 import { TIPOS } from '../dominio/tipos';
@@ -54,18 +55,16 @@ export async function perguntarLia(conversa: MensagemLia[], laudoId?: string): P
   const cfg = await lerConfig();
   const ultima = conversa[conversa.length - 1]?.texto ?? '';
   const comGemini = cfg.motorIA === 'gemini' && !!cfg.geminiKey;
-  if (!comGemini && (cfg.motorIA !== 'claude' || !cfg.apiKey)) {
+  const comServidor = cfg.motorIA === 'servidor';
+  if (!comGemini && !comServidor && (cfg.motorIA !== 'claude' || !cfg.apiKey)) {
     await new Promise((r) => setTimeout(r, 500));
     return responderSemIA(ultima, ctx);
   }
-  const sistema = [
-    'Você é a Lia, assistente do LaudoTech, um app que transforma fotos de vistoria em laudos técnicos de engenharia no Brasil.',
-    'Fale em português do Brasil, curto e direto (até 6 linhas), com tom simpático e profissional. Sem markdown pesado; use • para listas.',
-    'Você ajuda com patologia das construções, normas ABNT (NBR 13752, 16747, 15575, 5674), redação de laudos e com o uso do app.',
-    'Nunca diga que o laudo está aprovado ou assinado: a responsabilidade técnica é sempre do engenheiro. Não invente medidas.',
-    'Como usar o app: Fotos (subir e analisar), Conferir (aceitar/descartar achados, marcar na foto, ditar), Laudo (prévia, conclusão, PDF/Word), Configurações (perfil, IA, backup).',
-    ctx ? `\nContexto do laudo aberto:\n${ctx.texto}` : '',
-  ].join('\n');
+  const sistema = await instrucaoLia(ctx?.texto);
+  if (comServidor) {
+    const { conversarServidor, SERVIDOR_PADRAO } = await import('./servidor');
+    return conversarServidor(sistema, conversa, cfg.servidorUrl || SERVIDOR_PADRAO);
+  }
   if (comGemini) {
     const { conversarGemini } = await import('./gemini');
     return conversarGemini(sistema, conversa, cfg.geminiKey!, cfg.geminiModelo);

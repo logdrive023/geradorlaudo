@@ -11,7 +11,7 @@ export type Papel = 'admin' | 'engenheiro';
 export type Gravidade = 'critico' | 'medio' | 'minimo';
 
 export type StatusFoto = 'pendente' | 'analisando' | 'analisada' | 'conferida' | 'erro';
-export type OrigemAnalise = 'demo' | 'claude' | 'gemini' | 'manual';
+export type OrigemAnalise = 'demo' | 'claude' | 'gemini' | 'servidor' | 'manual';
 
 /** Região da foto onde está o achado, em % (0–100) da largura/altura. */
 export interface Regiao { x: number; y: number; w: number; h: number }
@@ -25,6 +25,7 @@ export interface Achado {
   causaProvavel: string;
   recomendacao: string;
   confianca: number;       // 0–1 (o que a IA acha); 1 quando foi o engenheiro
+  aberturaMm?: number;     // abertura estimada (fissuras), contrato analise-foto.v1
   regiao?: Regiao;
   /** null = ainda não conferido; true = aceito; false = descartado pelo engenheiro */
   aceito: boolean | null;
@@ -36,6 +37,8 @@ export interface Analise {
   elemento: string;        // ex.: "Parede", "Teto", "Piso"
   legenda: string;         // legenda técnica da foto no laudo
   semAnomalia: boolean;    // "nada a relatar" também entra no laudo
+  qualidadeFoto?: 'boa' | 'regular' | 'ruim';
+  contrato?: string;       // versão do formato da IA (ex.: analise-foto.v1)
   achados: Achado[];
   origem: OrigemAnalise;
   analisadoEm: number;
@@ -103,7 +106,7 @@ export interface ModeloTexto {
   normas?: string[];
 }
 
-export type MotorIA = 'demo' | 'claude' | 'gemini';
+export type MotorIA = 'demo' | 'claude' | 'gemini' | 'servidor';
 
 export interface Configuracao {
   chave: 'app';
@@ -111,6 +114,7 @@ export interface Configuracao {
   apiKey: string;          // chave da Anthropic (Claude) — só neste navegador; no backend vai para o servidor
   geminiKey?: string;      // chave do Google AI Studio (Gemini)
   geminiModelo?: string;
+  servidorUrl?: string;    // API LaudoTech (backend Go); a chave da IA fica no servidor
   tema: 'claro' | 'escuro' | 'sistema';
 }
 

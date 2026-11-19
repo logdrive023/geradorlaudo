@@ -1,4 +1,4 @@
-# Render — site estático do LaudoTech (sem backend ainda).
+# Render — LaudoTech: site estático (app) + API Go (backend/).
 # New → Blueprint → este repo. Publica a branch feat/react-vite-ia.
 services:
   - type: web
@@ -17,3 +17,26 @@ services:
       - type: rewrite
         source: /*
         destination: /index.html
+
+  # API Go (backend/). A chave do Gemini é preenchida no painel (sync: false), nunca no repositório.
+  - type: web
+    name: laudotech-api
+    runtime: docker
+    plan: free
+    region: virginia
+    branch: feat/react-vite-ia
+    rootDir: backend
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /api/health
+    autoDeploy: false
+    envVars:
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_MODELO
+        value: gemini-2.5-flash
+      - key: CORS_ORIGINS
+        value: https://laudotech.pages.dev,https://laudotech.onrender.com,https://logdrive023.github.io,http://localhost:5180
+      - key: LIMITE_IA_POR_MINUTO
+        value: "20"
+      - key: DATABASE_URL
+        sync: false

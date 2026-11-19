@@ -22,7 +22,7 @@ export const AJUDA: Categoria[] = [
       { p: 'Quais tipos de laudo existem?', r: 'São 10: cautelar, entrega de imóvel, locação, inspeção predial, vícios construtivos, estrutural, reforma (NBR 16280), perícia judicial, avaliação (NBR 14653) e contábil.', ir: { tipo: 'novo', rotulo: 'Ver os tipos' }, chaves: 'tipos laudo existem' },
       { p: 'Qual é o passo a passo?', r: '1) Dados: só o essencial. 2) Fotos: você manda, eu analiso. 3) Conferir: aceite ou edite o que escrevi. 4) Laudo: revise e baixe o PDF.', chaves: 'passo etapas wizard' },
       { p: 'Onde vejo todos os meus laudos?', r: 'Na tela Laudos. Dá para buscar por endereço e filtrar por tipo e status.', ir: { tipo: 'rota', para: '/painel', rotulo: 'Ir para Laudos' }, chaves: 'lista painel meus laudos' },
-      { p: 'Posso ver um exemplo pronto?', r: 'Pode. Na tela de entrar, "Ver funcionando agora" abre um laudo de exemplo já analisado.', ir: { tipo: 'rota', para: '/painel', rotulo: 'Ir para Laudos' }, chaves: 'exemplo demonstração demo' },
+      { p: 'Posso ver um exemplo pronto?', r: 'Pode. Na tela Laudos, quando ainda não há nenhum, toque em "Ver um laudo de exemplo".', ir: { tipo: 'rota', para: '/painel', rotulo: 'Ir para Laudos' }, chaves: 'exemplo demonstração demo' },
     ],
   },
   {

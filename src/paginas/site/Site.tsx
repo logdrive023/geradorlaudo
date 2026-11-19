@@ -124,7 +124,7 @@ function Calculadora() {
           <div className="relative mt-5 font-display text-6xl font-extrabold leading-none sm:text-7xl md:text-8xl">{Math.round(horas)}<span className="ml-2 text-3xl text-[#A9B1C1]">h/mês</span></div>
           <p className="relative mt-3 text-lg text-[#C9CED8]">≈ {Math.max(1, Math.round(horas / 8))} dia{Math.round(horas / 8) > 1 ? 's' : ''} de trabalho por mês livre de legenda e tabela, para vistoriar mais ou descansar.</p>
           <p className="relative mt-6 text-xs text-[#8C95A6]">Considera que a IA faz cerca de 70% do trabalho de legendar, descrever e montar a tabela, e que você continua conferindo cada foto. Seu resultado pode variar.</p>
-          <Link to="/entrar" className="pilula pilula-obra relative mt-6 w-full sm:w-auto">Testar com o laudo de exemplo <ArrowRight className="size-5" /></Link>
+          <Link to="/cadastrar" className="pilula pilula-obra relative mt-6 w-full sm:w-auto">Criar conta grátis <ArrowRight className="size-5" /></Link>
         </div>
       </div>
     </section>
@@ -147,8 +147,8 @@ export function Site() {
             <a href="#duvidas" className="hover:text-texto">Dúvidas</a>
           </nav>
           <div className="flex items-center gap-1.5">
-            <Link to="/entrar" className="hidden h-10 items-center rounded-full px-4 text-sm font-bold text-texto2 hover:text-texto sm:inline-flex">Entrar</Link>
-            <Link to="/entrar" className="pilula pilula-obra !min-h-10 !px-4 text-sm">Ver funcionando</Link>
+            <Link to="/entrar" className="inline-flex h-10 items-center rounded-full px-3 text-sm font-bold text-texto2 hover:text-texto sm:px-4">Entrar</Link>
+            <Link to="/cadastrar" className="pilula pilula-obra !min-h-10 !px-4 text-sm">Criar conta grátis</Link>
           </div>
         </div>
       </header>
@@ -167,11 +167,11 @@ export function Site() {
                 Suba as fotos da vistoria. A IA aponta fissuras, umidade e o grau de risco de cada uma. Você confere, e o laudo sai no padrão, pronto para assinar.
               </p>
               <div className="revelar mt-8 flex flex-wrap gap-3" style={{ animationDelay: '180ms' }}>
-                <Link to="/entrar" className="pilula pilula-obra text-base">Ver funcionando agora <ArrowRight className="size-5" /></Link>
+                <Link to="/cadastrar" className="pilula pilula-obra text-base">Criar conta grátis <ArrowRight className="size-5" /></Link>
                 <Link to="/cadastrar" className="pilula pilula-clara text-base">Criar conta grátis</Link>
               </div>
               <ul className="revelar mt-6 flex flex-wrap gap-x-5 gap-y-2 text-sm font-bold text-texto2" style={{ animationDelay: '240ms' }}>
-                {['Veja sem cadastro', 'Grátis para testar, sem cartão', 'Você aprova cada achado'].map((t) => <li key={t} className="flex items-center gap-1.5"><Check className="size-4 text-ok" />{t}</li>)}
+                {['Grátis para testar', 'Sem cartão', 'Você aprova cada achado'].map((t) => <li key={t} className="flex items-center gap-1.5"><Check className="size-4 text-ok" />{t}</li>)}
               </ul>
               <Lia className="revelar mt-7 max-w-md" humor="feliz" tam={42}>Oi! Sou a Lia. Eu olho as fotos e escrevo o rascunho. Você confere e assina.</Lia>
             </div>
@@ -309,10 +309,10 @@ export function Site() {
             <div className="fita absolute inset-x-0 top-0 h-2" aria-hidden />
             <div className="mx-auto w-fit"><RostoLia humor="feliz" tam={72} /></div>
             <h2 className="mt-4 text-4xl font-extrabold md:text-6xl">Bora <span className="grifo">vistoriar</span>?</h2>
-            <p className="mx-auto mt-4 max-w-lg text-lg text-[#B6BECC]">Abra o laudo de exemplo, confira o que a Lia encontrou e veja o PDF pronto. Leva dois minutos.</p>
-            <Link to="/entrar" className="pilula pilula-obra mt-8 text-base">Ver funcionando <ArrowRight className="size-5" /></Link>
+            <p className="mx-auto mt-4 max-w-lg text-lg text-[#B6BECC]">Crie a conta, mande as fotos da próxima vistoria e veja a Lia escrever o laudo. Leva dois minutos.</p>
+            <Link to="/cadastrar" className="pilula pilula-obra mt-8 text-base">Criar conta grátis <ArrowRight className="size-5" /></Link>
             <ul className="mt-6 flex flex-wrap justify-center gap-x-5 gap-y-2 text-sm font-bold text-[#C9CED8]">
-              {['Sem cadastro para ver', 'Sem cartão', 'Seus dados ficam com você', 'Exporte quando quiser'].map((t) => <li key={t} className="flex items-center gap-1.5"><ShieldCheck className="size-4 text-obra" />{t}</li>)}
+              {['Grátis para testar', 'Sem cartão', 'Seus dados ficam com você', 'Exporte quando quiser'].map((t) => <li key={t} className="flex items-center gap-1.5"><ShieldCheck className="size-4 text-obra" />{t}</li>)}
             </ul>
           </div>
         </section>
@@ -328,7 +328,7 @@ export function Site() {
 
       {/* barra fixa no celular */}
       <div className="fixed inset-x-0 bottom-0 z-40 border-t border-borda bg-papel/95 p-3 pb-[max(12px,env(safe-area-inset-bottom))] backdrop-blur sm:hidden">
-        <Link to="/entrar" className="pilula pilula-obra w-full">Ver funcionando <span className="font-bold opacity-70">· sem cadastro</span></Link>
+        <Link to="/cadastrar" className="pilula pilula-obra w-full">Criar conta grátis <span className="font-bold opacity-70">· sem cartão</span></Link>
       </div>
 
       <footer className="border-t border-borda pb-28 pt-8 sm:pb-8">

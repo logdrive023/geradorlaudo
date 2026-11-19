@@ -69,7 +69,7 @@ export function AbaFotos({ laudo, fotos, irPara }: { laudo: Laudo; fotos: Foto[]
   const [subindo, setSubindo] = useState<{ feitas: number; total: number } | null>(null);
   const [analisando, setAnalisando] = useState<{ feitas: number; total: number } | null>(null);
   const [filtro, setFiltro] = useState<Filtro>('todas');
-  const motor = useLiveQuery(async () => { const c = await lerConfig(); return c.motorIA === 'claude' && c.apiKey ? 'claude' : c.motorIA === 'gemini' && c.geminiKey ? 'gemini' : 'demo'; }, [], 'demo');
+  const motor = useLiveQuery(async () => { const c = await lerConfig(); return c.motorIA === 'claude' && c.apiKey ? 'claude' : c.motorIA === 'gemini' && c.geminiKey ? 'gemini' : c.motorIA === 'servidor' ? 'servidor' : 'demo'; }, [], 'demo');
   const { avisar, el } = useAviso();
   const p = progressoFotos(fotos);
   const paraConferir = fotos.filter((f) => f.status === 'analisada');

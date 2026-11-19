@@ -7,13 +7,18 @@ import { analisarDemo } from './demo';
 import type { ResultadoIA } from './tipos';
 
 /** Ponto único de entrada da IA: escolhe o motor pela configuração. */
-async function analisar(laudo: Laudo, foto: Foto): Promise<{ r: ResultadoIA; origem: Analise['origem'] }> {
+async function analisar(laudo: Laudo, foto: Foto): Promise<{ r: ResultadoIA; origem: Analise['origem']; contrato?: string }> {
   const cfg = await lerConfig();
   const contexto = [
     laudo.dados.endereco && `Imóvel: ${laudo.dados.endereco}`,
     foto.analise?.ambiente && `Ambiente anotado: ${foto.analise.ambiente}`,
     foto.observacao && `Observação: ${foto.observacao}`,
   ].filter(Boolean).join('. ');
+  if (cfg.motorIA === 'servidor') {
+    const { analisarServidor, SERVIDOR_PADRAO } = await import('./servidor');
+    const env = await analisarServidor({ imagem: foto.imagem, tipoLaudo: laudo.tipo, contexto }, cfg.servidorUrl || SERVIDOR_PADRAO);
+    return { r: env.analise, origem: 'servidor', contrato: env.versao };
+  }
   if (cfg.motorIA === 'gemini' && cfg.geminiKey) {
     const { analisarGemini } = await import('./gemini'); // só carrega o SDK quando usado
     return { r: await analisarGemini({ imagem: foto.imagem, tipoLaudo: laudo.tipo, contexto }, cfg.geminiKey, cfg.geminiModelo), origem: 'gemini' };
@@ -30,9 +35,10 @@ export async function analisarFoto(laudo: Laudo, fotoId: string) {
   if (!foto) return;
   await db.fotos.update(fotoId, { status: 'analisando', erro: undefined });
   try {
-    const { r, origem } = await analisar(laudo, foto);
+    const { r, origem, contrato } = await analisar(laudo, foto);
     const analise: Analise = {
       ambiente: r.ambiente, elemento: r.elemento, legenda: r.legenda, semAnomalia: r.semAnomalia,
+      qualidadeFoto: r.qualidadeFoto, contrato: contrato ?? 'analise-foto.v1',
       achados: r.achados.map((a) => ({ ...a, id: novoId(), aceito: null, origem })),
       origem, analisadoEm: Date.now(),
     };
@@ -53,7 +59,7 @@ export async function analisarPendentes(laudo: Laudo, aoAvancar?: (feitas: numbe
     }
   };
   const cfg = await lerConfig();
-  const vezes = cfg.motorIA === 'gemini' ? 2 : 3;
+  const vezes = cfg.motorIA === 'gemini' || cfg.motorIA === 'servidor' ? 2 : 3;
   await Promise.all(Array.from({ length: vezes }, trabalhador));
   if (laudo.status === 'rascunho') await tocarLaudo(laudo.id, { status: 'conferencia' });
 }
@@ -63,7 +69,8 @@ export async function gerarConclusao(laudo: Laudo): Promise<string> {
   const cfg = await lerConfig();
   const comGemini = cfg.motorIA === 'gemini' && !!cfg.geminiKey;
   const comClaude = cfg.motorIA === 'claude' && !!cfg.apiKey;
-  if (!comGemini && !comClaude) return conclusaoPadrao(laudo, fotos);
+  const comServidor = cfg.motorIA === 'servidor';
+  if (!comGemini && !comClaude && !comServidor) return conclusaoPadrao(laudo, fotos);
   const r = resumoAchados(fotos);
   const linhas = porAmbiente(fotos).map(([amb, fs]) => {
     const itens = fs.flatMap(achadosValidos).map((a) => `${a.tipo} (${a.gravidade}): ${a.descricao}. Recomendação: ${a.recomendacao}`);
@@ -76,6 +83,10 @@ export async function gerarConclusao(laudo: Laudo): Promise<string> {
     `Fotos: ${fotos.length}. Achados aceitos: ${r.total} (críticos ${r.critico}, médios ${r.medio}, mínimos ${r.minimo}).`,
     'Por ambiente:', ...linhas,
   ].join('\n');
+  if (comServidor) {
+    const { conclusaoServidor, SERVIDOR_PADRAO } = await import('./servidor');
+    return conclusaoServidor(resumo, cfg.servidorUrl || SERVIDOR_PADRAO);
+  }
   if (comGemini) {
     const { conclusaoGemini } = await import('./gemini');
     return conclusaoGemini(resumo, cfg.geminiKey!, cfg.geminiModelo);

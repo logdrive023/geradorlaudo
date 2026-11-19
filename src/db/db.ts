@@ -1,6 +1,9 @@
 import Dexie, { type EntityTable } from 'dexie';
 import type { Configuracao, Foto, Laudo, ModeloTexto, Usuario } from '../dominio/modelo';
 
+/** Prompt da IA editado pelo usuário (Ajustes › Prompts da IA). */
+export interface PromptSalvo { chave: string; texto: string; atualizadoEm: number }
+
 /**
  * Banco no próprio navegador (IndexedDB). Nada sai do aparelho.
  * As tabelas espelham o Postgres planejado em docs/ARQUITETURA.md.
@@ -11,6 +14,7 @@ export const db = new Dexie('laudotech') as Dexie & {
   fotos: EntityTable<Foto, 'id'>;
   config: EntityTable<Configuracao, 'chave'>;
   modelos: EntityTable<ModeloTexto, 'tipo'>;
+  prompts: EntityTable<PromptSalvo, 'chave'>;
 };
 
 db.version(1).stores({
@@ -20,15 +24,22 @@ db.version(1).stores({
   config: 'chave',
 });
 db.version(2).stores({ modelos: 'tipo' });
+db.version(3).stores({ prompts: 'chave' });
+// v4: o admin de fábrica passa a entrar como admin@admin (com a senha nova)
+db.version(4).stores({}).upgrade(async (tx) => {
+  await tx.table('usuarios').where('id').equals('admin').modify((u: Usuario) => {
+    if (u.email === 'admin') { u.email = 'admin@admin'; u.sal = ADMIN.sal; u.senhaHash = ADMIN.senhaHash; }
+  });
+});
 
-/** Admin de fábrica (usuário "admin"). A senha fica só como resumo com sal. */
+/** Admin de fábrica (login admin@admin). A senha fica só como resumo com sal. */
 const ADMIN: Usuario = {
   id: 'admin',
-  email: 'admin',
+  email: 'admin@admin',
   nome: 'Administrador',
   papel: 'admin',
-  sal: 'lt-admin-7f3a9c21',
-  senhaHash: 'df228093c4007bf384831f9ede6861b50583232c9c4761858cfaf4dc3b988d75',
+  sal: 'lt-admin-2b81e6d4',
+  senhaHash: 'c8f1b2a4587cced31ff6faf710da5bba5ca0fb3ba24e5147988e3b15018fa71d',
   profissao: 'Engenheiro Civil',
   registro: '',
   telefone: '',

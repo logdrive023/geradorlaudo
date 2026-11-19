@@ -2,8 +2,8 @@ import Anthropic from '@anthropic-ai/sdk';
 import { betaZodOutputFormat } from '@anthropic-ai/sdk/helpers/beta/zod';
 import { z } from 'zod';
 import { SISTEMAS, TIPOS_ANOMALIA } from '../dominio/modelo';
-import { TIPOS } from '../dominio/tipos';
-import { blobParaBase64 } from '../lib/imagem';
+import { instrucaoAnalise, lerPrompt } from './instrucoes';
+import { blobParaBase64, tipoImagem } from '../lib/imagem';
 import type { PedidoAnalise, ResultadoIA } from './tipos';
 
 /**
@@ -17,6 +17,7 @@ const EsquemaAnalise = z.object({
   elemento: z.string().describe('Elemento principal fotografado: Parede, Teto, Piso, Viga, Esquadria…'),
   legenda: z.string().describe('Legenda técnica curta para a foto no laudo, em português'),
   semAnomalia: z.boolean().describe('true se não há anomalia aparente na foto'),
+  qualidadeFoto: z.enum(['boa', 'regular', 'ruim']),
   achados: z.array(z.object({
     tipo: z.string().describe(`Um destes: ${TIPOS_ANOMALIA.join(', ')}`),
     sistema: z.string().describe(`Um destes: ${SISTEMAS.join(', ')}`),
@@ -25,23 +26,11 @@ const EsquemaAnalise = z.object({
     causaProvavel: z.string(),
     recomendacao: z.string(),
     confianca: z.number().describe('0 a 1: quanto você tem certeza vendo só a foto'),
+    aberturaMm: z.number().nullable().describe('Abertura estimada em mm (fissuras); null se não der'),
     regiao: z.object({ x: z.number(), y: z.number(), w: z.number(), h: z.number() }).nullable()
       .describe('Caixa aproximada do achado em % da imagem (0–100): x,y = canto superior esquerdo'),
   })),
 });
-
-function sistema(tipoLaudo: PedidoAnalise['tipoLaudo']) {
-  const t = TIPOS[tipoLaudo];
-  return [
-    'Você é um engenheiro civil perito que ajuda a montar laudos técnicos no Brasil.',
-    `Tipo de laudo: ${t.nome}. Normas de referência: ${t.normas.join('; ')}.`,
-    'Analise UMA foto da vistoria e devolva o que se vê, em português do Brasil, com vocabulário técnico de patologia das construções.',
-    'Grau de risco: "critico" = risco à segurança, saúde ou funcionamento (Prioridade 1); "medio" = perda parcial de desempenho (Prioridade 2); "minimo" = estético/manutenção (Prioridade 3).',
-    'Descreva apenas o que é visível. Não invente medidas: quando estimar, diga "estimada". Se não houver anomalia aparente, use semAnomalia=true e achados=[] — isso também é informação útil para o laudo.',
-    'Foto de documento (laudo contábil): ambiente="Documento", descreva o tipo de documento na legenda e deixe achados vazio.',
-    'O engenheiro vai conferir tudo; seja objetivo e não exagere a gravidade.',
-  ].join('\n');
-}
 
 function erroLegivel(e: unknown): Error {
   if (e instanceof Anthropic.AuthenticationError) return new Error('Chave da API inválida. Confira em Configurações › IA.');
@@ -64,11 +53,11 @@ export async function analisarClaude(p: PedidoAnalise, apiKey: string): Promise<
       betas: ['server-side-fallback-2026-07-01'],
       fallbacks: 'default',
       output_config: { effort: 'medium', format: betaZodOutputFormat(EsquemaAnalise) },
-      system: sistema(p.tipoLaudo),
+      system: await instrucaoAnalise(p.tipoLaudo),
       messages: [{
         role: 'user',
         content: [
-          { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data } },
+          { type: 'image', source: { type: 'base64', media_type: tipoImagem(p.imagem), data } },
           { type: 'text', text: `Contexto do engenheiro: ${p.contexto || '—'}\nAnalise a foto.` },
         ],
       }],
@@ -78,7 +67,7 @@ export async function analisarClaude(p: PedidoAnalise, apiKey: string): Promise<
     const o = r.parsed_output;
     return {
       ...o,
-      achados: o.achados.map((a) => ({ ...a, confianca: Math.max(0, Math.min(1, a.confianca)), regiao: a.regiao ?? undefined })),
+      achados: o.achados.map((a) => ({ ...a, confianca: Math.max(0, Math.min(1, a.confianca)), regiao: a.regiao ?? undefined, aberturaMm: a.aberturaMm && a.aberturaMm > 0 ? a.aberturaMm : undefined })),
     };
   } catch (e) { throw erroLegivel(e); }
 }
@@ -91,7 +80,7 @@ export async function conclusaoClaude(resumo: string, apiKey: string): Promise<s
       betas: ['server-side-fallback-2026-07-01'],
       fallbacks: 'default',
       output_config: { effort: 'low' },
-      system: 'Você redige a conclusão de laudos técnicos de engenharia no Brasil: texto corrido, formal, impessoal, 1 a 3 parágrafos, sem títulos nem listas, sem inventar fatos além do resumo dado.',
+      system: await lerPrompt('conclusao'),
       messages: [{ role: 'user', content: `Escreva a conclusão do laudo a partir deste resumo:\n\n${resumo}` }],
     });
     if (r.stop_reason === 'refusal') throw new Error('A IA não gerou a conclusão. Escreva manualmente.');

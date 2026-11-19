@@ -8,6 +8,7 @@ export interface AchadoIA {
   causaProvavel: string;
   recomendacao: string;
   confianca: number;
+  aberturaMm?: number;
   regiao?: Regiao;
 }
 
@@ -16,6 +17,7 @@ export interface ResultadoIA {
   elemento: string;
   legenda: string;
   semAnomalia: boolean;
+  qualidadeFoto?: 'boa' | 'regular' | 'ruim';
   achados: AchadoIA[];
 }
 

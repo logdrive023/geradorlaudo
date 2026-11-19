@@ -1,0 +1,43 @@
+{
+  "$id": "https://laudotech/contratos/analise-foto.v1.schema.json",
+  "title": "Análise de UMA foto de vistoria — contrato v1",
+  "description": "Formato ÚNICO que toda IA (Gemini, Claude) devolve. O app e a API salvam exatamente isto. Mudou o formato? Crie a v2; não altere esta.",
+  "type": "object",
+  "properties": {
+    "ambiente": { "type": "string", "description": "Ambiente: Sala, Banheiro social, Fachada frontal… ou \"Documento\"" },
+    "elemento": { "type": "string", "description": "Elemento principal: Parede, Teto, Piso, Viga, Pilar, Esquadria…" },
+    "legenda": { "type": "string", "description": "\"Ambiente – elemento: constatação.\" Até 160 caracteres." },
+    "qualidadeFoto": { "type": "string", "enum": ["boa", "regular", "ruim"], "description": "ruim = escura, tremida ou longe demais para avaliar" },
+    "semAnomalia": { "type": "boolean", "description": "true quando não há anomalia aparente (achados vazio)" },
+    "achados": {
+      "type": "array",
+      "description": "Um item por anomalia visível",
+      "items": {
+        "type": "object",
+        "properties": {
+          "tipo": { "type": "string", "description": "Fissura, Trinca, Rachadura, Infiltração / umidade, Mofo / bolor, Eflorescência, Destacamento de revestimento, Desplacamento de concreto, Corrosão de armadura, Recalque / desnível, Piso ou cerâmica trincada, Pintura deteriorada, Esquadria danificada, Vazamento hidráulico, Instalação elétrica exposta, Falha de vedação, Outro" },
+          "sistema": { "type": "string", "description": "Estrutura, Vedações, Revestimentos, Pisos, Forros e tetos, Cobertura, Esquadrias, Impermeabilização, Instalações hidráulicas, Instalações elétricas, Áreas externas, Documentos" },
+          "descricao": { "type": "string", "description": "Forma, direção, extensão e posição exata. Até 2 frases." },
+          "gravidade": { "type": "string", "enum": ["critico", "medio", "minimo"] },
+          "aberturaMm": { "type": "number", "description": "Abertura estimada em mm (só fissura/trinca/rachadura; omita se não der para estimar)" },
+          "causaProvavel": { "type": "string" },
+          "recomendacao": { "type": "string", "description": "Uma ação executável, começando por verbo" },
+          "confianca": { "type": "number", "description": "0 a 1: certeza vendo só a foto" },
+          "regiao": {
+            "type": "object",
+            "description": "Caixa só da anomalia, em % da imagem (0-100); x,y = canto superior esquerdo",
+            "properties": {
+              "x": { "type": "number" },
+              "y": { "type": "number" },
+              "w": { "type": "number" },
+              "h": { "type": "number" }
+            },
+            "required": ["x", "y", "w", "h"]
+          }
+        },
+        "required": ["tipo", "sistema", "descricao", "gravidade", "causaProvavel", "recomendacao", "confianca"]
+      }
+    }
+  },
+  "required": ["ambiente", "elemento", "legenda", "qualidadeFoto", "semAnomalia", "achados"]
+}

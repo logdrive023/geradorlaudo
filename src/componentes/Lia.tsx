@@ -94,7 +94,7 @@ export function PergunteLia({ ajuda = AJUDA, site = false, subir = false }: { aj
     setMenu(false); setTexto('');
     const achada = buscarAjuda(q, ajuda);
     if (achada) { setMsgs((m) => [...m, { de: 'voce', texto: q }, { de: 'lia', texto: achada.r, ir: achada.ir }]); return; }
-    if (site) { setMsgs((m) => [...m, { de: 'voce', texto: q }, { de: 'lia', texto: 'Ainda não sei responder isso. Veja as dúvidas frequentes ou teste o laudo de exemplo: leva dois minutos.', ir: { tipo: 'rota', para: '/entrar', rotulo: 'Ver funcionando' } }]); return; }
+    if (site) { setMsgs((m) => [...m, { de: 'voce', texto: q }, { de: 'lia', texto: 'Ainda não sei responder isso. Veja as dúvidas frequentes ou crie a conta grátis e teste: leva dois minutos.', ir: { tipo: 'rota', para: '/cadastrar', rotulo: 'Criar conta grátis' } }]); return; }
     const nova: MensagemLia[] = [...msgs.map(({ de, texto: t }) => ({ de, texto: t })), { de: 'voce', texto: q }];
     setMsgs(nova); setPensando(true);
     try { setMsgs([...nova, { de: 'lia', texto: await perguntarLia(nova, laudoId) }]); }
