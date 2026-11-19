@@ -48,7 +48,7 @@ func Abrir(ctx context.Context, url string) (*Banco, error) {
 	return b, nil
 }
 
-func (b *Banco) Fechar()                          { b.pool.Close() }
+func (b *Banco) Fechar()                        { b.pool.Close() }
 func (b *Banco) Ping(ctx context.Context) error { return b.pool.Ping(ctx) }
 
 func (b *Banco) migrar(ctx context.Context) error {
@@ -206,11 +206,17 @@ func (b *Banco) LerLaudo(ctx context.Context, u conta.Usuario, id string) (laudo
 	if err != nil {
 		return l, nil, traduzir(err)
 	}
+	fotos, err := b.fotosDoLaudo(ctx, id)
+	return l, fotos, err
+}
+
+// fotosDoLaudo lê as fotos com análise e achados (sem conferir dono: quem chama já conferiu).
+func (b *Banco) fotosDoLaudo(ctx context.Context, id string) ([]laudo.FotoRegistro, error) {
 	rows, err := b.pool.Query(ctx, `select id::text, ordem, nome_arquivo, largura, altura, tirada_em, gps[0], gps[1], status,
 			ambiente, elemento, legenda, sem_anomalia, qualidade_foto, contrato_ia, origem_analise, analisado_em, observacao, erro, criado_em
 		from fotos where laudo_id = $1 order by ordem`, id)
 	if err != nil {
-		return l, nil, err
+		return nil, err
 	}
 	defer rows.Close()
 	fotos := []laudo.FotoRegistro{}
@@ -224,7 +230,7 @@ func (b *Banco) LerLaudo(ctx context.Context, u conta.Usuario, id string) (laudo
 		var criado time.Time
 		if err := rows.Scan(&f.ID, &f.Ordem, &f.NomeArquivo, &f.Largura, &f.Altura, &tirada, &lng, &lat, &f.Status,
 			&amb, &elem, &leg, &sem, &qual, &contrato, &origem, &analisado, &obs, &erro, &criado); err != nil {
-			return l, nil, err
+			return nil, err
 		}
 		f.LaudoID, f.CriadoEm = id, ms(criado)
 		if tirada != nil {
@@ -243,13 +249,13 @@ func (b *Banco) LerLaudo(ctx context.Context, u conta.Usuario, id string) (laudo
 		fotos = append(fotos, f)
 	}
 	if err := rows.Err(); err != nil {
-		return l, nil, err
+		return nil, err
 	}
 	ach, err := b.pool.Query(ctx, `select a.foto_id::text, a.id::text, a.tipo, a.sistema, a.descricao, a.gravidade, a.abertura_mm::float8,
-			a.causa_provavel, a.recomendacao, a.confianca, a.regiao, a.aceito, a.origem
+			a.causa_provavel, a.recomendacao, a.confianca, a.regiao, a.aceito, a.origem, a.acompanhamento
 		from achados a join fotos f on f.id = a.foto_id where f.laudo_id = $1 order by a.prioridade, a.id`, id)
 	if err != nil {
-		return l, nil, err
+		return nil, err
 	}
 	defer ach.Close()
 	for ach.Next() {
@@ -258,8 +264,8 @@ func (b *Banco) LerLaudo(ctx context.Context, u conta.Usuario, id string) (laudo
 		var regiao []byte
 		var conf float32
 		if err := ach.Scan(&fotoID, &a.ID, &a.Tipo, &a.Sistema, &a.Descricao, &a.Gravidade, &a.AberturaMm,
-			&a.CausaProvavel, &a.Recomendacao, &conf, &regiao, &a.Aceito, &a.Origem); err != nil {
-			return l, nil, err
+			&a.CausaProvavel, &a.Recomendacao, &conf, &regiao, &a.Aceito, &a.Origem, &a.Acompanhamento); err != nil {
+			return nil, err
 		}
 		a.Confianca = float64(conf)
 		if len(regiao) > 0 {
@@ -270,7 +276,7 @@ func (b *Banco) LerLaudo(ctx context.Context, u conta.Usuario, id string) (laudo
 			fotos[i].Analise.Achados = append(fotos[i].Analise.Achados, a)
 		}
 	}
-	return l, fotos, ach.Err()
+	return fotos, ach.Err()
 }
 
 func (b *Banco) ApagarLaudo(ctx context.Context, u conta.Usuario, id string) ([]string, error) {
@@ -401,10 +407,10 @@ func (b *Banco) SalvarFoto(ctx context.Context, u conta.Usuario, f laudo.FotoReg
 				regiao, _ = json.Marshal(a.Regiao)
 			}
 			_, err := tx.Exec(ctx, `insert into achados (id, foto_id, tipo, sistema, descricao, gravidade, prioridade, abertura_mm,
-					causa_provavel, recomendacao, confianca, regiao, aceito, origem)
-				values (coalesce($1::uuid, gen_random_uuid()), $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`,
+					causa_provavel, recomendacao, confianca, regiao, aceito, origem, acompanhamento)
+				values (coalesce($1::uuid, gen_random_uuid()), $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)`,
 				uuidOuNulo(a.ID), f.ID, a.Tipo, a.Sistema, a.Descricao, a.Gravidade, laudo.PrioridadeDe(a.Gravidade), a.AberturaMm,
-				a.CausaProvavel, a.Recomendacao, a.Confianca, regiao, a.Aceito, a.Origem)
+				a.CausaProvavel, a.Recomendacao, a.Confianca, regiao, a.Aceito, a.Origem, jsonOuNulo(a.Acompanhamento))
 			if err != nil {
 				return traduzir(err)
 			}
@@ -470,4 +476,53 @@ func traduzir(err error) error {
 		}
 	}
 	return err
+}
+
+// jsonOuNulo: JSON vazio vira NULL no banco.
+func jsonOuNulo(b json.RawMessage) any {
+	if len(b) == 0 || string(b) == "null" {
+		return nil
+	}
+	return []byte(b)
+}
+
+// ---------- link do cliente (só leitura) ----------
+
+// CriarLink devolve o link do laudo (cria na 1ª vez; depois devolve o mesmo).
+func (b *Banco) CriarLink(ctx context.Context, u conta.Usuario, id, novo string) (string, error) {
+	var token string
+	err := b.pool.QueryRow(ctx, `update laudos set link_token = coalesce(link_token, $3), link_criado_em = coalesce(link_criado_em, now())
+		where id = $1 and organizacao_id = $2 and excluido_em is null returning link_token`, id, u.OrganizacaoID, novo).Scan(&token)
+	return token, traduzir(err)
+}
+
+// ApagarLink desliga o link: quem tinha o endereço não vê mais nada.
+func (b *Banco) ApagarLink(ctx context.Context, u conta.Usuario, id string) error {
+	_, err := b.pool.Exec(ctx, `update laudos set link_token = null, link_criado_em = null where id = $1 and organizacao_id = $2`, id, u.OrganizacaoID)
+	return traduzir(err)
+}
+
+// LaudoPublico: o laudo pelo link, com fotos e os dados públicos do responsável técnico.
+func (b *Banco) LaudoPublico(ctx context.Context, token string) (laudo.Registro, []laudo.FotoRegistro, conta.Usuario, error) {
+	var autor conta.Usuario
+	l, err := lerLaudo(b.pool.QueryRow(ctx, `select id::text, tipo, titulo, status, dados, textos, conclusao, usuario_id::text, criado_em, atualizado_em
+		from laudos where link_token = $1 and excluido_em is null`, token), false)
+	if err != nil {
+		return l, nil, autor, traduzir(err)
+	}
+	_ = b.pool.QueryRow(ctx, `select nome, profissao, registro, telefone, cidade, coalesce(uf,'') from usuarios where id = $1`, l.UsuarioID).
+		Scan(&autor.Nome, &autor.Profissao, &autor.Registro, &autor.Telefone, &autor.Cidade, &autor.UF)
+	fotos, err := b.fotosDoLaudo(ctx, l.ID)
+	return l, fotos, autor, err
+}
+
+// ChavesFotoPublica: as chaves da foto, só se ela é do laudo daquele link.
+func (b *Banco) ChavesFotoPublica(ctx context.Context, token, fotoID string) (string, string, error) {
+	var img, mini string
+	err := b.pool.QueryRow(ctx, `select f.imagem_chave, f.miniatura_chave from fotos f join laudos l on l.id = f.laudo_id
+		where l.link_token = $1 and f.id = $2 and l.excluido_em is null`, token, fotoID).Scan(&img, &mini)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return "", "", laudo.ErrNaoEncontrado
+	}
+	return img, mini, traduzir(err)
 }

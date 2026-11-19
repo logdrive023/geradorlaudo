@@ -1,4 +1,5 @@
 import { createContext, useContext, type ReactNode } from 'react';
+import { STATUS_ACAO, dataCurta, itensPlano, planoPreenchido, reais, resumoPlano } from '../dominio/plano';
 import { GRAVIDADE, type Achado, type Foto, type Gravidade, type Laudo, type Usuario } from '../dominio/modelo';
 import { TIPOS } from '../dominio/tipos';
 import { achadosValidos, porAmbiente, resumoAchados } from '../dominio/regras';
@@ -99,6 +100,11 @@ export function Documento({ laudo, fotos, autor, editar }: Props) {
   linhasConst.sort((x, y) => ordemG[x.a.gravidade] - ordemG[y.a.gravidade]);
   const imovel = t.foco === 'imovel';
   const local = d.cidadeUf?.split('/')[0]?.trim() || autor?.cidade || '';
+  // plano de ação: só entra no documento quando o engenheiro preencheu algo
+  const plano = itensPlano(laudo, fotos);
+  const comPlano = imovel && planoPreenchido(plano);
+  const rp = resumoPlano(plano);
+  const nConclusao = comPlano ? 7 : 6;
 
   let n = 0;
   return (
@@ -231,10 +237,30 @@ export function Documento({ laudo, fotos, autor, editar }: Props) {
 
         {/* 6. CONCLUSÃO E ENCERRAMENTO */}
         <Folha n={++n} total={total} laudo={laudo} autor={autor}>
-          <h2>6. Conclusão</h2>
+          {comPlano && (
+            <div style={{ marginBottom: '7mm' }}>
+              <h2>6. Plano de ação</h2>
+              <p>Prioridades, prazos e responsáveis para correção das anomalias constatadas{rp.custo > 0 && <>, com custo estimado total de <b>{reais(rp.custo)}</b></>}.</p>
+              <table>
+                <thead><tr><th>Foto</th><th>Anomalia</th><th>Prioridade</th><th>Prazo</th><th>Responsável</th><th>Custo est.</th><th>Situação</th></tr></thead>
+                <tbody>{plano.map((i) => (
+                  <tr key={i.achado.id}>
+                    <td>{dois(i.numeroFoto)}</td>
+                    <td><b>{i.achado.tipo}</b><br /><span style={{ color: '#526079' }}>{i.foto.analise?.ambiente}</span></td>
+                    <td><span className={`selo selo-${i.achado.gravidade}`}>{GRAVIDADE[i.achado.gravidade].nome}</span><br /><span style={{ fontSize: '8pt' }}>{GRAVIDADE[i.achado.gravidade].prioridade}</span></td>
+                    <td>{dataCurta(i.prazo)}</td>
+                    <td>{i.acomp.responsavel || '—'}</td>
+                    <td>{i.acomp.custo != null ? reais(i.acomp.custo) : '—'}</td>
+                    <td>{STATUS_ACAO[i.acomp.status].nome}</td>
+                  </tr>
+                ))}</tbody>
+              </table>
+            </div>
+          )}
+          <h2>{nConclusao}. Conclusão</h2>
           {e ? <p><Ed v={laudo.conclusao} salvar={e.conclusao} bloco vazio="Toque para escrever a conclusão (ou use “Escrever com a Lia”)" /></p>
             : (laudo.conclusao || 'Conclusão ainda não redigida.').split('\n').filter(Boolean).map((p, i) => <p key={i}>{p}</p>)}
-          <h2 style={{ marginTop: '8mm' }}>7. Encerramento</h2>
+          <h2 style={{ marginTop: '8mm' }}>{nConclusao + 1}. Encerramento</h2>
           <p>O presente laudo é composto por {total} páginas, todas rubricadas, sendo esta a última, datada e assinada.
             As constatações referem-se ao estado aparente verificado na data da diligência, sem ensaios destrutivos, salvo indicação em contrário.</p>
           <div style={{ marginTop: '28mm', textAlign: 'center' }}>

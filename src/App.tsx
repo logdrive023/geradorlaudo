@@ -12,6 +12,7 @@ import { Painel } from './paginas/painel/Painel';
 import { Editor } from './paginas/editor/Editor';
 import { Configuracoes } from './paginas/config/Configuracoes';
 import { Usuarios } from './paginas/admin/Usuarios';
+import { VerLaudo } from './paginas/publico/VerLaudo';
 
 function Tema() {
   const tema = useLiveQuery(async () => (await lerConfig()).tema, [], 'claro');
@@ -44,6 +45,7 @@ export function App() {
           <Route path="/entrar" element={<Entrar modo="entrar" />} />
           <Route path="/cadastrar" element={<Entrar modo="criar" />} />
           <Route path="/esqueci" element={<Entrar modo="esqueci" />} />
+          <Route path="/ver/:token" element={<VerLaudo />} />
           <Route element={<Protegido><Casco /></Protegido>}>
             <Route path="/painel" element={<Painel />} />
             <Route path="/laudo/:id" element={<Editor />} />

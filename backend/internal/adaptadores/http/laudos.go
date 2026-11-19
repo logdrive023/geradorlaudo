@@ -33,13 +33,122 @@ func (s *Servidor) rotasDados(mux *http.ServeMux, limite *limitador) {
 	mux.Handle("PUT /api/laudos/{id}/fotos/{foto}", s.logado(s.salvarFoto))
 	mux.Handle("DELETE /api/laudos/{id}/fotos/{foto}", s.logado(s.apagarFoto))
 	mux.Handle("GET /api/laudos/{id}/fotos/{foto}/arquivo", s.logado(s.arquivoFoto))
+
+	// link do cliente: o engenheiro cria/desliga; quem tem o link só vê
+	mux.Handle("POST /api/laudos/{id}/link", s.logado(s.criarLink))
+	mux.Handle("DELETE /api/laudos/{id}/link", s.logado(s.apagarLink))
+	publico := novoLimitador(120)
+	mux.Handle("GET /api/publico/{token}", publico.envolver(http.HandlerFunc(s.laudoPublico)))
+	mux.Handle("GET /api/publico/{token}/fotos/{foto}", publico.envolver(http.HandlerFunc(s.fotoPublica)))
+}
+
+// POST /api/laudos/{id}/link → {token}
+func (s *Servidor) criarLink(w http.ResponseWriter, r *http.Request) {
+	novo, _, err := conta.NovoToken()
+	if err != nil {
+		responderDados(w, err)
+		return
+	}
+	t, err := s.Banco.CriarLink(r.Context(), usuarioDe(r), r.PathValue("id"), novo)
+	if err != nil {
+		responderDados(w, err)
+		return
+	}
+	json200(w, map[string]any{"token": t})
+}
+
+func (s *Servidor) apagarLink(w http.ResponseWriter, r *http.Request) {
+	if err := s.Banco.ApagarLink(r.Context(), usuarioDe(r), r.PathValue("id")); err != nil {
+		responderDados(w, err)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// tokenValido: o link tem 43 caracteres base64url; qualquer outra coisa nem consulta o banco.
+func tokenValido(t string) bool {
+	if len(t) < 32 || len(t) > 64 {
+		return false
+	}
+	for _, c := range t {
+		if !(c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' || c >= '0' && c <= '9' || c == '-' || c == '_') {
+			return false
+		}
+	}
+	return true
+}
+
+// GET /api/publico/{token} → {laudo, fotos, autor} (só leitura, sem login)
+func (s *Servidor) laudoPublico(w http.ResponseWriter, r *http.Request) {
+	if s.Banco == nil {
+		erro(w, http.StatusServiceUnavailable, "O servidor está sem banco de dados configurado.")
+		return
+	}
+	t := r.PathValue("token")
+	if !tokenValido(t) {
+		erro(w, http.StatusNotFound, "Link inválido ou desligado pelo engenheiro.")
+		return
+	}
+	l, fotos, autor, err := s.Banco.LaudoPublico(r.Context(), t)
+	if errors.Is(err, laudo.ErrNaoEncontrado) {
+		erro(w, http.StatusNotFound, "Link inválido ou desligado pelo engenheiro.")
+		return
+	}
+	if err != nil {
+		responderDados(w, err)
+		return
+	}
+	l.UsuarioID = ""
+	w.Header().Set("Cache-Control", "no-store")
+	json200(w, map[string]any{"laudo": l, "fotos": fotos, "autor": map[string]string{
+		"nome": autor.Nome, "profissao": autor.Profissao, "registro": autor.Registro, "telefone": autor.Telefone, "cidade": autor.Cidade, "uf": autor.UF,
+	}})
+}
+
+// GET /api/publico/{token}/fotos/{foto}?tam=mini
+func (s *Servidor) fotoPublica(w http.ResponseWriter, r *http.Request) {
+	if s.Banco == nil || s.Arquivos == nil {
+		erro(w, http.StatusServiceUnavailable, "Servidor sem banco ou storage.")
+		return
+	}
+	t := r.PathValue("token")
+	if !tokenValido(t) {
+		erro(w, http.StatusNotFound, "Foto não encontrada.")
+		return
+	}
+	img, mini, err := s.Banco.ChavesFotoPublica(r.Context(), t, r.PathValue("foto"))
+	if err != nil {
+		if errors.Is(err, laudo.ErrNaoEncontrado) {
+			erro(w, http.StatusNotFound, "Foto não encontrada.")
+			return
+		}
+		responderDados(w, err)
+		return
+	}
+	chave := img
+	if r.URL.Query().Get("tam") == "mini" {
+		chave = mini
+	}
+	b, tipo, err := s.Arquivos.Baixar(r.Context(), chave)
+	if err != nil {
+		erro(w, http.StatusNotFound, "Foto não encontrada.")
+		return
+	}
+	if !strings.HasPrefix(tipo, "image/") {
+		tipo = http.DetectContentType(b)
+	}
+	w.Header().Set("Content-Type", tipo)
+	w.Header().Set("Cache-Control", "private, max-age=3600")
+	_, _ = w.Write(b)
 }
 
 // ---------- sessão ----------
 
 type chaveUsuario struct{}
 
-func usuarioDe(r *http.Request) conta.Usuario { return r.Context().Value(chaveUsuario{}).(conta.Usuario) }
+func usuarioDe(r *http.Request) conta.Usuario {
+	return r.Context().Value(chaveUsuario{}).(conta.Usuario)
+}
 
 func tokenDe(r *http.Request) string {
 	h := r.Header.Get("Authorization")

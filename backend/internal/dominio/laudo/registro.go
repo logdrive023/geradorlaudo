@@ -1,6 +1,9 @@
 package laudo
 
-import "errors"
+import (
+	"encoding/json"
+	"errors"
+)
 
 // MaxFotosPorLaudo: fase de teste, cada laudo aceita poucas fotos (cota do banco e da IA).
 const MaxFotosPorLaudo = 5
@@ -50,15 +53,15 @@ type GPS struct {
 
 // AnaliseSalva é a análise depois da conferência do engenheiro.
 type AnaliseSalva struct {
-	Ambiente      string         `json:"ambiente"`
-	Elemento      string         `json:"elemento"`
-	Legenda       string         `json:"legenda"`
-	SemAnomalia   bool           `json:"semAnomalia"`
-	QualidadeFoto string         `json:"qualidadeFoto,omitempty"`
-	Contrato      string         `json:"contrato,omitempty"`
-	Achados       []AchadoSalvo  `json:"achados"`
-	Origem        string         `json:"origem"`
-	AnalisadoEm   int64          `json:"analisadoEm"`
+	Ambiente      string        `json:"ambiente"`
+	Elemento      string        `json:"elemento"`
+	Legenda       string        `json:"legenda"`
+	SemAnomalia   bool          `json:"semAnomalia"`
+	QualidadeFoto string        `json:"qualidadeFoto,omitempty"`
+	Contrato      string        `json:"contrato,omitempty"`
+	Achados       []AchadoSalvo `json:"achados"`
+	Origem        string        `json:"origem"`
+	AnalisadoEm   int64         `json:"analisadoEm"`
 }
 
 type AchadoSalvo struct {
@@ -74,12 +77,14 @@ type AchadoSalvo struct {
 	Regiao        *Regiao  `json:"regiao,omitempty"`
 	Aceito        *bool    `json:"aceito"`
 	Origem        string   `json:"origem"`
+	// plano de ação: status, prazo, responsável, custo (o app define o formato; até 4 KB)
+	Acompanhamento json.RawMessage `json:"acompanhamento,omitempty"`
 }
 
 var (
-	ErrNaoEncontrado  = errors.New("não encontrado")
-	ErrLimiteFotos    = errors.New("limite de fotos do laudo")
-	ErrPrecisaImagem  = errors.New("foto nova precisa da imagem")
+	ErrNaoEncontrado = errors.New("não encontrado")
+	ErrLimiteFotos   = errors.New("limite de fotos do laudo")
+	ErrPrecisaImagem = errors.New("foto nova precisa da imagem")
 )
 
 var statusLaudo = map[string]bool{"rascunho": true, "conferencia": true, "concluido": true}
@@ -138,6 +143,9 @@ func (f *FotoRegistro) Validar() error {
 			}
 			if x.AberturaMm != nil && (*x.AberturaMm <= 0 || *x.AberturaMm >= 1000) {
 				x.AberturaMm = nil
+			}
+			if len(x.Acompanhamento) > 4096 || (len(x.Acompanhamento) > 0 && !json.Valid(x.Acompanhamento)) {
+				x.Acompanhamento = nil
 			}
 		}
 	}

@@ -1,0 +1,74 @@
+import { GRAVIDADE, type Acompanhamento, type Achado, type Foto, type Gravidade, type Laudo, type StatusAcao } from './modelo';
+import { achadosValidos } from './regras';
+
+/**
+ * Plano de ação: o que fazer com cada anomalia depois do laudo (NBR 16747 pede prioridades e prazos).
+ * Cada achado aceito vira um item com status, prazo, responsável e custo estimado.
+ */
+
+/** Prazo sugerido pela gravidade (dias a partir da vistoria). */
+export const PRAZO_DIAS: Record<Gravidade, number> = { critico: 7, medio: 30, minimo: 90 };
+
+export const STATUS_ACAO: Record<StatusAcao, { nome: string; cor: string }> = {
+  aberta: { nome: 'A fazer', cor: 'critico' },
+  andamento: { nome: 'Em andamento', cor: 'medio' },
+  resolvida: { nome: 'Resolvida', cor: 'ok' },
+};
+
+export interface ItemPlano { foto: Foto; achado: Achado; numeroFoto: number; acomp: Acompanhamento; prazo: string; atrasado: boolean }
+
+const iso = (d: Date) => d.toISOString().slice(0, 10);
+
+export function prazoSugerido(dataVistoria: string | undefined, g: Gravidade): string {
+  const base = dataVistoria ? new Date(`${dataVistoria}T12:00:00`) : new Date();
+  if (Number.isNaN(base.getTime())) return iso(new Date(Date.now() + PRAZO_DIAS[g] * 864e5));
+  base.setDate(base.getDate() + PRAZO_DIAS[g]);
+  return iso(base);
+}
+
+/** Itens do plano, na ordem de prioridade (crítico primeiro, depois prazo). */
+export function itensPlano(laudo: Laudo, fotos: Foto[], hoje = iso(new Date())): ItemPlano[] {
+  const ordem: Record<Gravidade, number> = { critico: 0, medio: 1, minimo: 2 };
+  const itens = fotos.flatMap((f, i) => achadosValidos(f).map((a) => {
+    const acomp: Acompanhamento = a.acompanhamento ?? { status: 'aberta' };
+    const prazo = acomp.prazo || prazoSugerido(laudo.dados.dataVistoria, a.gravidade);
+    return { foto: f, achado: a, numeroFoto: i + 1, acomp, prazo, atrasado: acomp.status !== 'resolvida' && prazo < hoje };
+  }));
+  return itens.sort((x, y) => ordem[x.achado.gravidade] - ordem[y.achado.gravidade] || x.prazo.localeCompare(y.prazo));
+}
+
+export function resumoPlano(itens: ItemPlano[]) {
+  const r = { total: itens.length, aberta: 0, andamento: 0, resolvida: 0, atrasados: 0, custo: 0, custoAberto: 0 };
+  for (const i of itens) {
+    r[i.acomp.status]++;
+    if (i.atrasado) r.atrasados++;
+    const c = i.acomp.custo ?? 0;
+    r.custo += c;
+    if (i.acomp.status !== 'resolvida') r.custoAberto += c;
+  }
+  return r;
+}
+
+/** O engenheiro mexeu em algum item? (só então o plano entra no documento A4) */
+export const planoPreenchido = (itens: ItemPlano[]) => itens.some((i) => i.achado.acompanhamento);
+
+export const reais = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+export const dataCurta = (d: string) => (d ? d.split('-').reverse().join('/') : '');
+
+/** Planilha (CSV com ; e BOM: abre certo no Excel brasileiro). */
+export function planilhaPlano(laudo: Laudo, itens: ItemPlano[]): Blob {
+  const cel = (v: string | number | undefined) => {
+    const s = String(v ?? '').replace(/\r?\n/g, ' ');
+    return /[;"]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  };
+  const linhas = [
+    ['Laudo', laudo.titulo], ['Endereço', laudo.dados.endereco ?? ''], [],
+    ['Foto', 'Ambiente', 'Anomalia', 'Grau', 'Prioridade', 'Recomendação', 'Status', 'Prazo', 'Responsável', 'Custo estimado (R$)', 'Observação'],
+    ...itens.map((i) => [
+      String(i.numeroFoto).padStart(2, '0'), i.foto.analise?.ambiente ?? '', i.achado.tipo, GRAVIDADE[i.achado.gravidade].nome,
+      GRAVIDADE[i.achado.gravidade].prioridade, i.achado.recomendacao, STATUS_ACAO[i.acomp.status].nome, dataCurta(i.prazo),
+      i.acomp.responsavel ?? '', i.acomp.custo != null ? i.acomp.custo.toFixed(2).replace('.', ',') : '', i.acomp.nota ?? '',
+    ]),
+  ];
+  return new Blob(['﻿' + linhas.map((l) => l.map(cel).join(';')).join('\r\n')], { type: 'text/csv;charset=utf-8' });
+}

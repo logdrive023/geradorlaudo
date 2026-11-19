@@ -31,7 +31,7 @@ export const AJUDA: Categoria[] = [
       { p: 'Como mando as fotos?', r: 'Na aba Fotos: solte as fotos na tela, toque em "Adicionar fotos" ou use a Câmera no celular. Pode mandar todas de uma vez.', ir: { tipo: 'aba', aba: 'fotos', rotulo: 'Ir para Fotos' }, chaves: 'mandar enviar subir fotos upload câmera' },
       { p: 'O que a IA faz com cada foto?', r: 'Eu vejo o ambiente e escrevo a legenda, cada achado (tipo, sistema, grau de risco, causa provável e recomendação) e marco onde está na foto. Você só confere.', ir: { tipo: 'aba', aba: 'conferir', rotulo: 'Ir para Conferir' }, chaves: 'ia analisa faz escreve' },
       { p: 'Preciso apertar algum botão para analisar?', r: 'Não. Assim que a foto sobe, eu já começo a analisar. Se alguma falhar, aparece "Analisar" de novo.', ir: { tipo: 'aba', aba: 'fotos', rotulo: 'Ir para Fotos' }, chaves: 'botão analisar automático' },
-      { p: 'Como ligo a IA de verdade?', r: 'Em Ajustes › IA, escolha "Gemini" (tem faixa grátis: crie a chave no Google AI Studio) ou "Claude" (pago por uso) e cole a chave. Sem chave, fico no modo demonstração (análise simulada).', ir: AJ('ia', 'Abrir Ajustes › IA'), chaves: 'ligar ia chave claude gemini google grátis api demonstração' },
+      { p: 'Como ligo a IA de verdade?', r: 'Entrando com a sua conta, a IA do servidor LaudoTech (Gemini) já vem ligada: não precisa de chave. Em Ajustes › IA dá para usar a sua própria chave do Gemini ou do Claude.', ir: AJ('ia', 'Abrir Ajustes › IA'), chaves: 'ligar ia chave claude gemini google grátis api demonstração' },
       { p: 'Como mudo a ordem das fotos?', r: 'Na aba Fotos, toque no "⋯" da foto e use "Mover para trás / frente". A ordem é a do relatório fotográfico.', ir: { tipo: 'aba', aba: 'fotos', rotulo: 'Ir para Fotos' }, chaves: 'ordem mover reordenar' },
       { p: 'Como apago uma foto?', r: 'Na aba Fotos, "⋯" da foto › Excluir foto. Os achados dela saem do laudo.', ir: { tipo: 'aba', aba: 'fotos', rotulo: 'Ir para Fotos' }, chaves: 'apagar excluir remover foto' },
       { p: 'A data e o GPS da foto entram?', r: 'Sim. Eu leio a data e o local gravados na própria foto. A data vai na legenda do relatório.', chaves: 'data gps local exif' },
@@ -58,6 +58,27 @@ export const AJUDA: Categoria[] = [
       { p: 'Dá para baixar em Word?', r: 'Dá: aba Laudo › Entregar › "Baixar Word (.doc)".', ir: { tipo: 'aba', aba: 'laudo', rotulo: 'Ir para o Laudo' }, chaves: 'word doc docx' },
       { p: 'Como marco o laudo como concluído?', r: 'Na aba Laudo › "Marcar como concluído" (libera quando nada falta), ou pelo status no topo da tela.', ir: { tipo: 'aba', aba: 'laudo', rotulo: 'Ir para o Laudo' }, chaves: 'concluído concluir status' },
       { p: 'Onde mudo o nome do laudo?', r: 'Toque no status no topo do laudo (a bolinha colorida): lá tem o campo "Nome do laudo".', chaves: 'nome título renomear' },
+    ],
+  },
+  {
+    id: 'acompanhar', nome: 'Plano de ação e cliente',
+    perguntas: [
+      { p: 'O que é o plano de ação?', r: 'É a lista do que fazer depois do laudo: cada anomalia aceita vira uma tarefa com status, prazo, responsável e custo estimado. Fica na aba Laudo.', ir: { tipo: 'aba', aba: 'laudo', rotulo: 'Ver o plano de ação' }, chaves: 'plano ação pendências tarefas acompanhar manutenção' },
+      { p: 'Como defino prazo, responsável e custo?', r: 'Na aba Laudo › Plano de ação, toque na anomalia. O prazo já vem sugerido pela gravidade (crítico 7 dias, médio 30, mínimo 90) e você muda se quiser.', ir: { tipo: 'aba', aba: 'laudo', rotulo: 'Abrir o plano de ação' }, chaves: 'prazo responsável custo orçamento valor reparo' },
+      { p: 'O plano de ação entra no PDF?', r: 'Entra, como a seção "Plano de ação", assim que você preenche algum item (prazo, responsável, custo ou status).', ir: { tipo: 'aba', aba: 'laudo', rotulo: 'Ir para o Laudo' }, chaves: 'plano pdf documento seção' },
+      { p: 'Como baixo a planilha em Excel?', r: 'Na aba Laudo › Plano de ação › "Planilha (Excel)". Abre direto no Excel ou no Google Planilhas.', ir: { tipo: 'aba', aba: 'laudo', rotulo: 'Ir para o Laudo' }, chaves: 'excel planilha csv exportar' },
+      { p: 'Como mando o laudo para o cliente?', r: 'Na aba Laudo › Entregar › "Gerar link do cliente". O link é copiado: é só mandar no WhatsApp ou e-mail. O cliente lê no celular e baixa o PDF, sem conta.', ir: { tipo: 'aba', aba: 'laudo', rotulo: 'Gerar o link' }, chaves: 'cliente link compartilhar enviar whatsapp proprietário' },
+      { p: 'Como tiro o acesso do cliente?', r: 'Na aba Laudo › Entregar › "Desligar". Quem tinha o link não vê mais nada.', ir: { tipo: 'aba', aba: 'laudo', rotulo: 'Ir para o Laudo' }, chaves: 'desligar link remover acesso cliente' },
+      { p: 'Onde vejo as pendências de todos os laudos?', r: 'Na tela Laudos aparece o quadro "Plano de ação" com o que está em aberto e o que está atrasado.', ir: { tipo: 'rota', para: '/painel', rotulo: 'Ir para Laudos' }, chaves: 'pendências atrasadas todas painel' },
+    ],
+  },
+  {
+    id: 'app', nome: 'Celular e nuvem',
+    perguntas: [
+      { p: 'Tem aplicativo para celular?', r: 'O LaudoTech instala direto do navegador: no Chrome (Android), menu › "Instalar app"; no iPhone, Safari › Compartilhar › "Adicionar à Tela de Início". Abre como app, sem loja.', chaves: 'app aplicativo instalar celular android iphone' },
+      { p: 'Meus laudos ficam salvos onde?', r: 'Entrando com a sua conta, ficam no servidor (banco seguro) e também no aparelho. Se trocar de celular, é só entrar de novo que eles voltam.', chaves: 'salvo nuvem servidor banco trocar celular perder' },
+      { p: 'Quantas fotos posso pôr por laudo?', r: 'Nesta fase de teste, até 5 fotos por laudo.', ir: { tipo: 'aba', aba: 'fotos', rotulo: 'Ir para Fotos' }, chaves: 'quantas fotos limite máximo 5' },
+      { p: 'Funciona sem internet?', r: 'O que você já abriu continua no aparelho. A análise da IA e o envio para o servidor precisam de internet; quando ela volta, eu sincronizo sozinha.', chaves: 'offline sem internet sinal' },
     ],
   },
   {

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router';
-import { ArrowRight, ArrowUp, Camera, Check, ClipboardCheck, Crosshair, FileDown, MapPin, Mic, ScanSearch, ShieldCheck, Smartphone, Sparkles, TriangleAlert, X } from 'lucide-react';
+import { AlarmClock, ArrowRight, ArrowUp, Camera, Check, ClipboardCheck, ClipboardList, Cloud, Crosshair, FileDown, FileSpreadsheet, Link2, MapPin, Mic, ScanSearch, Share2, ShieldCheck, Smartphone, Sparkles, TriangleAlert, X } from 'lucide-react';
 import { Logo } from '../../componentes/ui';
 import { LISTA_TIPOS } from '../../dominio/tipos';
 import { ICONE_TIPO } from '../painel/NovoLaudo';
@@ -81,14 +81,19 @@ const RECURSOS = [
   { ic: TriangleAlert, t: 'Grau de risco', d: 'Crítico, médio e mínimo, com Prioridade 1, 2 e 3 (NBR 16747).' },
   { ic: Mic, t: 'Ditado por voz', d: 'Fale a observação no local; o texto entra na foto.' },
   { ic: MapPin, t: 'Data e GPS da foto', d: 'Lidos da própria imagem, para a prova ficar datada.' },
-  { ic: FileDown, t: 'PDF e Word', d: 'Capa, sumário técnico, relatório fotográfico 2 por página e assinatura.' },
-  { ic: Smartphone, t: 'Feito para o celular', d: 'Tire a foto e confira no mesmo aparelho, com botões grandes.' },
+  { ic: FileDown, t: 'PDF, Word e Excel', d: 'Capa, relatório fotográfico 2 por página, assinatura e o plano de ação em planilha.' },
+  { ic: Smartphone, t: 'Feito para o celular', d: 'Tire a foto e confira no mesmo aparelho. Instala como app, sem loja.' },
+  { ic: Cloud, t: 'Salvo na nuvem', d: 'Seus laudos no servidor e no aparelho. Trocou de celular? Entre e eles voltam.' },
+  { ic: ClipboardList, t: 'Plano de ação', d: 'Cada anomalia com prazo, responsável e custo estimado do reparo.' },
+  { ic: Link2, t: 'Link do cliente', d: 'O cliente lê o laudo no celular e baixa o PDF, sem criar conta.' },
 ];
 
 const DUVIDAS = [
   ['A IA assina o laudo?', 'Não. A IA faz o rascunho; você confere cada foto e cada achado. A responsabilidade técnica, a ART e a assinatura são suas.'],
-  ['Para onde vão as minhas fotos?', 'Nesta versão de teste, ficam só no seu navegador. Na análise com IA de verdade, cada foto é enviada para a API da Anthropic e volta com o resultado.'],
-  ['Preciso instalar alguma coisa?', 'Não. Abre no navegador do computador ou do celular.'],
+  ['Para onde vão as minhas fotos?', 'Para o servidor do LaudoTech: a IA analisa e as fotos ficam guardadas com o seu laudo, no seu aparelho e na nuvem, num armazenamento privado.'],
+  ['Preciso instalar alguma coisa?', 'Não. Abre no navegador do computador ou do celular, e dá para instalar como app na tela inicial, sem loja.'],
+  ['Como o meu cliente recebe o laudo?', 'Além do PDF, você gera um link e manda no WhatsApp. O cliente lê no celular e baixa o PDF, sem conta. Você desliga o link quando quiser.'],
+  ['E depois da vistoria?', 'O plano de ação transforma cada anomalia em tarefa com prazo (sugerido pela gravidade), responsável e custo estimado. Sai no PDF e em planilha Excel.'],
   ['Quais tipos de laudo?', 'Vistoria cautelar, entrega de imóvel, locação, inspeção predial, vícios construtivos, estrutural, reforma (NBR 16280), perícia judicial, avaliação (NBR 14653) e contábil. Cada um com seu padrão, que você pode personalizar.'],
   ['Quais normas o laudo cita?', 'ABNT NBR 13752 (perícias), NBR 16747 (inspeção predial), NBR 15575 (desempenho), NBR 5674 (manutenção), conforme o tipo de laudo.'],
 ];
@@ -143,6 +148,7 @@ export function Site() {
           <nav className="hidden gap-7 text-sm font-bold text-texto2 lg:flex">
             <a href="#como" className="hover:text-texto">Como funciona</a>
             <a href="#recursos" className="hover:text-texto">Recursos</a>
+            <a href="#entrega" className="hover:text-texto">Depois do laudo</a>
             <a href="#tipos" className="hover:text-texto">Tipos de laudo</a>
             <a href="#duvidas" className="hover:text-texto">Dúvidas</a>
           </nav>
@@ -168,7 +174,7 @@ export function Site() {
               </p>
               <div className="revelar mt-8 flex flex-wrap gap-3" style={{ animationDelay: '180ms' }}>
                 <Link to="/cadastrar" className="pilula pilula-obra text-base">Criar conta grátis <ArrowRight className="size-5" /></Link>
-                <Link to="/cadastrar" className="pilula pilula-clara text-base">Criar conta grátis</Link>
+                <a href="#como" className="pilula pilula-clara text-base">Ver como funciona</a>
               </div>
               <ul className="revelar mt-6 flex flex-wrap gap-x-5 gap-y-2 text-sm font-bold text-texto2" style={{ animationDelay: '240ms' }}>
                 {['Grátis para testar', 'Sem cartão', 'Você aprova cada achado'].map((t) => <li key={t} className="flex items-center gap-1.5"><Check className="size-4 text-ok" />{t}</li>)}
@@ -186,7 +192,7 @@ export function Site() {
         {/* FITA DE OBRA */}
         <div className="fita relative overflow-hidden py-3" aria-hidden>
           <div className="flex w-max animate-[rolar_28s_linear_infinite] gap-10 whitespace-nowrap font-display text-lg font-extrabold uppercase tracking-wider text-white [text-shadow:0_1px_0_#121A2B]">
-            {[...Array(2)].map((_, k) => <span key={k} className="flex gap-10">{['Suba as fotos', 'A IA analisa', 'Você confere', 'O laudo sai pronto', 'NBR 13752', 'NBR 16747'].map((t) => <span key={t} className="rounded bg-[#121A2B] px-3">{t}</span>)}</span>)}
+            {[...Array(2)].map((_, k) => <span key={k} className="flex gap-10">{['Suba as fotos', 'A IA analisa', 'Você confere', 'O laudo sai pronto', 'Plano de ação', 'Link do cliente', 'NBR 13752', 'NBR 16747'].map((t) => <span key={t} className="rounded bg-[#121A2B] px-3">{t}</span>)}</span>)}
           </div>
         </div>
 
@@ -271,6 +277,62 @@ export function Site() {
           </div>
         </section>
 
+        {/* DEPOIS DO LAUDO: plano de ação, link do cliente, app */}
+        <section id="entrega" className="scroll-mt-20 bg-sup py-20 md:py-28">
+          <div className="mx-auto max-w-[1180px] px-4">
+            <span className="inline-flex items-center gap-2 rounded-full bg-obra-suave px-3 py-1 text-sm font-extrabold text-obra-texto"><Sparkles className="size-4" />Novo</span>
+            <h2 className="mt-4 max-w-3xl text-4xl font-extrabold leading-tight md:text-5xl">O laudo não termina no <span className="grifo">PDF</span>.</h2>
+            <p className="mt-3 max-w-2xl text-lg text-texto2">Depois da assinatura começa o trabalho do seu cliente. O LaudoTech organiza o que fazer, em que ordem e quanto custa, e entrega tudo num link.</p>
+            <div className="mt-10 grid gap-4 lg:grid-cols-3">
+              <div className="flex flex-col rounded-[22px] border border-borda bg-papel p-6">
+                <span className="grid size-11 place-items-center rounded-xl bg-obra-suave text-obra-texto"><ClipboardList className="size-5" /></span>
+                <h3 className="mt-4 text-xl font-bold">Plano de ação</h3>
+                <p className="mt-1.5 text-texto2">Cada anomalia vira tarefa com prazo sugerido pela gravidade, responsável e custo estimado.</p>
+                <div className="mt-5 grid gap-2 rounded-2xl border border-borda bg-sup p-3 text-sm" aria-hidden>
+                  {[['Fissura em viga', 'Crítico', '7 dias', 'A fazer', 'bg-critico-suave text-critico-texto'], ['Infiltração no teto', 'Médio', '30 dias', 'Em andamento', 'bg-medio-suave text-medio-texto'], ['Rejunte gasto', 'Mínimo', '90 dias', 'Resolvida', 'bg-ok-suave text-ok-texto']].map(([a, g, p, st, cls]) => (
+                    <div key={a} className="flex items-center gap-2 rounded-xl bg-sup2 px-3 py-2">
+                      <span className="min-w-0 flex-1"><b className="block truncate">{a}</b><span className="flex items-center gap-1 text-xs text-texto3"><AlarmClock className="size-3" />{g} · {p}</span></span>
+                      <span className={cx('shrink-0 rounded-full px-2 py-0.5 text-[11px] font-extrabold', cls)}>{st}</span>
+                    </div>
+                  ))}
+                  <div className="flex items-center justify-between px-1 pt-1 text-xs font-bold text-texto2"><span className="flex items-center gap-1"><FileSpreadsheet className="size-3.5" />Planilha Excel</span><span>R$ 4.850 em reparos</span></div>
+                </div>
+              </div>
+              <div className="flex flex-col rounded-[22px] border border-borda bg-papel p-6">
+                <span className="grid size-11 place-items-center rounded-xl bg-obra-suave text-obra-texto"><Link2 className="size-5" /></span>
+                <h3 className="mt-4 text-xl font-bold">Link do cliente</h3>
+                <p className="mt-1.5 text-texto2">Mande no WhatsApp. O cliente lê no celular e baixa o PDF, sem conta. Você desliga quando quiser.</p>
+                <div className="mt-5 rounded-2xl border border-borda bg-sup p-3" aria-hidden>
+                  <div className="rounded-xl bg-[#121A2B] p-3 text-white">
+                    <p className="text-[10px] font-extrabold uppercase tracking-[.14em] text-obra">Inspeção predial</p>
+                    <p className="font-display text-lg font-extrabold leading-tight">Ed. Jardim das Acácias</p>
+                    <p className="mt-2 flex items-center gap-1.5 text-xs text-white/75"><ShieldCheck className="size-3.5 text-obra" />Eng. responsável · CREA</p>
+                  </div>
+                  <div className="mt-2 flex items-center gap-2 rounded-xl bg-sup2 px-3 py-2 text-xs"><Link2 className="size-3.5 shrink-0 text-obra" /><span className="min-w-0 flex-1 truncate text-texto2">laudotech.pages.dev/ver/…</span><Share2 className="size-3.5 shrink-0 text-texto3" /></div>
+                </div>
+              </div>
+              <div className="flex flex-col rounded-[22px] border border-borda bg-papel p-6">
+                <span className="grid size-11 place-items-center rounded-xl bg-obra-suave text-obra-texto"><Smartphone className="size-5" /></span>
+                <h3 className="mt-4 text-xl font-bold">No bolso, como app</h3>
+                <p className="mt-1.5 text-texto2">Instala na tela inicial direto do navegador. Tire a foto na vistoria e confira no mesmo aparelho.</p>
+                <div className="mt-5 grid grid-cols-4 gap-3 rounded-2xl border border-borda bg-[#121A2B] p-4" aria-hidden>
+                  {[0, 1, 2, 3, 4, 5, 6, 7].map((i) => (
+                    <div key={i} className="grid justify-items-center gap-1">
+                      <span className={cx('grid aspect-square w-full place-items-center rounded-xl', i === 2 ? 'bg-obra' : 'bg-white/10')}>{i === 2 && <ClipboardCheck className="size-5 text-[#121A2B]" />}</span>
+                      <span className={cx('h-1.5 w-8 max-w-full rounded-full', i === 2 ? 'bg-white/80' : 'bg-white/15')} />
+                    </div>
+                  ))}
+                  <p className="col-span-4 flex items-center justify-center gap-1.5 text-xs font-bold text-white/70"><Cloud className="size-3.5" />Salvo na nuvem e no aparelho</p>
+                </div>
+              </div>
+            </div>
+            <div className="mt-8 flex flex-wrap items-center gap-3">
+              <Link to="/cadastrar" className="pilula pilula-obra text-base">Testar grátis <ArrowRight className="size-5" /></Link>
+              <span className="text-sm font-bold text-texto2">Sem cartão · sem instalar nada</span>
+            </div>
+          </div>
+        </section>
+
         {/* TIPOS */}
         <section id="tipos" className="scroll-mt-20 bg-[#121A2B] py-20 text-white md:py-28">
           <div className="mx-auto max-w-[1180px] px-4">
@@ -334,7 +396,7 @@ export function Site() {
       <footer className="border-t border-borda pb-28 pt-8 sm:pb-8">
         <div className="mx-auto flex max-w-[1180px] flex-wrap items-center justify-between gap-4 px-4 text-sm text-texto3">
           <Logo tam={26} />
-          <span>Versão de teste · os dados ficam no seu navegador · © {new Date().getFullYear()} LaudoTech</span>
+          <span>Versão de teste · laudos salvos na nuvem e no seu aparelho · © {new Date().getFullYear()} LaudoTech</span>
         </div>
       </footer>
     </div>

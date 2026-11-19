@@ -30,6 +30,16 @@ export interface Achado {
   /** null = ainda não conferido; true = aceito; false = descartado pelo engenheiro */
   aceito: boolean | null;
   origem: OrigemAnalise;
+  /** Plano de ação (opcional): acompanhamento do reparo depois do laudo. */
+  acompanhamento?: Acompanhamento;
+}
+export type StatusAcao = 'aberta' | 'andamento' | 'resolvida';
+export interface Acompanhamento {
+  status: StatusAcao;
+  prazo?: string;        // AAAA-MM-DD
+  responsavel?: string;  // construtora, síndico, proprietário…
+  custo?: number;        // custo estimado do reparo, em R$
+  nota?: string;
 }
 
 export interface Analise {

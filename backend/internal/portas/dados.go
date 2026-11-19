@@ -28,6 +28,12 @@ type Banco interface {
 	// SalvarFoto grava os dados e a análise; imagem/miniatura vazias = manter as que já estão.
 	SalvarFoto(ctx context.Context, u conta.Usuario, f laudo.FotoRegistro, imagem, miniatura string, bytes int) error
 	ApagarFoto(ctx context.Context, u conta.Usuario, laudoID, fotoID string) ([]string, error)
+
+	// link do cliente (só leitura)
+	CriarLink(ctx context.Context, u conta.Usuario, laudoID, tokenNovo string) (string, error)
+	ApagarLink(ctx context.Context, u conta.Usuario, laudoID string) error
+	LaudoPublico(ctx context.Context, token string) (laudo.Registro, []laudo.FotoRegistro, conta.Usuario, error)
+	ChavesFotoPublica(ctx context.Context, token, fotoID string) (imagem, miniatura string, err error)
 }
 
 // Arquivos é o storage das imagens (Supabase Storage em produção; disco em desenvolvimento).

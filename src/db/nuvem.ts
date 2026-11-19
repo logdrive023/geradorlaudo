@@ -278,3 +278,46 @@ export function sincronizar(usuarioId: string): Promise<void> {
   })();
   return sincronizando;
 }
+
+// ---------- link do cliente (só leitura) ----------
+
+export const logadoNaNuvem = () => !!lerToken();
+
+/** Cria (ou devolve) o link do laudo para o cliente. Antes, garante que o laudo e as fotos já subiram. */
+export async function criarLinkCliente(laudoId: string): Promise<string> {
+  if (!lerToken()) throw new Error('Entre com sua conta para gerar o link (o laudo precisa estar salvo no servidor).');
+  await enviar();
+  const { token } = await api<{ token: string }>(`/api/laudos/${laudoId}/link`, { method: 'POST' });
+  return `${location.origin}${import.meta.env.BASE_URL.replace(/\/$/, '')}/ver/${token}`;
+}
+
+export async function desligarLinkCliente(laudoId: string) {
+  await api(`/api/laudos/${laudoId}/link`, { method: 'DELETE' });
+}
+
+export interface LaudoPublico {
+  laudo: Omit<Laudo, 'usuarioId' | 'logo' | 'imagemLocalizacao'>;
+  fotos: Foto[];
+  autor: Pick<Usuario, 'nome' | 'profissao' | 'registro' | 'telefone' | 'cidade' | 'uf'>;
+}
+
+/** Lê o laudo pelo link (sem login) e baixa as imagens. */
+export async function abrirLaudoPublico(token: string): Promise<LaudoPublico> {
+  const pedir = async (caminho: string) => {
+    const r = await fetch(base() + caminho);
+    if (!r.ok) {
+      const corpo = await r.json().catch(() => ({})) as { erro?: string };
+      throw new Error(corpo.erro || 'Não deu para abrir este laudo agora.');
+    }
+    return r;
+  };
+  const d = await (await pedir(`/api/publico/${encodeURIComponent(token)}`)).json() as { laudo: LaudoPublico['laudo']; fotos: RegistroFoto[]; autor: LaudoPublico['autor'] };
+  const fotos = await Promise.all(d.fotos.map(async (f) => {
+    const [imagem, miniatura] = await Promise.all([
+      pedir(`/api/publico/${encodeURIComponent(token)}/fotos/${f.id}`).then((r) => r.blob()),
+      pedir(`/api/publico/${encodeURIComponent(token)}/fotos/${f.id}?tam=mini`).then((r) => r.blob()),
+    ]);
+    return { ...f, imagem, miniatura } as Foto;
+  }));
+  return { laudo: d.laudo, fotos, autor: d.autor };
+}

@@ -1,0 +1,16 @@
+{
+  "name": "LaudoTech — fotos viram laudo",
+  "short_name": "LaudoTech",
+  "description": "Suba as fotos da vistoria, a IA aponta o que encontrou e você confere. O laudo sai pronto para assinar.",
+  "lang": "pt-BR",
+  "start_url": "./painel",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#F6F8FB",
+  "theme_color": "#121A2B",
+  "categories": ["business", "productivity"],
+  "icons": [
+    { "src": "icone.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}
