@@ -15,6 +15,7 @@ import { Usuarios } from './paginas/admin/Usuarios';
 import { VerLaudo } from './paginas/publico/VerLaudo';
 import { VerObra } from './paginas/publico/VerObra';
 import { Convite } from './paginas/publico/Convite';
+import { Agenda } from './paginas/agenda/Agenda';
 import { Verificar } from './paginas/publico/Verificar';
 import { ListaObras } from './paginas/obras/ListaObras';
 import { ObraTela } from './paginas/obras/ObraTela';
@@ -62,6 +63,7 @@ export function App() {
             <Route path="/painel" element={<Painel />} />
             <Route path="/laudo/:id" element={<Editor />} />
             <Route path="/obras" element={<ListaObras />} />
+            <Route path="/agenda" element={<Agenda />} />
             <Route path="/obra/:id" element={<ObraTela />} />
             <Route path="/configuracoes" element={<Configuracoes />} />
             <Route path="/usuarios" element={<Protegido admin><Usuarios /></Protegido>} />

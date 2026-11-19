@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { CheckCircle2, Download, ListOrdered, FileStack, MessageSquareText, ImagePlus, KeyRound, Monitor, Moon, Palette, ShieldCheck, Sparkles, Sun, Trash2, Upload, User } from 'lucide-react';
+import { BookMarked, CheckCircle2, Download, ListOrdered, FileStack, MessageSquareText, ImagePlus, KeyRound, Monitor, Moon, Palette, ShieldCheck, Sparkles, Sun, Trash2, Upload, User } from 'lucide-react';
 import { db, lerConfig, salvarConfig } from '../../db/db';
 import { useSessao } from '../../lib/sessao';
 import { Botao, Campo, Cartao, Entrada, Modal, useAviso, useUrl } from '../../componentes/ui';
@@ -10,6 +10,7 @@ import { prepararFoto } from '../../lib/imagem';
 import type { Configuracao, Usuario } from '../../dominio/modelo';
 import { Modelos } from './Modelos';
 import { EtapasObra } from './EtapasObra';
+import { BibliotecaTextos } from './BibliotecaTextos';
 import { SERVIDOR_PADRAO } from '../../ia/servidor';
 import { Prompts } from './Prompts';
 import { IasServidor } from './IasServidor';
@@ -22,10 +23,11 @@ const MODELOS_GEMINI_UI = [
   { id: 'gemini-3.5-flash', nome: 'Gemini 3.5 Flash', nota: 'alternativa' },
 ];
 
-type Aba = 'perfil' | 'modelos' | 'etapas' | 'prompts' | 'ia' | 'aparencia' | 'seguranca' | 'dados';
+type Aba = 'perfil' | 'modelos' | 'biblioteca' | 'etapas' | 'prompts' | 'ia' | 'aparencia' | 'seguranca' | 'dados';
 const ABAS: { id: Aba; rotulo: string; ic: typeof User }[] = [
   { id: 'perfil', rotulo: 'Perfil', ic: User },
   { id: 'modelos', rotulo: 'Modelos', ic: FileStack },
+  { id: 'biblioteca', rotulo: 'Biblioteca', ic: BookMarked },
   { id: 'etapas', rotulo: 'Etapas de obra', ic: ListOrdered },
   { id: 'ia', rotulo: 'IA', ic: Sparkles },
   { id: 'prompts', rotulo: 'Prompts', ic: MessageSquareText },
@@ -347,6 +349,7 @@ export function Configuracoes() {
         {aba === 'perfil' && <Perfil u={usuario} />}
         {aba === 'modelos' && <Modelos />}
         {aba === 'etapas' && <EtapasObra />}
+        {aba === 'biblioteca' && <BibliotecaTextos />}
         {aba === 'prompts' && <Prompts />}
         {aba === 'ia' && <IA cfg={cfg} />}
         {aba === 'aparencia' && (

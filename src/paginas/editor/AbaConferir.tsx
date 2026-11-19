@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState, type PointerEvent } from 'react';
-import { CalendarDays, Check, CheckCheck, ChevronLeft, ChevronRight, Crosshair, Eye, MapPin, Mic, MicOff, Pencil, Plus, RotateCw, Search, Sparkles, Wrench, X } from 'lucide-react';
+import { BookMarked, BookmarkPlus, CalendarDays, Check, CheckCheck, ChevronLeft, ChevronRight, Crosshair, Eye, MapPin, Mic, MicOff, Pencil, Plus, RotateCw, Search, Sparkles, Wrench, X } from 'lucide-react';
 import { db, tocarLaudo } from '../../db/db';
+import { listarBiblioteca, salvarTexto, type TextoBiblioteca } from '../../db/organizacao';
+import { logadoNaNuvem } from '../../db/nuvem';
 import { GRAVIDADE, IAS, SISTEMAS, TIPOS_ANOMALIA, nomeIA, type Achado, type Analise, type Foto, type Gravidade, type Laudo, type Regiao } from '../../dominio/modelo';
 import { analisarFoto } from '../../ia/motor';
 import { AreaTexto, Barra, Botao, Campo, Cartao, COR_GRAVIDADE, Dica, Entrada, SeloGravidade, Vazio, useAviso, useUrl } from '../../componentes/ui';
@@ -74,7 +76,9 @@ export function SeloLia({ texto = 'Escrito pela Lia' }: { texto?: string }) {
  * Um achado: por padrão mostra o TEXTO PRONTO que a IA escreveu, em 3 blocos
  * (o que é · por quê · o que fazer). "Editar" (✎) abre os campos.
  */
-function CartaoAchado({ a, n, sel, aoSel, aoMudar, aoMarcar, mostrarIA }: { a: Achado; n: number; sel: boolean; aoSel: () => void; aoMudar: (p: Partial<Achado>) => void; aoMarcar: () => void; mostrarIA?: boolean }) {
+type Bib = { textos: TextoBiblioteca[]; salvar: (a: Achado) => void; usar: (t: TextoBiblioteca) => Partial<Achado> };
+
+function CartaoAchado({ a, n, sel, aoSel, aoMudar, aoMarcar, mostrarIA, bib }: { a: Achado; n: number; sel: boolean; aoSel: () => void; aoMudar: (p: Partial<Achado>) => void; aoMarcar: () => void; mostrarIA?: boolean; bib?: Bib }) {
   const daIA = a.origem !== 'manual';
   const cor = COR_GRAVIDADE[a.gravidade];
   const blocos = [
@@ -136,6 +140,22 @@ function CartaoAchado({ a, n, sel, aoSel, aoMudar, aoMarcar, mostrarIA }: { a: A
           <Campo rotulo="Por quê (causa provável)"><AreaTexto rows={2} value={a.causaProvavel} onChange={(e) => aoMudar({ causaProvavel: e.target.value })} /></Campo>
           <Campo rotulo="O que fazer (recomendação)"><AreaTexto rows={2} value={a.recomendacao} onChange={(e) => aoMudar({ recomendacao: e.target.value })} /></Campo>
           <Botao tam="p" variante="claro" onClick={aoMarcar}><Crosshair className="size-4" />{a.regiao ? 'Remarcar na foto' : 'Marcar na foto'}</Botao>
+          {bib && (
+            <div className="grid gap-2 rounded-xl border border-dashed border-borda-forte p-2.5">
+              <span className="flex items-center gap-1.5 text-xs font-extrabold text-texto2"><BookMarked className="size-4" />Biblioteca do escritório
+                <Dica texto="Textos que a equipe já aprovou. Use um para preencher este achado, ou salve este texto para reaproveitar nos próximos laudos." /></span>
+              {bib.textos.length > 0 && (
+                <select value="" onChange={(e) => { const t = bib.textos.find((x) => x.id === e.target.value); if (t) aoMudar(bib.usar(t)); }}
+                  className="h-10 rounded-xl border border-borda-forte bg-sup px-2 text-sm" aria-label="Usar texto da biblioteca">
+                  <option value="">Usar um texto salvo…</option>
+                  {[...bib.textos].sort((x, y) => Number(y.tipo === a.tipo) - Number(x.tipo === a.tipo) || y.usos - x.usos).map((t) => (
+                    <option key={t.id} value={t.id}>{t.tipo === a.tipo ? '★ ' : ''}{t.tipo} · {GRAVIDADE[t.gravidade].nome} · {t.descricao.slice(0, 50)}</option>
+                  ))}
+                </select>
+              )}
+              <Botao tam="p" variante="claro" disabled={!a.descricao.trim() && !a.recomendacao.trim()} onClick={() => bib.salvar(a)}><BookmarkPlus className="size-4" />Salvar este texto na biblioteca</Botao>
+            </div>
+          )}
         </div>
       )}
 
@@ -163,6 +183,9 @@ export function AbaConferir({ laudo, fotos, irPara, fotoInicial }: { laudo: Laud
   const todas = fotos.filter((f) => f.analise || f.status === 'analisando' || f.status === 'erro');
   // várias IAs: só quando alguma foto deste laudo foi analisada por 2+ IAs (com 1 IA a tela fica igual)
   const [iaSel, setIaSel] = useState('todas');
+  // biblioteca de textos do escritório (só com conta no servidor)
+  const [textos, setTextos] = useState<TextoBiblioteca[] | null>(null);
+  useEffect(() => { if (logadoNaNuvem()) listarBiblioteca().then(setTextos).catch(() => setTextos(null)); }, []);
   const iasLaudo = [...new Set(todas.flatMap((f) => ((f.analise?.porIA?.length ?? 0) > 1 ? f.analise!.achados.map((a) => a.ia ?? '') : [])).filter(Boolean))];
   const mostrarIA = iasLaudo.length > 1;
   const daIA = (a: Achado, ia = iaSel) => !mostrarIA || ia === 'todas' || a.ia === ia;
@@ -251,6 +274,20 @@ export function AbaConferir({ laudo, fotos, irPara, fotoInicial }: { laudo: Laud
   atalhos.current = { ant: idx > 0 ? () => void irFoto(idx - 1) : undefined, prox: idx < lista.length - 1 ? () => void irFoto(idx + 1) : undefined };
   const situacao = foto.status === 'conferida' ? { t: 'Conferida', c: 'bg-ok-suave text-ok-texto' } : foto.status === 'erro' ? { t: 'Falhou', c: 'bg-critico-suave text-critico-texto' } : foto.status === 'analisando' ? { t: 'Analisando…', c: 'bg-obra-suave text-obra-texto' } : { t: 'A conferir', c: 'bg-medio-suave text-medio-texto' };
   const criticosDa = (f: Foto) => (f.analise?.achados ?? []).filter((a) => a.gravidade === 'critico' && a.aceito !== false).length;
+
+  const bib: Bib | undefined = textos ? {
+    textos,
+    salvar: async (a) => {
+      try {
+        const t = await salvarTexto({ tipo: a.tipo, sistema: a.sistema, gravidade: a.gravidade, descricao: a.descricao, causaProvavel: a.causaProvavel, recomendacao: a.recomendacao });
+        setTextos((x) => [t, ...(x ?? [])]); avisar('Salvo na biblioteca do escritório');
+      } catch (e) { avisar((e as Error).message, 'erro'); }
+    },
+    usar: (t) => {
+      void salvarTexto({ ...t, usos: t.usos + 1 }).catch(() => undefined); // conta o uso (os mais usados aparecem primeiro)
+      return { tipo: t.tipo, ...(t.sistema ? { sistema: t.sistema } : {}), gravidade: t.gravidade, descricao: t.descricao, causaProvavel: t.causaProvavel, recomendacao: t.recomendacao } as Partial<Achado>;
+    },
+  } : undefined;
 
   const falaLia = (() => {
     const ativos = achados.filter((a) => a.aceito !== false && a.origem !== 'manual');
@@ -375,7 +412,7 @@ export function AbaConferir({ laudo, fotos, irPara, fotoInicial }: { laudo: Laud
             )}
             {todosAchados.length === 0 && <Cartao className="p-4 text-sm text-ok-texto"><b>Sem anomalia aparente.</b> A foto entra no laudo como registro do ambiente.</Cartao>}
             {achados.map((a, i) => (
-              <CartaoAchado key={a.id} a={a} n={i + 1} sel={sel === a.id} aoSel={() => setSel(sel === a.id ? undefined : a.id)} aoMudar={(p) => mudarAchado(a.id, p)} aoMarcar={() => { setSel(a.id); setMarcando(a.id); }} mostrarIA={mostrarIA} />
+              <CartaoAchado key={a.id} a={a} n={i + 1} sel={sel === a.id} aoSel={() => setSel(sel === a.id ? undefined : a.id)} aoMudar={(p) => mudarAchado(a.id, p)} aoMarcar={() => { setSel(a.id); setMarcando(a.id); }} mostrarIA={mostrarIA} bib={bib} />
             ))}
             <button onClick={novoAchado} className="flex h-11 items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-borda-forte font-extrabold text-texto2 hover:border-obra hover:text-obra-texto"><Plus className="size-4" />Adicionar achado</button>
 

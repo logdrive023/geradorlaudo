@@ -67,3 +67,10 @@ export const ACAO: Record<string, string> = {
   'organizacao.alterada': 'alterou os dados da organização', 'cliente.aceite': 'cliente aceitou um laudo', 'cliente.contestacao': 'cliente contestou um laudo',
   'cliente.comentario': 'cliente comentou', 'cliente.reparo': 'cliente pediu reparo', 'cliente.aprovacao': 'cliente aprovou',
 };
+
+// ---------- biblioteca de textos (do escritório) ----------
+export interface TextoBiblioteca { id: string; tipo: string; sistema: string; gravidade: 'critico' | 'medio' | 'minimo'; descricao: string; causaProvavel: string; recomendacao: string; usos: number }
+export const listarBiblioteca = async () => (await api<{ textos: TextoBiblioteca[] }>('/api/biblioteca')).textos;
+export const salvarTexto = async (t: Omit<TextoBiblioteca, 'id' | 'usos'> & { id?: string; usos?: number }) =>
+  (await api<{ texto: TextoBiblioteca }>('/api/biblioteca', json({ usos: 0, ...t }))).texto;
+export const apagarTexto = (id: string) => api<void>(`/api/biblioteca/${id}`, { method: 'DELETE' });
