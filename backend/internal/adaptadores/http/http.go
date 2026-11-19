@@ -72,7 +72,11 @@ func (s *Servidor) analisar(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// envelope padrão: versão do contrato + quem analisou + a análise no formato do contrato
-	json200(w, map[string]any{"versao": contratos.VersaoAnaliseFoto, "origem": s.IA.IA.Nome(), "modelo": s.IA.IA.Modelo(), "analise": a})
+	modelo := a.Modelo
+	if modelo == "" {
+		modelo = s.IA.IA.Modelo()
+	}
+	json200(w, map[string]any{"versao": contratos.VersaoAnaliseFoto, "origem": s.IA.IA.Nome(), "modelo": modelo, "analise": a})
 }
 
 // POST /api/ia/conclusao  {"resumo": "..."}

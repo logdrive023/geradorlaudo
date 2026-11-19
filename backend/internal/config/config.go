@@ -12,6 +12,7 @@ type Config struct {
 	Porta          string
 	GeminiKey      string   // GEMINI_API_KEY (vazio = modo demonstração)
 	GeminiModelo   string   // GEMINI_MODELO
+	GeminiReserva  string   // GEMINI_MODELO_RESERVA: usado quando o principal está lotado ("nenhum" desliga)
 	GeminiPensar   string   // GEMINI_PENSAMENTO: minimal | low | medium | high | padrao
 	OrigensCORS    []string // CORS_ORIGINS separado por vírgula
 	TimeoutIA      time.Duration
@@ -24,6 +25,7 @@ func Ler() Config {
 		Porta:          env("PORT", "8080"),
 		GeminiKey:      strings.TrimSpace(os.Getenv("GEMINI_API_KEY")),
 		GeminiModelo:   env("GEMINI_MODELO", "gemini-3.8-flash"),
+		GeminiReserva:  reserva(env("GEMINI_MODELO_RESERVA", "gemini-3.1-flash-lite")),
 		GeminiPensar:   pensamento(env("GEMINI_PENSAMENTO", "low")),
 		OrigensCORS:    lista(env("CORS_ORIGINS", "http://localhost:5180,https://laudotech.pages.dev,https://laudotech.onrender.com,https://logdrive023.github.io")),
 		TimeoutIA:      time.Duration(numero("TIMEOUT_IA_SEGUNDOS", 120)) * time.Second,
@@ -59,6 +61,13 @@ func lista(s string) []string {
 // pensamento: "padrao" (ou "default") deixa o modelo decidir.
 func pensamento(v string) string {
 	if v = strings.ToLower(v); v == "padrao" || v == "default" {
+		return ""
+	}
+	return v
+}
+
+func reserva(v string) string {
+	if strings.EqualFold(v, "nenhum") {
 		return ""
 	}
 	return v

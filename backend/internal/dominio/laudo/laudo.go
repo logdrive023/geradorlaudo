@@ -92,6 +92,7 @@ type Analise struct {
 	QualidadeFoto string   `json:"qualidadeFoto"` // boa | regular | ruim
 	SemAnomalia   bool     `json:"semAnomalia"`
 	Achados       []Achado `json:"achados"`
+	Modelo        string   `json:"-"` // modelo que respondeu (vai no envelope, não na análise)
 }
 
 func limitar(v, min, max float64) float64 {

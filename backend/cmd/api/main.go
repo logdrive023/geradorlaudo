@@ -2,6 +2,7 @@
 //
 //	GEMINI_API_KEY  chave do Google AI Studio (sem ela, modo demonstração)
 //	GEMINI_MODELO   padrão gemini-3.8-flash
+//	GEMINI_MODELO_RESERVA padrão gemini-3.1-flash-lite (quando o principal lota)
 //	GEMINI_PENSAMENTO padrão low (minimal|low|medium|high|padrao)
 //	PORT            padrão 8080
 //	CORS_ORIGINS    origens do app separadas por vírgula
@@ -35,7 +36,7 @@ func main() {
 
 	var ia portas.IA = demo.Demo{}
 	if cfg.GeminiKey != "" {
-		g, err := gemini.Novo(ctx, cfg.GeminiKey, cfg.GeminiModelo, cfg.GeminiPensar)
+		g, err := gemini.Novo(ctx, cfg.GeminiKey, cfg.GeminiModelo, cfg.GeminiReserva, cfg.GeminiPensar)
 		if err != nil {
 			slog.Error("não deu para iniciar o Gemini; seguindo em modo demonstração", "erro", err)
 		} else {
@@ -59,7 +60,7 @@ func main() {
 		WriteTimeout:      cfg.TimeoutIA + 30*time.Second,
 	}
 	go func() {
-		slog.Info("api no ar", "porta", cfg.Porta, "ia", ia.Nome(), "modelo", ia.Modelo(), "pensamento", cfg.GeminiPensar)
+		slog.Info("api no ar", "porta", cfg.Porta, "ia", ia.Nome(), "modelo", ia.Modelo(), "reserva", cfg.GeminiReserva, "pensamento", cfg.GeminiPensar)
 		if err := h.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			slog.Error("servidor parou", "erro", err)
 			os.Exit(1)

@@ -17,6 +17,7 @@ No app: Ajustes › IA › **Servidor LaudoTech** › `http://localhost:8080`.
 |---|---|---|
 | `GEMINI_API_KEY` | — | chave do Google AI Studio (sem ela: demonstração) |
 | `GEMINI_MODELO` | `gemini-3.8-flash` | modelo do Gemini |
+| `GEMINI_MODELO_RESERVA` | `gemini-3.1-flash-lite` | usado sozinho quando o principal responde "lotado" ou passa de 50 s (`nenhum` desliga) |
 | `GEMINI_PENSAMENTO` | `low` | quanto o modelo "pensa" na análise (`minimal`, `low`, `medium`, `high`, `padrao`) — `low` é bem mais rápido |
 | `PORT` | `8080` | porta |
 | `CORS_ORIGINS` | app local + Pages + Render | origens permitidas |

@@ -20,17 +20,57 @@ import (
 type Gemini struct {
 	cliente    *genai.Client
 	modelo     string
+	reserva    string              // modelo usado quando o principal está lotado ("" = sem reserva)
 	pensamento genai.ThinkingLevel // "" = padrão do modelo
 }
 
+// tempoPrincipal: quanto esperar o modelo principal antes de passar para o reserva.
+const tempoPrincipal = 50 * time.Second
+
 // Novo cria o cliente. pensamento: minimal | low | medium | high ("" = padrão do modelo).
 // Para olhar foto e preencher o contrato, "low" responde bem mais rápido e basta.
-func Novo(ctx context.Context, apiKey, modelo, pensamento string) (*Gemini, error) {
+// reserva: modelo mais leve usado quando o principal responde "lotado" (503/504) ou demora demais.
+func Novo(ctx context.Context, apiKey, modelo, reserva, pensamento string) (*Gemini, error) {
 	c, err := genai.NewClient(ctx, &genai.ClientConfig{APIKey: apiKey, Backend: genai.BackendGeminiAPI})
 	if err != nil {
 		return nil, err
 	}
-	return &Gemini{cliente: c, modelo: modelo, pensamento: genai.ThinkingLevel(strings.ToUpper(strings.TrimSpace(pensamento)))}, nil
+	if reserva == modelo {
+		reserva = ""
+	}
+	return &Gemini{cliente: c, modelo: modelo, reserva: reserva, pensamento: genai.ThinkingLevel(strings.ToUpper(strings.TrimSpace(pensamento)))}, nil
+}
+
+// gerar chama o modelo principal; se ele estiver lotado ou lento, cai para o reserva.
+// Devolve também o nome do modelo que respondeu.
+func (g *Gemini) gerar(ctx context.Context, conteudo []*genai.Content, cfg *genai.GenerateContentConfig) (*genai.GenerateContentResponse, string, error) {
+	modelos := []string{g.modelo}
+	if g.reserva != "" {
+		modelos = append(modelos, g.reserva)
+	}
+	var ultimo error
+	for i, m := range modelos {
+		tentar, cancelar := ctx, context.CancelFunc(func() {})
+		if i < len(modelos)-1 {
+			tentar, cancelar = context.WithTimeout(ctx, tempoPrincipal)
+		}
+		resp, err := comRepeticao(tentar, func() (*genai.GenerateContentResponse, error) {
+			return g.cliente.Models.GenerateContent(tentar, m, conteudo, cfg)
+		})
+		cancelar()
+		if err == nil {
+			return resp, m, nil
+		}
+		ultimo = err
+		var e *portas.ErroIA
+		if ctx.Err() != nil || !errors.As(err, &e) || (e.Tipo != "indisponivel" && e.Tipo != "limite") {
+			break
+		}
+		if i < len(modelos)-1 {
+			slog.Warn("gemini lotado; usando o modelo reserva", "de", m, "para", modelos[i+1])
+		}
+	}
+	return nil, "", ultimo
 }
 
 func (g *Gemini) configPensamento() *genai.ThinkingConfig {
@@ -108,9 +148,7 @@ func (g *Gemini) AnalisarFoto(ctx context.Context, f portas.Foto) (laudo.Analise
 		Temperature:        genai.Ptr[float32](0.2),
 		ThinkingConfig:     g.configPensamento(),
 	}
-	resp, err := comRepeticao(ctx, func() (*genai.GenerateContentResponse, error) {
-		return g.cliente.Models.GenerateContent(ctx, g.modelo, conteudo, cfg)
-	})
+	resp, modelo, err := g.gerar(ctx, conteudo, cfg)
 	if err != nil {
 		return laudo.Analise{}, err
 	}
@@ -122,6 +160,7 @@ func (g *Gemini) AnalisarFoto(ctx context.Context, f portas.Foto) (laudo.Analise
 	if err := json.Unmarshal([]byte(txt), &a); err != nil {
 		return laudo.Analise{}, &portas.ErroIA{Tipo: "formato", Mensagem: "A resposta do Gemini veio fora do formato. Tente de novo."}
 	}
+	a.Modelo = modelo
 	return a, nil
 }
 
@@ -130,9 +169,7 @@ func (g *Gemini) EscreverConclusao(ctx context.Context, instrucao, resumo string
 		SystemInstruction: genai.NewContentFromText(instrucao, genai.RoleUser),
 		Temperature:       genai.Ptr[float32](0.3),
 	}
-	resp, err := comRepeticao(ctx, func() (*genai.GenerateContentResponse, error) {
-		return g.cliente.Models.GenerateContent(ctx, g.modelo, genai.Text("Escreva a conclusão do laudo a partir deste resumo:\n\n"+resumo), cfg)
-	})
+	resp, _, err := g.gerar(ctx, genai.Text("Escreva a conclusão do laudo a partir deste resumo:\n\n"+resumo), cfg)
 	if err != nil {
 		return "", err
 	}
@@ -155,9 +192,7 @@ func (g *Gemini) Conversar(ctx context.Context, instrucao string, conversa []lau
 		SystemInstruction: genai.NewContentFromText(instrucao, genai.RoleUser),
 		Temperature:       genai.Ptr[float32](0.4),
 	}
-	resp, err := comRepeticao(ctx, func() (*genai.GenerateContentResponse, error) {
-		return g.cliente.Models.GenerateContent(ctx, g.modelo, conteudo, cfg)
-	})
+	resp, _, err := g.gerar(ctx, conteudo, cfg)
 	if err != nil {
 		return "", err
 	}
