@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { AlertTriangle, Camera, ChevronRight, ClipboardList, Copy, FilePlus2, FileText, ImageOff, MoreVertical, Search, SlidersHorizontal, Sparkles, Trash2 } from 'lucide-react';
+import { Camera, ChevronRight, ClipboardList, Copy, FilePlus2, FileText, ImageOff, MapPin, MoreVertical, Search, SlidersHorizontal, Sparkles, Trash2 } from 'lucide-react';
 import { db, excluirLaudo } from '../../db/db';
 import { criarLaudoExemplo } from '../../db/exemplo';
 import { useSessao } from '../../lib/sessao';
@@ -10,7 +10,7 @@ import { LISTA_TIPOS, TIPOS } from '../../dominio/tipos';
 import { STATUS_LAUDO, type Foto, type Laudo, type StatusLaudo, type TipoLaudo } from '../../dominio/modelo';
 import { progressoFotos, resumoAchados } from '../../dominio/regras';
 import { PainelPlano, itensDoPainel } from '../../componentes/PainelPlano';
-import { Abas } from '../../componentes/Pecas';
+import { Abas, Rotulado } from '../../componentes/Pecas';
 import { cx, haQuanto, novoId } from '../../lib/util';
 import { ICONE_TIPO, NovoLaudo } from './NovoLaudo';
 import { Lia } from '../../componentes/Lia';
@@ -20,7 +20,7 @@ function saudacao() {
   return h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite';
 }
 
-/** Cartão do laudo: lista no celular (foto à esquerda), grade com capa no computador. */
+/** Cartão do laudo: capa com tipo e status, nome inteiro, endereço e números com rótulo. */
 function CartaoLaudo({ laudo, fotos, autor, aoDuplicar, aoExcluir }: { laudo: Laudo; fotos: Foto[]; autor?: string; aoDuplicar: () => void; aoExcluir: () => void }) {
   const [menu, setMenu] = useState(false);
   const capa = useUrl(fotos[0]?.miniatura);
@@ -29,40 +29,42 @@ function CartaoLaudo({ laudo, fotos, autor, aoDuplicar, aoExcluir }: { laudo: La
   const Ic = ICONE_TIPO[laudo.tipo];
   const tomStatus = laudo.status === 'concluido' ? 'ok' : laudo.status === 'conferencia' ? 'obra' : 'neutro';
   return (
-    <Cartao className="group relative flex overflow-hidden transition hover:shadow-[0_12px_30px_rgba(18,26,43,.08)] sm:flex-col sm:hover:-translate-y-0.5">
+    <Cartao className="group relative flex flex-col overflow-hidden transition hover:-translate-y-0.5 hover:shadow-[0_12px_30px_rgba(18,26,43,.08)]">
       <Link to={`/laudo/${laudo.id}`} className="absolute inset-0 z-0" aria-label={`Abrir ${laudo.titulo}`} />
-      <div className="relative w-28 shrink-0 bg-sup2 sm:aspect-[16/8] sm:w-full">
+      {/* capa: tipo à esquerda, status à direita */}
+      <div className="relative aspect-[16/7] w-full shrink-0 bg-sup2">
         {capa ? <img src={capa} alt="" className="absolute inset-0 size-full object-cover" /> : <div className="absolute inset-0 grid place-items-center text-texto3"><ImageOff className="size-7" /></div>}
-        <span className="absolute left-2 top-2 hidden items-center gap-1 rounded-full bg-[#121A2B]/85 px-2.5 py-1 text-xs font-bold text-white backdrop-blur sm:inline-flex"><Ic className="size-3.5" />{TIPOS[laudo.tipo].curto}</span>
-        {r.critico > 0 && <span className="absolute bottom-2 left-2 inline-flex items-center gap-1 rounded-full bg-critico px-2 py-0.5 text-[11px] font-extrabold text-white sm:bottom-auto sm:left-auto sm:right-3 sm:top-2 sm:px-2.5 sm:py-1 sm:text-xs"><AlertTriangle className="size-3.5" />{r.critico}<span className="hidden sm:inline"> crítico{r.critico > 1 ? 's' : ''}</span></span>}
+        <div className="absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-black/45 to-transparent" aria-hidden />
+        <span className="absolute left-2.5 top-2.5 inline-flex items-center gap-1 rounded-full bg-[#121A2B]/85 px-2.5 py-1 text-xs font-bold text-white backdrop-blur"><Ic className="size-3.5" />{TIPOS[laudo.tipo].curto}</span>
+        <span className="absolute right-12 top-2.5"><Selo tom={tomStatus}>{STATUS_LAUDO[laudo.status]}</Selo></span>
+        <div className="absolute right-1.5 top-1.5 z-10">
+          <button onClick={() => setMenu(!menu)} aria-label="Mais ações" className="grid size-9 place-items-center rounded-full bg-black/35 text-white backdrop-blur hover:bg-black/55"><MoreVertical className="size-5" /></button>
+          {menu && (
+            <div className="absolute right-0 top-10 z-20 w-44 overflow-hidden rounded-xl border border-borda bg-sup py-1 text-texto shadow-xl" onMouseLeave={() => setMenu(false)}>
+              <button onClick={() => { setMenu(false); aoDuplicar(); }} className="flex w-full items-center gap-2 px-3 py-2.5 text-sm font-semibold hover:bg-sup2"><Copy className="size-4" />Duplicar</button>
+              <button onClick={() => { setMenu(false); aoExcluir(); }} className="flex w-full items-center gap-2 px-3 py-2.5 text-sm font-semibold text-critico-texto hover:bg-critico-suave"><Trash2 className="size-4" />Excluir</button>
+            </div>
+          )}
+        </div>
       </div>
-      <div className="flex min-w-0 flex-1 flex-col gap-1.5 p-3 sm:gap-2 sm:p-4">
-        <div className="flex items-start justify-between gap-1">
-          <div className="min-w-0">
-            <span className="text-[11px] font-extrabold uppercase tracking-wide text-obra-texto sm:hidden">{TIPOS[laudo.tipo].curto}</span>
-            <h3 className="line-clamp-2 text-[15px] font-bold leading-snug sm:text-[17px]">{laudo.titulo}</h3>
-          </div>
-          <div className="relative z-10">
-            <button onClick={() => setMenu(!menu)} aria-label="Mais ações" className="-mr-1.5 rounded-lg p-1.5 text-texto3 hover:bg-sup2 hover:text-texto"><MoreVertical className="size-5" /></button>
-            {menu && (
-              <div className="absolute right-0 top-9 z-20 w-44 overflow-hidden rounded-xl border border-borda bg-sup py-1 shadow-xl" onMouseLeave={() => setMenu(false)}>
-                <button onClick={() => { setMenu(false); aoDuplicar(); }} className="flex w-full items-center gap-2 px-3 py-2.5 text-sm font-semibold hover:bg-sup2"><Copy className="size-4" />Duplicar</button>
-                <button onClick={() => { setMenu(false); aoExcluir(); }} className="flex w-full items-center gap-2 px-3 py-2.5 text-sm font-semibold text-critico-texto hover:bg-critico-suave"><Trash2 className="size-4" />Excluir</button>
-              </div>
-            )}
-          </div>
+
+      <div className="flex min-w-0 flex-1 flex-col gap-2.5 p-4">
+        <div className="min-w-0">
+          <h3 className="line-clamp-2 text-[17px] font-bold leading-snug">{laudo.titulo}</h3>
+          {laudo.dados.endereco && <p className="mt-0.5 flex items-start gap-1 text-sm text-texto2"><MapPin className="mt-0.5 size-3.5 shrink-0" /><span className="line-clamp-2">{laudo.dados.endereco}</span></p>}
+          {autor && <p className="mt-1 text-xs text-texto3">Responsável: <b className="text-texto2">{autor}</b></p>}
         </div>
-        {laudo.dados.endereco && <p className="line-clamp-1 text-sm text-texto2">{laudo.dados.endereco}</p>}
-        <div className="mt-auto flex flex-wrap items-center gap-1.5 pt-1">
-          <Selo tom={tomStatus}>{STATUS_LAUDO[laudo.status]}</Selo>
-          <Selo><Camera className="size-3.5" />{p.total}</Selo>
-          {autor && <Selo tom="tinta">{autor}</Selo>}
-          <span className="ml-auto hidden text-xs text-texto3 sm:inline">{haQuanto(laudo.atualizadoEm)}</span>
+
+        <div className="grid grid-cols-3 gap-2 rounded-xl bg-sup2 px-3 py-2">
+          <Rotulado rotulo="Fotos"><span className="flex items-center gap-1"><Camera className="size-3.5 shrink-0 text-texto3" />{p.total}</span></Rotulado>
+          <Rotulado rotulo="Achados" alerta={r.critico > 0}>{r.total}{r.critico > 0 && <span className="text-xs font-extrabold"> · {r.critico} crít.</span>}</Rotulado>
+          <Rotulado rotulo="Atualizado">{haQuanto(laudo.atualizadoEm)}</Rotulado>
         </div>
+
         {p.total > 0 && (
-          <div className="flex items-center gap-2 pt-0.5">
-            <Barra className="flex-1" valor={p.conferidas} total={p.total} />
-            <span className="text-xs font-bold text-texto3">{p.conferidas}/{p.total}</span>
+          <div className="mt-auto grid gap-1">
+            <span className="flex items-center justify-between text-xs"><span className="font-bold text-texto2">Fotos conferidas</span><b>{p.conferidas} de {p.total}</b></span>
+            <Barra valor={p.conferidas} total={p.total} />
           </div>
         )}
       </div>
