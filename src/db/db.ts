@@ -36,6 +36,13 @@ db.version(5).stores({}).upgrade(async (tx) => {
     if (!c.geminiModelo || c.geminiModelo.startsWith('gemini-2.5')) c.geminiModelo = 'gemini-3.8-flash';
   });
 });
+// v6: quem abriu o site publicado antes e ficou na demonstração passa a usar o servidor.
+db.version(6).stores({}).upgrade(async (tx) => {
+  if (!import.meta.env.PROD) return;
+  await tx.table('config').where('chave').equals('app').modify((c: Configuracao) => {
+    if (c.motorIA === 'demo') c.motorIA = 'servidor';
+  });
+});
 });
 
 /** Admin de fábrica (login admin@admin). A senha fica só como resumo com sal. */
@@ -56,7 +63,10 @@ const ADMIN: Usuario = {
   criadoEm: 0,
 };
 
-const CONFIG_PADRAO: Configuracao = { chave: 'app', motorIA: 'demo', apiKey: '', geminiKey: '', geminiModelo: 'gemini-3.8-flash', tema: 'claro' };
+// No site publicado a IA de verdade (servidor LaudoTech + Gemini) já vem ligada; local fica a demonstração.
+const MOTOR_PADRAO: Configuracao['motorIA'] = import.meta.env.PROD ? 'servidor' : 'demo';
+
+const CONFIG_PADRAO: Configuracao = { chave: 'app', motorIA: MOTOR_PADRAO, apiKey: '', geminiKey: '', geminiModelo: 'gemini-3.8-flash', tema: 'claro' };
 
 db.on('populate', (tx) => {
   void tx.table('usuarios').add(ADMIN);
