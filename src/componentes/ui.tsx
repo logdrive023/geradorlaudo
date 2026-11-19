@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes } from 'react';
+import { CenaCarregando } from './CenaCarregando';
 import { Info, LoaderCircle, X } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import { cx } from '../lib/util';
@@ -216,8 +217,9 @@ export function useUrl(b?: Blob) {
   return url;
 }
 
-export function Carregando({ texto = 'Carregando…' }: { texto?: string }) {
-  return <div className="flex items-center justify-center gap-2 py-20 text-texto3"><LoaderCircle className="size-5 girando" />{texto}</div>;
+/** Espera de tela inteira ou de bloco: a cena da obra (fachada, fissura, Lia marcando o achado). */
+export function Carregando({ texto }: { texto?: string }) {
+  return <CenaCarregando texto={texto} />;
 }
 
 /** Aviso rápido no canto (sem biblioteca). */

@@ -1,5 +1,5 @@
 import { CalendarHeart } from 'lucide-react';
-import { UFS, cidadesDe, feriadosDoAno, type Local } from '../../lib/feriados';
+import { NOME_UF, UFS, cidadesDe, feriadosDoAno, type Local } from '../../lib/feriados';
 import { cx } from '../../lib/util';
 
 const CHAVE = 'laudotech.feriados.local';
@@ -24,21 +24,23 @@ export function LegendaFeriados({ local, aoMudar }: { local: Local; aoMudar: (l:
   const cidades = cidadesDe(local.uf);
   const hoje = new Date().toISOString().slice(0, 10);
   const proximos = [...feriadosDoAno(new Date().getFullYear(), local), ...feriadosDoAno(new Date().getFullYear() + 1, local)].filter((f) => f.data >= hoje).slice(0, 4);
-  const SEL = 'h-9 rounded-lg border border-borda-forte bg-sup px-2 text-sm font-bold text-texto';
+  const SEL = 'h-11 w-full min-w-0 rounded-xl border border-borda-forte bg-sup px-3 text-sm font-bold text-texto outline-none focus:border-tinta';
   return (
     <div className="mt-4 grid gap-3 rounded-2xl border border-borda bg-sup p-4">
-      <div className="flex flex-wrap items-center gap-2">
-        <CalendarHeart className="size-5 text-obra" /><b className="mr-auto">Feriados na agenda</b>
-        <select className={SEL} value={local.uf ?? ''} onChange={(e) => mudar({ uf: e.target.value || undefined, cidade: undefined })} aria-label="Estado">
-          <option value="">Só nacionais</option>
-          {UFS.map((u) => <option key={u} value={u}>{u}</option>)}
-        </select>
-        {local.uf && (
-          <select className={SEL} value={local.cidade ?? ''} onChange={(e) => mudar({ ...local, cidade: e.target.value || undefined })} aria-label="Cidade">
-            <option value="">Sem municipais</option>
+      <b className="flex items-center gap-2"><CalendarHeart className="size-5 text-obra" />Feriados na agenda</b>
+      <div className="grid gap-2 sm:grid-cols-2">
+        <label className="grid min-w-0 gap-1 text-[11px] font-extrabold uppercase tracking-wider text-texto3">Estado
+          <select className={SEL} value={local.uf ?? ''} onChange={(e) => mudar({ uf: e.target.value || undefined, cidade: undefined })} aria-label="Estado">
+            <option value="">Só os nacionais</option>
+            {UFS.map((u) => <option key={u} value={u}>{NOME_UF[u]} ({u})</option>)}
+          </select>
+        </label>
+        <label className="grid min-w-0 gap-1 text-[11px] font-extrabold uppercase tracking-wider text-texto3">Cidade
+          <select className={SEL} value={local.cidade ?? ''} disabled={!local.uf || !cidades.length} onChange={(e) => mudar({ ...local, cidade: e.target.value || undefined })} aria-label="Cidade">
+            <option value="">{!local.uf ? 'Escolha o estado' : cidades.length ? 'Sem feriados municipais' : 'Sem cidade cadastrada'}</option>
             {cidades.map((c) => <option key={c} value={c}>{c}</option>)}
           </select>
-        )}
+        </label>
       </div>
       <div className="flex flex-wrap gap-x-4 gap-y-1.5 text-xs font-bold text-texto2">
         {([['nacional', 'Nacional'], ['estadual', 'Estadual'], ['municipal', 'Municipal'], ['facultativo', 'Ponto facultativo']] as const).map(([k, r]) => (

@@ -115,6 +115,23 @@ h1, h2, h3 { font-family: var(--font-display); letter-spacing: -0.02em; }
 .lia-pensando { animation: balancar 1.1s ease-in-out infinite; }
 .girando { animation: girar 1s linear infinite; }
 
+/* carregamento com a cena da obra (componentes/CenaCarregando.tsx): ciclo de 2,4 s */
+.lt-cena { animation: subir .35s ease both; }
+.lt-tela { animation: subir .22s ease both; } /* troca de tela suave */
+.lt-fissura { stroke-dasharray: 1; stroke-dashoffset: 0; animation: lt-desenhar 2.4s ease-in-out infinite; }
+.lt-feixe { animation: lt-varrer 2.4s ease-in-out infinite; }
+.lt-marca { transform-origin: 156px 150px; animation: lt-marcar 2.4s ease-in-out infinite; }
+.lt-fita { animation: lt-fita 1.2s linear infinite; }
+.lt-barra { animation: lt-barra 1.4s ease-in-out infinite; }
+.lt-brilho { transform-box: fill-box; transform-origin: center; animation: lt-brilhar 2.4s ease-in-out infinite; }
+.lt-d2 { animation-delay: .6s; } .lt-d3 { animation-delay: 1.2s; }
+@keyframes lt-desenhar { 0%, 30% { stroke-dashoffset: 1; } 55%, 100% { stroke-dashoffset: 0; } }
+@keyframes lt-varrer { 0% { transform: translateX(0); } 60% { transform: translateX(200px); } 100% { transform: translateX(200px); } }
+@keyframes lt-marcar { 0%, 55% { opacity: 0; transform: scale(.7); } 68%, 92% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(1); } }
+@keyframes lt-fita { to { transform: translateX(-28px); } }
+@keyframes lt-barra { 0% { transform: translateX(-110%); } 100% { transform: translateX(320%); } }
+@keyframes lt-brilhar { 0%, 100% { opacity: .25; transform: scale(.7); } 50% { opacity: 1; transform: scale(1.1); } }
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }

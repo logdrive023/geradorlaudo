@@ -7,13 +7,15 @@ import { Logo } from './ui';
 import { cx } from '../lib/util';
 import { NovoLaudo } from '../paginas/painel/NovoLaudo';
 import { PergunteLia } from './Lia';
+import { MolduraTransicao } from './MolduraTransicao';
 
 /** Estrutura das telas internas: menu lateral (computador) e barra inferior (celular). */
 export function Casco() {
   const { usuario, sair } = useSessao();
   const nav = useNavigate();
   const [novo, setNovo] = useState(false);
-  const noLaudo = useLocation().pathname.startsWith('/laudo/'); // dentro do laudo, o celular usa o cabeçalho do próprio laudo
+  const caminho = useLocation().pathname;
+  const noLaudo = caminho.startsWith('/laudo/'); // dentro do laudo, o celular usa o cabeçalho do próprio laudo
   if (!usuario) return null;
   const itens = [
     { para: '/painel', rotulo: 'Laudos', ic: LayoutGrid },
@@ -59,7 +61,7 @@ export function Casco() {
         <button onClick={() => { sair(); nav('/entrar'); }} className="flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm font-bold text-texto2"><LogOut className="size-4" />Sair</button>
       </header>
 
-      <main className={noLaudo ? 'md:pb-0' : 'pb-28 md:pb-10'}><Outlet /></main>
+      <main className={noLaudo ? 'md:pb-0' : 'pb-28 md:pb-10'}><div key={caminho} className="lt-tela"><Outlet /></div></main>
 
       <nav style={{ gridTemplateColumns: `repeat(${itens.length + 1}, 1fr)` }} className={cx(noLaudo ? 'hidden' : 'grid', 'nao-imprimir fixed inset-x-0 bottom-0 z-30 border-t border-borda bg-sup/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden')}>
         {itens.slice(0, 2).map(({ para, rotulo, ic: Ic }) => (
@@ -73,6 +75,7 @@ export function Casco() {
         ))}
       </nav>
 
+      <MolduraTransicao chave={caminho} />
       <NovoLaudo aberto={novo} aoFechar={() => setNovo(false)} />
       <PergunteLia />
     </div>
