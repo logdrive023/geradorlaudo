@@ -2,6 +2,7 @@ import type { Transaction } from 'dexie';
 import { db } from './db';
 import type { Foto, Laudo, Papel, Usuario } from '../dominio/modelo';
 import { SERVIDOR_PADRAO } from '../ia/servidor';
+import { novoId, resumoSenha } from '../lib/util';
 
 /**
  * Nuvem LaudoTech: login no servidor e cópia dos laudos no banco (Supabase).
@@ -65,16 +66,20 @@ export async function entrarNuvem(email: string, senha: string): Promise<Usuario
   const corpo = await r.json().catch(() => ({})) as { token?: string; usuario?: UsuarioServidor; erro?: string };
   if (!r.ok || !corpo.token || !corpo.usuario) throw new Error(corpo.erro || 'E-mail ou senha não conferem.');
   gravarToken(corpo.token);
-  return guardarUsuario(corpo.usuario);
+  return guardarUsuario(corpo.usuario, senha);
 }
 
 /** Usuário do servidor vira o usuário do aparelho; laudos de uma conta local com o mesmo e-mail passam para ele. */
-async function guardarUsuario(s: UsuarioServidor): Promise<Usuario> {
+/** `senha`: guarda o resumo (com sal) para entrar sem internet depois, como no login local. */
+async function guardarUsuario(s: UsuarioServidor, senha: string): Promise<Usuario> {
+  const sal = novoId();
+  const senhaHash = await resumoSenha(sal, senha);
   const antigo = await db.usuarios.where('email').equals(s.email).first();
   const u: Usuario = {
     ...(antigo ?? { sal: '', senhaHash: '', telefone: '', endereco: '', cidade: '', uf: '', criadoEm: Date.now() }),
     id: s.id, email: s.email, nome: s.nome || antigo?.nome || s.email, papel: s.papel,
     profissao: s.profissao || antigo?.profissao || 'Engenheiro Civil', registro: s.registro || antigo?.registro || '', ativo: true,
+    sal, senhaHash,
   };
   await db.transaction('rw', db.usuarios, db.laudos, async () => {
     if (antigo && antigo.id !== s.id) {

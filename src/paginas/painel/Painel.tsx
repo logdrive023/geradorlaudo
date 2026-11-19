@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { AlarmClock, AlertTriangle, Camera, ClipboardList, ChevronRight, Copy, FilePlus2, FileText, ImageOff, MoreVertical, Search, SlidersHorizontal, Sparkles, Trash2 } from 'lucide-react';
+import { AlertTriangle, Camera, ChevronRight, ClipboardList, Copy, FilePlus2, FileText, ImageOff, MoreVertical, Search, SlidersHorizontal, Sparkles, Trash2 } from 'lucide-react';
 import { db, excluirLaudo } from '../../db/db';
 import { criarLaudoExemplo } from '../../db/exemplo';
 import { useSessao } from '../../lib/sessao';
@@ -9,7 +9,8 @@ import { Barra, Botao, Carregando, Cartao, Modal, Selo, Vazio, useAviso, useUrl 
 import { LISTA_TIPOS, TIPOS } from '../../dominio/tipos';
 import { STATUS_LAUDO, type Foto, type Laudo, type StatusLaudo, type TipoLaudo } from '../../dominio/modelo';
 import { progressoFotos, resumoAchados } from '../../dominio/regras';
-import { itensPlano, planoPreenchido, reais, resumoPlano } from '../../dominio/plano';
+import { PainelPlano, itensDoPainel } from '../../componentes/PainelPlano';
+import { Abas } from '../../componentes/Pecas';
 import { cx, haQuanto, novoId } from '../../lib/util';
 import { ICONE_TIPO, NovoLaudo } from './NovoLaudo';
 import { Lia } from '../../componentes/Lia';
@@ -77,6 +78,7 @@ export function Painel() {
   const [status, setStatus] = useState<'todos' | StatusLaudo>('todos');
   const [busca, setBusca] = useState('');
   const [filtros, setFiltros] = useState(false);
+  const [vista, setVista] = useState<'laudos' | 'plano'>('laudos');
   const [excluir, setExcluir] = useState<Laudo | null>(null);
   const [criandoEx, setCriandoEx] = useState(false);
   const [busca2, setBusca2] = useSearchParams();
@@ -167,54 +169,35 @@ export function Painel() {
         <div className="fita absolute inset-x-0 bottom-0 h-1.5" aria-hidden />
       </section>
 
-      {/* plano de ação: o que ficou em aberto depois dos laudos (só aparece para quem usa) */}
+      {/* um lugar só: laudos e plano de ação, com a mesma busca */}
       {(() => {
-        const comPlano = dados.laudos.map((l) => {
-          const itens = itensPlano(l, dados.porLaudo.get(l.id) ?? []);
-          return { l, itens, r: resumoPlano(itens) };
-        }).filter((x) => planoPreenchido(x.itens) && x.r.aberta + x.r.andamento > 0);
-        if (!comPlano.length) return null;
-        const abertas = comPlano.reduce((s, x) => s + x.r.aberta + x.r.andamento, 0);
-        const atrasadas = comPlano.reduce((s, x) => s + x.r.atrasados, 0);
-        const custo = comPlano.reduce((s, x) => s + x.r.custoAberto, 0);
+        const plano = itensDoPainel(dados.laudos, dados.porLaudo);
+        if (!plano.length) return null;
+        const abertas = plano.filter((i) => i.acomp.status !== 'resolvida').length;
         return (
-          <section className="mt-5 rounded-[22px] border border-borda bg-sup p-4">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <h2 className="flex items-center gap-1.5 text-lg font-extrabold"><ClipboardList className="size-5 text-obra" />Plano de ação</h2>
-              <p className="flex flex-wrap gap-x-3 text-sm text-texto2">
-                <span><b className="text-texto">{abertas}</b> em aberto</span>
-                {atrasadas > 0 && <span className="flex items-center gap-1 font-bold text-critico-texto"><AlarmClock className="size-4" />{atrasadas} atrasada{atrasadas > 1 ? 's' : ''}</span>}
-                {custo > 0 && <span>{reais(custo)} a executar</span>}
-              </p>
-            </div>
-            <ul className="mt-3 grid gap-2 sm:grid-cols-2">
-              {comPlano.slice(0, 4).map(({ l, r: rp }) => (
-                <li key={l.id}>
-                  <Link to={`/laudo/${l.id}?aba=laudo`} className="flex items-center gap-3 rounded-2xl bg-sup2 p-3 transition hover:bg-obra-suave">
-                    <span className="min-w-0 flex-1"><b className="block truncate">{l.titulo}</b>
-                      <span className="text-sm text-texto2">{rp.aberta + rp.andamento} pendência{rp.aberta + rp.andamento > 1 ? 's' : ''}{rp.atrasados > 0 && <b className="text-critico-texto"> · {rp.atrasados} atrasada{rp.atrasados > 1 ? 's' : ''}</b>}</span>
-                    </span>
-                    <ChevronRight className="size-4 shrink-0 text-texto3" />
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </section>
+          <div className="mt-5">
+            <Abas rotulo="O que ver" ativa={vista} aoMudar={setVista} abas={[
+              { id: 'laudos', rotulo: 'Laudos', ic: FileText, conta: dados.laudos.length },
+              { id: 'plano', rotulo: 'Plano de ação', ic: ClipboardList, conta: abertas },
+            ]} />
+          </div>
         );
       })()}
 
-      {/* busca e filtros */}
-      <div className="mt-5 flex gap-2">
+      {/* busca (vale para laudos e plano) e filtros */}
+      <div className="mt-3 flex gap-2">
         <label className="flex h-11 min-w-0 flex-1 items-center rounded-xl border border-borda-forte bg-sup focus-within:border-tinta">
           <Search className="ml-3 size-[18px] shrink-0 text-texto3" />
-          <input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar laudo, endereço…" className="h-full w-full min-w-0 bg-transparent px-2.5 outline-none placeholder:text-texto3" />
+          <input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder={vista === 'plano' ? 'Buscar anomalia, laudo, ambiente, responsável…' : 'Buscar laudo, endereço…'} className="h-full w-full min-w-0 bg-transparent px-2.5 outline-none placeholder:text-texto3" />
         </label>
-        <button onClick={() => setFiltros(!filtros)} aria-expanded={filtros} aria-label="Filtrar por status"
+        {vista === 'laudos' && <button onClick={() => setFiltros(!filtros)} aria-expanded={filtros} aria-label="Filtrar por status"
           className={cx('relative grid size-11 shrink-0 place-items-center rounded-xl border transition', filtros || status !== 'todos' ? 'border-tinta bg-tinta/10 text-tinta' : 'border-borda-forte bg-sup text-texto2')}>
           <SlidersHorizontal className="size-5" />
           {status !== 'todos' && <span className="absolute -right-1 -top-1 size-3 rounded-full bg-obra ring-2 ring-papel" />}
-        </button>
+        </button>}
       </div>
+      {vista === 'plano' && <div className="mt-4"><PainelPlano laudos={dados.laudos} porLaudo={dados.porLaudo} buscaExterna={busca} /></div>}
+      {vista === 'laudos' && <>
       {filtros && (
         <div className="revelar mt-2 flex flex-wrap gap-1.5">
           {([['todos', 'Todos os status'], ...Object.entries(STATUS_LAUDO)] as [string, string][]).map(([k, v]) => (
@@ -255,6 +238,7 @@ export function Painel() {
           </div>
         )}
       </div>
+      </>}
 
       <Modal aberto={!!excluir} aoFechar={() => setExcluir(null)} titulo="Excluir laudo?">
         <p className="text-texto2">“{excluir?.titulo}” e as {dados.porLaudo.get(excluir?.id ?? '')?.length ?? 0} fotos dele serão apagados deste navegador. Não dá para desfazer.</p>

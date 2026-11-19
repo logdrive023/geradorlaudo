@@ -281,8 +281,7 @@ export function Site() {
         {/* DEPOIS DO LAUDO: plano de ação, link do cliente, app */}
         <section id="entrega" className="scroll-mt-20 bg-sup py-20 md:py-28">
           <div className="mx-auto max-w-[1180px] px-4">
-            <span className="inline-flex items-center gap-2 rounded-full bg-obra-suave px-3 py-1 text-sm font-extrabold text-obra-texto"><Sparkles className="size-4" />Novo</span>
-            <h2 className="mt-4 max-w-3xl text-4xl font-extrabold leading-tight md:text-5xl">O laudo não termina no <span className="grifo">PDF</span>.</h2>
+            <h2 className="max-w-3xl text-4xl font-extrabold leading-tight md:text-5xl">O laudo não termina no <span className="grifo">PDF</span>.</h2>
             <p className="mt-3 max-w-2xl text-lg text-texto2">Depois da assinatura começa o trabalho do seu cliente. O LaudoTech organiza o que fazer, em que ordem e quanto custa, e entrega tudo num link.</p>
             <div className="mt-10 grid gap-4 lg:grid-cols-3">
               <div className="flex flex-col rounded-[22px] border border-borda bg-papel p-6">
