@@ -80,21 +80,26 @@ export function PainelPlano({ laudos, porLaudo, buscaExterna }: { laudos: Laudo[
         <ul className="mt-3 grid gap-2">
           {mostrar.map((i) => (
             <li key={`${i.laudo.id}-${i.achado.id}`}>
-              <Link to={`/laudo/${i.laudo.id}?aba=laudo`} className="relative grid gap-2 overflow-hidden rounded-2xl bg-sup2 py-3 pl-4 pr-3 transition hover:bg-obra-suave">
+              <Link to={`/laudo/${i.laudo.id}?aba=laudo`} className="relative grid gap-2.5 overflow-hidden rounded-2xl bg-sup2 py-3 pl-4 pr-9 transition hover:bg-obra-suave">
                 <span className="absolute inset-y-0 left-0 w-1" style={{ background: `var(--${i.achado.gravidade})` }} aria-hidden />
+                <ChevronRight className="absolute right-3 top-1/2 size-4 -translate-y-1/2 text-texto3" aria-hidden />
+                {/* o quê: anomalia, gravidade e situação */}
                 <span className="flex items-start justify-between gap-2">
-                  <span className="min-w-0">
-                    <span className="flex items-center gap-1.5"><b className="truncate text-[15px]">{i.achado.tipo}</b><SeloGravidade g={i.achado.gravidade} /></span>
-                    <span className="block truncate text-xs text-texto2">Laudo: {i.laudo.titulo}{i.foto.analise?.ambiente && ` · ${i.foto.analise.ambiente}`}</span>
-                  </span>
+                  <span className="flex min-w-0 flex-wrap items-center gap-1.5"><b className="text-[15px] leading-tight">{i.achado.tipo}</b><SeloGravidade g={i.achado.gravidade} /></span>
                   <span className={cx('shrink-0 whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-extrabold', COR[i.acomp.status])}>{STATUS_ACAO[i.acomp.status].nome}</span>
                 </span>
-                <span className="grid grid-cols-[auto_minmax(0,1fr)_auto_auto] items-end gap-x-4 gap-y-2 border-t border-dashed border-borda-forte/60 pt-2">
-                  <Rotulado rotulo="Prazo" alerta={i.atrasado}><span className="flex items-center gap-1"><AlarmClock className="size-3.5 shrink-0" />{dataCurta(i.prazo)}</span></Rotulado>
-                  <Rotulado rotulo="Responsável">{i.acomp.responsavel || <span className="font-normal text-texto3">—</span>}</Rotulado>
-                  <Rotulado rotulo="Custo est.">{i.acomp.custo != null ? reais(i.acomp.custo) : <span className="font-normal text-texto3">—</span>}</Rotulado>
-                  <ChevronRight className="mb-0.5 size-4 text-texto3" />
+                {/* onde: laudo (nome inteiro, até 2 linhas) e ambiente */}
+                <span className="grid gap-0.5 rounded-xl bg-sup px-3 py-2">
+                  <span className="text-[10px] font-extrabold uppercase tracking-wider text-texto3">Laudo</span>
+                  <span className="line-clamp-2 text-sm font-bold leading-snug">{i.laudo.titulo}</span>
+                  {i.foto.analise?.ambiente && <span className="text-xs text-texto2">Ambiente: {i.foto.analise.ambiente}</span>}
                 </span>
+                {/* quando e quanto: o custo nunca é cortado, mesmo valor alto */}
+                <span className="flex flex-wrap items-end justify-between gap-x-4 gap-y-2">
+                  <Rotulado rotulo={i.atrasado ? 'Prazo · atrasado' : 'Prazo'} alerta={i.atrasado}><span className="flex items-center gap-1"><AlarmClock className="size-3.5 shrink-0" />{dataCurta(i.prazo)}</span></Rotulado>
+                  <Rotulado rotulo="Custo estimado" className="text-right" inteiro>{i.acomp.custo != null ? <span className="font-display text-base">{reais(i.acomp.custo)}</span> : <span className="font-normal text-texto3">sem custo</span>}</Rotulado>
+                </span>
+                {i.acomp.responsavel && <span className="text-xs text-texto2">Responsável: <b className="text-texto">{i.acomp.responsavel}</b></span>}
               </Link>
             </li>
           ))}

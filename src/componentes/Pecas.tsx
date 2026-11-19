@@ -38,11 +38,11 @@ export function EntradaReais({ valor, aoMudar, placeholder = '0,00', className, 
 }
 
 /** Dado com rótulo pequeno em cima (deixa claro o que é cada número numa lista). */
-export function Rotulado({ rotulo, children, className, alerta }: { rotulo: string; children: ReactNode; className?: string; alerta?: boolean }) {
+export function Rotulado({ rotulo, children, className, alerta, inteiro }: { rotulo: string; children: ReactNode; className?: string; alerta?: boolean; inteiro?: boolean }) {
   return (
     <span className={cx('grid min-w-0', className)}>
       <span className="text-[10px] font-extrabold uppercase tracking-wider text-texto3">{rotulo}</span>
-      <span className={cx('truncate text-sm font-bold', alerta ? 'text-critico-texto' : 'text-texto')}>{children}</span>
+      <span className={cx('text-sm font-bold', inteiro ? 'whitespace-nowrap' : 'truncate', alerta ? 'text-critico-texto' : 'text-texto')}>{children}</span>
     </span>
   );
 }
