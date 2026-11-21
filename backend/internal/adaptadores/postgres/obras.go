@@ -10,6 +10,7 @@ import (
 	"github.com/logdrive023/geradorlaudo/backend/internal/dominio/conta"
 	"github.com/logdrive023/geradorlaudo/backend/internal/dominio/laudo"
 	"github.com/logdrive023/geradorlaudo/backend/internal/dominio/obra"
+	"github.com/logdrive023/geradorlaudo/backend/internal/portas"
 )
 
 // Gestão de obras: a obra é um documento JSON (etapas, diário, financeiro, compras); as fotos do diário
@@ -80,9 +81,17 @@ func (b *Banco) ApagarObra(ctx context.Context, u conta.Usuario, id string) ([]s
 	if err != nil {
 		return nil, err
 	}
-	if _, err := b.pool.Exec(ctx, `delete from obras where id = $1 and organizacao_id = $2 and ($3 = 'admin' or usuario_id = $4::uuid)`,
-		id, u.OrganizacaoID, string(u.Papel), u.ID); err != nil {
+	tag, err := b.pool.Exec(ctx, `delete from obras where id = $1 and organizacao_id = $2 and ($3 = 'admin' or usuario_id = $4::uuid)`,
+		id, u.OrganizacaoID, string(u.Papel), u.ID)
+	if err != nil {
 		return nil, traduzir(err)
+	}
+	if tag.RowsAffected() == 0 {
+		var existe bool
+		_ = b.pool.QueryRow(ctx, `select exists(select 1 from obras where id = $1 and organizacao_id = $2)`, id, u.OrganizacaoID).Scan(&existe)
+		if existe { // existe, mas não é sua: avisa em vez de fingir que apagou
+			return nil, &portas.ErroDados{Mensagem: "Só o administrador ou quem criou pode apagar esta obra."}
+		}
 	}
 	return chaves, nil
 }

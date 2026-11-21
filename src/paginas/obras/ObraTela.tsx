@@ -20,7 +20,9 @@ export function ObraTela() {
   const { usuario } = useSessao();
   const { id = '' } = useParams();
   const [q, setQ] = useSearchParams();
-  const aba = (q.get('aba') as AbaObra) || 'resumo';
+  const assistente = usuario?.papel === 'assistente'; // não vê o financeiro (o servidor também esconde)
+  const pedida = (q.get('aba') as AbaObra) || 'resumo';
+  const aba = assistente && (pedida === 'financeiro' || pedida === 'compras') ? 'resumo' : pedida;
   const irPara = (a: AbaObra) => setQ({ aba: a }, { replace: true });
   const obra = useLiveQuery(async () => (await db.obras.get(id)) ?? null, [id]);
   const [menu, setMenu] = useState(false);
@@ -47,7 +49,7 @@ export function ObraTela() {
           <button onClick={() => setMenu(!menu)} aria-label="Mais opções" aria-expanded={menu} className="grid size-10 place-items-center rounded-xl hover:bg-sup2"><MoreVertical className="size-5" /></button>
           {menu && (
             <div className="revelar absolute right-0 top-11 z-30 w-52 rounded-2xl border border-borda bg-sup p-1 shadow-xl">
-              {usuario?.papel !== 'assistente' && <button onClick={() => { setMenu(false); setApagar(true); }} className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-sm font-bold text-critico-texto hover:bg-critico-suave"><Trash2 className="size-4" />Apagar obra</button>}
+              {(usuario?.papel === 'admin' || (usuario?.papel !== 'assistente' && obra.usuarioId === usuario?.id)) && <button onClick={() => { setMenu(false); setApagar(true); }} className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-sm font-bold text-critico-texto hover:bg-critico-suave"><Trash2 className="size-4" />Apagar obra</button>}
             </div>
           )}
         </div>
@@ -58,8 +60,10 @@ export function ObraTela() {
           { id: 'resumo', rotulo: 'Resumo', ic: LayoutDashboard },
           { id: 'cronograma', rotulo: 'Cronograma', ic: CalendarRange, conta: obra.etapas.length },
           { id: 'diario', rotulo: 'Diário', ic: BookOpenText, conta: obra.diarios.length },
-          { id: 'financeiro', rotulo: 'Financeiro', ic: Wallet },
-          { id: 'compras', rotulo: 'Compras', ic: ShoppingCart, conta: abertasCompras },
+          ...(assistente ? [] : [
+            { id: 'financeiro' as const, rotulo: 'Financeiro', ic: Wallet },
+            { id: 'compras' as const, rotulo: 'Compras', ic: ShoppingCart, conta: abertasCompras },
+          ]),
         ]} />
       </div>
 

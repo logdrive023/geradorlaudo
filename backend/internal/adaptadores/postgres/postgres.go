@@ -300,6 +300,11 @@ func (b *Banco) ApagarLaudo(ctx context.Context, u conta.Usuario, id string) ([]
 		return nil, traduzir(err)
 	}
 	if tag.RowsAffected() == 0 {
+		var existe bool
+		_ = b.pool.QueryRow(ctx, `select exists(select 1 from laudos where id = $1 and organizacao_id = $2)`, id, u.OrganizacaoID).Scan(&existe)
+		if existe { // existe, mas não é seu: avisa em vez de fingir que apagou
+			return nil, &portas.ErroDados{Mensagem: "Só o administrador ou quem criou pode apagar este laudo."}
+		}
 		return nil, laudo.ErrNaoEncontrado
 	}
 	return chaves, nil

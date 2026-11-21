@@ -233,7 +233,7 @@ export function Painel() {
             {filtrados.map((l) => (
               <CartaoLaudo key={l.id} laudo={l} fotos={dados.porLaudo.get(l.id) ?? []}
                 autor={admin && l.usuarioId !== usuario.id ? dados.autores.get(l.usuarioId) : undefined}
-                aoDuplicar={() => duplicar(l)} aoExcluir={usuario?.papel === 'assistente' ? undefined : () => setExcluir(l)} />
+                aoDuplicar={() => duplicar(l)} aoExcluir={usuario?.papel === 'admin' || (usuario?.papel !== 'assistente' && l.usuarioId === usuario?.id) ? () => setExcluir(l) : undefined} />
             ))}
             <button onClick={() => setNovo(true)} className="flex min-h-24 items-center justify-center gap-2 rounded-[18px] border-2 border-dashed border-borda-forte font-extrabold text-texto2 transition hover:border-obra hover:bg-obra-suave hover:text-obra-texto">
               <FilePlus2 className="size-5" />Novo laudo<ChevronRight className="size-4" />
