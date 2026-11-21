@@ -39,11 +39,23 @@ func (s *Servidor) Rotas() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /api/health", s.saude)
 	limite := novoLimitador(s.LimitePorMin)
-	mux.Handle("POST /api/ia/analisar", limite.envolver(http.HandlerFunc(s.analisar)))
-	mux.Handle("POST /api/ia/conclusao", limite.envolver(http.HandlerFunc(s.conclusao)))
-	mux.Handle("POST /api/ia/lia", limite.envolver(http.HandlerFunc(s.lia)))
+	// IA custa dinheiro: com banco ligado, só quem está logado usa (o acesso é por convite)
+	mux.Handle("POST /api/ia/analisar", limite.envolver(s.iaLogado(s.analisar)))
+	mux.Handle("POST /api/ia/conclusao", limite.envolver(s.iaLogado(s.conclusao)))
+	mux.Handle("POST /api/ia/lia", limite.envolver(s.iaLogado(s.lia)))
 	s.rotasDados(mux, novoLimitador(10)) // login: no máximo 10 tentativas por minuto por IP
 	return s.cors(registrar(mux))
+}
+
+// iaLogado exige sessão válida quando o servidor tem banco. Sem banco (só desenvolvimento), segue aberto.
+func (s *Servidor) iaLogado(fn http.HandlerFunc) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if s.Banco == nil {
+			fn(w, r)
+			return
+		}
+		s.logado(fn).ServeHTTP(w, r)
+	})
 }
 
 func (s *Servidor) saude(w http.ResponseWriter, r *http.Request) {

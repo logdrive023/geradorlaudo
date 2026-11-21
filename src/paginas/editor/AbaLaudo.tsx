@@ -127,6 +127,7 @@ function Autenticidade({ laudo, avisar }: { laudo: Laudo; avisar: (t: string, to
 }
 
 export function AbaLaudo({ laudo, fotos, autor, irPara }: { laudo: Laudo; fotos: Foto[]; autor?: Usuario; irPara: (a: Aba, foto?: string) => void }) {
+  const { usuario } = useSessao();
   const doc = useRef<HTMLDivElement>(null);
   const [conclusao, setConclusao] = useState(laudo.conclusao);
   const [gerando, setGerando] = useState(false);
@@ -175,7 +176,9 @@ export function AbaLaudo({ laudo, fotos, autor, irPara }: { laudo: Laudo; fotos:
       <h2 className="flex items-center gap-1.5 text-lg font-bold">Entregar<Dica texto={<>PDF: abre a impressão; escolha <b>Salvar como PDF</b>. No celular: Compartilhar › Imprimir › Salvar PDF.<br />Word: um .doc para ajustes finais no Office.</>} /></h2>
       <button onClick={() => window.print()} className="pilula pilula-obra"><Printer className="size-5" />Baixar PDF / imprimir</button>
       <Botao variante="claro" carregando={exportando} onClick={word}><FileDown className="size-4" />Baixar Word (.doc)</Botao>
-      {laudo.status !== 'concluido'
+      {laudo.status !== 'concluido' && usuario?.papel === 'assistente'
+        ? <p className="rounded-xl bg-sup2 p-3 text-center text-sm text-texto2">Quem conclui é o engenheiro responsável.</p>
+        : laudo.status !== 'concluido'
         ? <div className="flex items-center gap-1"><Botao variante="tinta" className="flex-1" disabled={!pronto} onClick={concluir}><CheckCircle2 className="size-4" />Marcar como concluído</Botao><Dica texto="Muda o status para Concluído no painel. Você ainda pode editar depois, se precisar." /></div>
         : <p className="rounded-xl bg-ok-suave p-3 text-center text-sm font-bold text-ok-texto">Laudo concluído</p>}
       {!pronto && laudo.status !== 'concluido' && <p className="text-center text-xs text-texto3">Resolva o que falta para concluir.</p>}

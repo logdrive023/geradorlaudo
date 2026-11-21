@@ -12,14 +12,21 @@ export const SERVIDOR_PADRAO = (import.meta.env.VITE_API_URL as string | undefin
 
 export interface Envelope { versao: string; origem: string; modelo: string; analise: ResultadoIA }
 
+/** Token da sessão (o servidor só faz IA para quem está logado). */
+function token(): string | null {
+  try { return localStorage.getItem('laudotech.token'); } catch { return null; }
+}
+
 async function chamar<T>(base: string, caminho: string, init: RequestInit): Promise<T> {
   let r: Response;
+  const t = token();
   try {
-    r = await fetch(`${base.replace(/\/$/, '')}${caminho}`, init);
+    r = await fetch(`${base.replace(/\/$/, '')}${caminho}`, { ...init, headers: { ...(init.headers ?? {}), ...(t ? { Authorization: `Bearer ${t}` } : {}) } });
   } catch {
     throw new Error('Não deu para falar com o servidor. Confira o endereço em Ajustes › IA (o plano grátis do Render pode levar ~1 min para acordar).');
   }
   const corpo = await r.json().catch(() => ({}));
+  if (r.status === 401) throw new Error('Entre com a sua conta para usar a IA.');
   if (!r.ok) throw new Error((corpo as { erro?: string }).erro || `Servidor respondeu ${r.status}.`);
   return corpo as T;
 }

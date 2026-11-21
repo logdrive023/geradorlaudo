@@ -452,6 +452,9 @@ func (b *Banco) SalvarTexto(ctx context.Context, u conta.Usuario, t portas.Texto
 }
 
 func (b *Banco) ApagarTexto(ctx context.Context, u conta.Usuario, id string) error {
+	if u.Papel == conta.Assistente {
+		return &portas.ErroDados{Mensagem: "Só o administrador ou o engenheiro apagam textos da biblioteca."}
+	}
 	_, err := b.pool.Exec(ctx, `delete from biblioteca_textos where id = $1 and organizacao_id = $2`, id, u.OrganizacaoID)
 	return traduzir(err)
 }
@@ -491,9 +494,9 @@ func (b *Banco) SalvarAgendamento(ctx context.Context, u conta.Usuario, a portas
 		on conflict (id) do update set usuario_id = excluded.usuario_id, cliente_nome = excluded.cliente_nome,
 			cliente_contato = excluded.cliente_contato, endereco = excluded.endereco, tipo = excluded.tipo, inicio = excluded.inicio,
 			duracao_min = excluded.duracao_min, status = excluded.status, laudo_id = excluded.laudo_id, observacao = excluded.observacao
-		where agendamentos.organizacao_id = excluded.organizacao_id
+		where agendamentos.organizacao_id = excluded.organizacao_id and ($13 = 'admin' or agendamentos.usuario_id = $14::uuid)
 		returning id::text`, a.ID, u.OrganizacaoID, a.UsuarioID, a.ClienteNome, a.ClienteContato, a.Endereco, a.Tipo, a.Inicio,
-		a.DuracaoMin, a.Status, a.LaudoID, a.Observacao).Scan(&a.ID)
+		a.DuracaoMin, a.Status, a.LaudoID, a.Observacao, string(u.Papel), u.ID).Scan(&a.ID)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return a, laudo.ErrNaoEncontrado
 	}

@@ -4,6 +4,7 @@ import { ArrowLeft, Check, ChevronDown, Pencil } from 'lucide-react';
 import { STATUS_LAUDO, type Laudo, type StatusLaudo } from '../dominio/modelo';
 import { TIPOS } from '../dominio/tipos';
 import { cx, haQuanto } from '../lib/util';
+import { useSessao } from '../lib/sessao';
 
 const COR_STATUS: Record<StatusLaudo, { ponto: string; caixa: string }> = {
   rascunho: { ponto: 'bg-texto3', caixa: 'bg-sup2 text-texto2' },
@@ -18,6 +19,7 @@ const COR_STATUS: Record<StatusLaudo, { ponto: string; caixa: string }> = {
 export function PilulaStatus({ status, aoMudar, info }: { status: StatusLaudo; aoMudar: (s: StatusLaudo) => void; info?: React.ReactNode }) {
   const [aberto, setAberto] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const assistente = useSessao().usuario?.papel === 'assistente'; // quem conclui é o responsável técnico
   useEffect(() => {
     if (!aberto) return;
     const fora = (e: PointerEvent) => { if (!ref.current?.contains(e.target as Node)) setAberto(false); };
@@ -38,7 +40,7 @@ export function PilulaStatus({ status, aoMudar, info }: { status: StatusLaudo; a
           {info && <div className="border-b border-borda px-3 pb-2 pt-1.5 text-xs text-texto3">{info}</div>}
           <div className="px-3 pb-1 pt-2 text-[11px] font-extrabold uppercase tracking-wider text-texto3">Status</div>
           <ul role="listbox">
-            {(Object.keys(STATUS_LAUDO) as StatusLaudo[]).map((s) => (
+            {(Object.keys(STATUS_LAUDO) as StatusLaudo[]).filter((s) => !assistente || s !== 'concluido' || status === 'concluido').map((s) => (
               <li key={s}>
                 <button role="option" aria-selected={s === status} onClick={() => { aoMudar(s); setAberto(false); }}
                   className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-sm font-bold hover:bg-sup2">

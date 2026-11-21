@@ -1,9 +1,9 @@
 package laudo
 
 import (
-	"regexp"
 	"encoding/json"
 	"errors"
+	"regexp"
 )
 
 // MaxFotosPorLaudo: fase de teste, cada laudo aceita poucas fotos (cota do banco e da IA).
@@ -108,6 +108,17 @@ func (r *Registro) Validar() error {
 	}
 	if len(r.Titulo) > 300 || len(r.Conclusao) > 20000 {
 		return errors.New("título ou conclusão grandes demais")
+	}
+	// dados do formulário (inclui o plano de manutenção em JSON): limite para o banco não inchar
+	if len(r.Dados) > 300 {
+		return errors.New("campos demais no laudo")
+	}
+	total := 0
+	for k, v := range r.Dados {
+		total += len(k) + len(v)
+	}
+	if total > 256<<10 {
+		return errors.New("dados do laudo grandes demais (máx. 256 KB)")
 	}
 	return nil
 }

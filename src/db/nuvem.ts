@@ -173,7 +173,7 @@ async function enviar() {
   const passo = async (fn: () => Promise<void>, devolver: () => void) => {
     try { await fn(); } catch (e) {
       if (e instanceof ErroServidor && e.status === 401) throw e;
-      if (e instanceof ErroServidor && (e.status === 409 || e.status === 400 || e.status === 404)) {
+      if (e instanceof ErroServidor && (e.status === 409 || e.status === 400 || e.status === 403 || e.status === 404)) {
         emitir({ tipo: 'erro', mensagem: e.message }); // recusado de vez: não insiste
       } else { devolver(); falhou = true; }
     }
