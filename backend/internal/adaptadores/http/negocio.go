@@ -579,7 +579,7 @@ func (s *Servidor) verificarWhatsApp(w http.ResponseWriter, r *http.Request) {
 
 // POST /api/whatsapp/webhook: guarda as mensagens recebidas para a Lia organizar (processamento: próxima etapa).
 func (s *Servidor) webhookWhatsApp(w http.ResponseWriter, r *http.Request) {
-	if s.WhatsAppVerificacao == "" || s.Negocio == nil {
+	if s.WhatsAppVerificacao == "" || s.WhatsAppSegredo == "" || s.Negocio == nil { // sem a assinatura do Meta, ninguém grava aqui
 		http.NotFound(w, r)
 		return
 	}
@@ -588,7 +588,7 @@ func (s *Servidor) webhookWhatsApp(w http.ResponseWriter, r *http.Request) {
 		erro(w, http.StatusBadRequest, "Corpo inválido.")
 		return
 	}
-	if s.WhatsAppSegredo != "" { // assinatura do Meta: X-Hub-Signature-256 = sha256=HMAC(corpo)
+	{ // assinatura do Meta: X-Hub-Signature-256 = sha256=HMAC(corpo)
 		m := hmac.New(sha256.New, []byte(s.WhatsAppSegredo))
 		m.Write(corpo)
 		esperado := "sha256=" + hex.EncodeToString(m.Sum(nil))

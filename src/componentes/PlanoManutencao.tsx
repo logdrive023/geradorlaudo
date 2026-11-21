@@ -64,7 +64,7 @@ export function PlanoManutencao({ laudo, fotos, className }: { laudo: Laudo; fot
                   <b className="block text-sm leading-snug">{i.atividade}</b>
                   <span className="mt-0.5 block text-xs text-texto2">{PERIODO[i.periodicidade].nome} · {RESPONSAVEL[i.responsavel].nome}</span>
                 </span>
-                <span className={cx('whitespace-nowrap rounded-full px-2 py-1 text-[11px] font-extrabold', atraso ? 'bg-critico-suave text-critico-texto' : 'bg-sup2 text-texto2')}>{atraso ? 'atrasada' : br(prox).slice(0, 5)}</span>
+                <span className={cx('whitespace-nowrap rounded-full px-2 py-1 text-[11px] font-extrabold', atraso ? 'bg-critico-suave text-critico-texto' : 'bg-sup2 text-texto2')}>{atraso ? 'atrasada' : prox.slice(0, 4) === hoje().slice(0, 4) ? br(prox).slice(0, 5) : br(prox)}</span>
               </button>
               {abre && (
                 <div className="grid gap-2 border-t border-borda p-3">

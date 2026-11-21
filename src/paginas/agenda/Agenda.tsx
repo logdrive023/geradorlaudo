@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { CalendarCheck2, CalendarPlus, Check, ChevronLeft, ChevronRight, MapPin, MessageCircle, Pencil, Phone, RotateCw } from 'lucide-react';
 import { api, logadoNaNuvem } from '../../db/nuvem';
 import { listarUsuarios, type UsuarioOrg } from '../../db/organizacao';
@@ -76,15 +76,23 @@ export function Agenda() {
   const [local, setLocal] = useState<Local>(() => lerLocal({ uf: usuario?.uf || undefined, cidade: usuario?.cidade || undefined }));
   const admin = usuario?.papel === 'admin';
 
-  const carregar = async () => {
+  const janela = useRef<{ de: number; ate: number } | null>(null); // período já carregado
+  const carregar = async (centro = foco) => {
     setErro('');
     try {
-      const de = new Date(Date.now() - 90 * 864e5).toISOString(), ate = new Date(Date.now() + 365 * 864e5).toISOString();
-      setLista((await api<{ agenda: Agendamento[] }>(`/api/agenda?de=${encodeURIComponent(de)}&ate=${encodeURIComponent(ate)}`)).agenda);
+      const de = centro.getTime() - 120 * 864e5, ate = centro.getTime() + 365 * 864e5;
+      const r = await api<{ agenda: Agendamento[] }>(`/api/agenda?de=${encodeURIComponent(new Date(de).toISOString())}&ate=${encodeURIComponent(new Date(ate).toISOString())}`);
+      janela.current = { de, ate };
+      setLista(r.agenda);
       if (admin) setPessoas((await listarUsuarios()).filter((u) => u.ativo));
     } catch (e) { setErro((e as Error).message); }
   };
   useEffect(() => { if (logadoNaNuvem()) void carregar(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  // andou para um mês fora do que foi carregado: busca de novo em volta dele
+  useEffect(() => {
+    const j = janela.current;
+    if (j && logadoNaNuvem() && (foco.getTime() - 40 * 864e5 < j.de || foco.getTime() + 40 * 864e5 > j.ate)) void carregar(foco);
+  }, [foco]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const salvar = async (a: Rascunho) => {
     try {
@@ -216,7 +224,7 @@ export function Agenda() {
 
       <div className="mt-3">
         {erro ? (
-          <Cartao className="p-5 text-center"><p className="text-texto2">{erro}</p><Botao className="mt-3" variante="claro" onClick={carregar}><RotateCw className="size-4" />Tentar de novo</Botao></Cartao>
+          <Cartao className="p-5 text-center"><p className="text-texto2">{erro}</p><Botao className="mt-3" variante="claro" onClick={() => void carregar()}><RotateCw className="size-4" />Tentar de novo</Botao></Cartao>
         ) : !lista ? <div className="h-64 animate-pulse rounded-2xl bg-sup2" />
           : visao === 'mes' ? <Mes />
             : visao === 'semana' ? <div className="grid gap-2">{Array.from({ length: 7 }, (_, i) => <ListaDoDia key={i} d={mais(inicioSemana(foco), i)} compacto />)}</div>

@@ -68,8 +68,8 @@ export function ObraTela() {
       </div>
 
       <div className="mt-4">
-        {aba === 'resumo' && <AbaResumo obra={obra} irPara={irPara} avisar={aviso.avisar} />}
-        {aba === 'cronograma' && <AbaCronograma obra={obra} />}
+        {aba === 'resumo' && <AbaResumo obra={obra} irPara={irPara} avisar={aviso.avisar} semFinanceiro={assistente} />}
+        {aba === 'cronograma' && <AbaCronograma obra={obra} semFinanceiro={assistente} />}
         {aba === 'diario' && <AbaDiario obra={obra} avisar={aviso.avisar} />}
         {aba === 'financeiro' && <AbaFinanceiro obra={obra} />}
         {aba === 'compras' && <AbaCompras obra={obra} avisar={aviso.avisar} />}

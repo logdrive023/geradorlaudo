@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { AlarmClock, BookOpenText, CalendarDays, CalendarRange, ChevronRight, FileText, Pencil, Plus, ShoppingCart, Unlink, Wallet } from 'lucide-react';
@@ -15,7 +15,7 @@ import { CamposObra, ICONE_OBRA, type ValoresObra } from './CamposObra';
 import type { AbaObra } from './ObraTela';
 
 /** Editar a ficha da obra (mesmos campos de "Nova obra"). */
-function EditarFicha({ obra, aberto, aoFechar }: { obra: Obra; aberto: boolean; aoFechar: () => void }) {
+function EditarFicha({ obra, aberto, aoFechar, semFinanceiro }: { obra: Obra; aberto: boolean; aoFechar: () => void; semFinanceiro?: boolean }) {
   const [v, setV] = useState<ValoresObra>(() => ({ nome: obra.nome, endereco: obra.endereco, cliente: obra.cliente, inicio: obra.inicio, fim: obra.fim, tipo: obra.tipo, regime: obra.regime, area: obra.area, orcamentoPrevisto: obra.orcamentoPrevisto, clienteTelefone: obra.clienteTelefone, clienteEmail: obra.clienteEmail, art: obra.art, alvara: obra.alvara }));
   const salvar = async () => {
     if (!v.nome.trim()) return;
@@ -25,7 +25,7 @@ function EditarFicha({ obra, aberto, aoFechar }: { obra: Obra; aberto: boolean; 
   return (
     <Modal aberto={aberto} aoFechar={aoFechar} largura="max-w-xl" titulo="Ficha da obra">
       <div className="grid gap-4">
-        <CamposObra v={v} set={(p) => setV({ ...v, ...p })} />
+        <CamposObra v={v} set={(p) => setV({ ...v, ...p })} semFinanceiro={semFinanceiro} />
         <div className="sticky bottom-0 -mx-1 flex justify-end gap-2 bg-sup px-1 pt-2">
           <Botao variante="fantasma" onClick={aoFechar}>Cancelar</Botao>
           <Botao variante="obra" onClick={salvar}>Salvar</Botao>
@@ -36,7 +36,7 @@ function EditarFicha({ obra, aberto, aoFechar }: { obra: Obra; aberto: boolean; 
 }
 
 /** Resumo: avanço, prazo, dinheiro, diário, próximas etapas, laudos, ficha, link e notas. */
-export function AbaResumo({ obra, irPara, avisar }: { obra: Obra; irPara: (a: AbaObra) => void; avisar: (t: string, tom?: 'ok' | 'erro') => void }) {
+export function AbaResumo({ obra, irPara, avisar, semFinanceiro }: { obra: Obra; irPara: (a: AbaObra) => void; avisar: (t: string, tom?: 'ok' | 'erro') => void; semFinanceiro?: boolean }) {
   const r = resumoObra(obra);
   const p = prazoObra(obra);
   const laudos = useLiveQuery(() => db.laudos.toArray(), [], []);
@@ -45,6 +45,8 @@ export function AbaResumo({ obra, irPara, avisar }: { obra: Obra; irPara: (a: Ab
   const [link, setLink] = useState<string | null>(null);
   const [comFin, setComFin] = useState(false);
   const [notas, setNotas] = useState(obra.notasInternas ?? '');
+  const digitou = useRef(false); // só grava se a pessoa escreveu (sair do campo não apaga o que veio de outro aparelho)
+  useEffect(() => { if (!digitou.current) setNotas(obra.notasInternas ?? ''); }, [obra.notasInternas]);
   const [ficha, setFicha] = useState(false);
   const usoOrc = r.fin.orcado > 0 ? Math.round((r.fin.realizado / r.fin.orcado) * 100) : null;
   const proximas = obra.etapas.filter((e) => e.percentual < 100).slice(0, 4);
@@ -92,14 +94,14 @@ export function AbaResumo({ obra, irPara, avisar }: { obra: Obra; irPara: (a: Ab
 
         <div className="grid gap-4 sm:grid-cols-2">
           {/* dinheiro */}
-          <button onClick={() => irPara('financeiro')} className="group grid gap-2 rounded-[22px] border border-borda bg-sup p-4 text-left transition hover:border-obra">
+          {!semFinanceiro && <button onClick={() => irPara('financeiro')} className="group grid gap-2 rounded-[22px] border border-borda bg-sup p-4 text-left transition hover:border-obra">
             <span className="flex items-center justify-between"><span className="flex items-center gap-1.5 text-sm font-bold text-texto2"><Wallet className="size-4 text-obra" />Orçado × gasto</span><ChevronRight className="size-4 text-texto3 transition group-hover:translate-x-0.5" /></span>
             <ValorAjustado className="font-display text-2xl font-extrabold leading-none">{reais(r.fin.realizado)}</ValorAjustado>
             {usoOrc != null ? <>
               <div className="h-2 overflow-hidden rounded-full bg-sup2"><div className={cx('h-full rounded-full', usoOrc > 100 ? 'bg-critico' : 'bg-obra')} style={{ width: `${Math.min(100, usoOrc)}%` }} /></div>
               <span className="text-xs text-texto2"><b className={usoOrc > 100 ? 'text-critico-texto' : 'text-texto'}>{usoOrc}%</b> de {reais(r.fin.orcado)}{r.fin.aPagar > 0 && <> · <b className="text-medio-texto">{reais(r.fin.aPagar)} a pagar</b></>}</span>
             </> : <span className="text-xs text-texto2">Ponha o orçamento na ficha ou nas etapas para acompanhar.</span>}
-          </button>
+          </button>}
           {/* último diário */}
           <button onClick={() => irPara('diario')} className="group grid gap-2 rounded-[22px] border border-borda bg-sup p-4 text-left transition hover:border-obra">
             <span className="flex items-center justify-between"><span className="flex items-center gap-1.5 text-sm font-bold text-texto2"><BookOpenText className="size-4 text-obra" />Último diário</span><ChevronRight className="size-4 text-texto3 transition group-hover:translate-x-0.5" /></span>
@@ -173,8 +175,8 @@ export function AbaResumo({ obra, irPara, avisar }: { obra: Obra; irPara: (a: Ab
           <div className="grid grid-cols-2 gap-3">
             <Rotulado rotulo="Tipo">{obra.tipo ? TIPO_OBRA[obra.tipo].nome : '—'}</Rotulado>
             <Rotulado rotulo="Área">{obra.area ? `${obra.area.toLocaleString('pt-BR')} m²` : '—'}</Rotulado>
-            <Rotulado rotulo="Orçamento" inteiro>{obra.orcamentoPrevisto ? reais(obra.orcamentoPrevisto) : '—'}</Rotulado>
-            <Rotulado rotulo="Custo / m²">{obra.area && obra.orcamentoPrevisto ? reais(obra.orcamentoPrevisto / obra.area) : '—'}</Rotulado>
+            {!semFinanceiro && <Rotulado rotulo="Orçamento" inteiro>{obra.orcamentoPrevisto ? reais(obra.orcamentoPrevisto) : '—'}</Rotulado>}
+            {!semFinanceiro && <Rotulado rotulo="Custo / m²">{obra.area && obra.orcamentoPrevisto ? reais(obra.orcamentoPrevisto / obra.area) : '—'}</Rotulado>}
             <Rotulado rotulo="ART / RRT">{obra.art || '—'}</Rotulado>
             <Rotulado rotulo="Alvará">{obra.alvara || '—'}</Rotulado>
           </div>
@@ -185,17 +187,17 @@ export function AbaResumo({ obra, irPara, avisar }: { obra: Obra; irPara: (a: Ab
         {logadoNaNuvem() && (
           <LinkPublico titulo="Link do cliente" textoCompartilhar={`Acompanhe a obra ${obra.nome}:`} link={link} setLink={setLink} avisar={avisar}
             dica="O cliente acompanha avanço, cronograma e diário com fotos, sem conta. O financeiro só aparece se você liberar."
-            extra={!link && <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={comFin} onChange={(e) => setComFin(e.target.checked)} className="size-4 accent-[var(--obra)]" />Mostrar financeiro e compras ao cliente</label>}
+            extra={!link && !semFinanceiro && <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={comFin} onChange={(e) => setComFin(e.target.checked)} className="size-4 accent-[var(--obra)]" />Mostrar financeiro e compras ao cliente</label>}
             gerar={() => criarLinkObra(obra.id, comFin)} desligar={() => desligarLinkObra(obra.id)} />
         )}
 
         <Cartao className="grid gap-2 p-4">
           <h2 className="flex items-center gap-1.5 text-lg font-bold">Notas internas<Dica texto="Só você vê. Nunca aparecem no link do cliente." /></h2>
-          <AreaTexto rows={4} value={notas} onChange={(e) => setNotas(e.target.value)} onBlur={() => notas !== (obra.notasInternas ?? '') && void mudarObra(obra.id, (o) => { o.notasInternas = notas; })} placeholder="Combinações, telefones, lembretes…" />
+          <AreaTexto rows={4} value={notas} onChange={(e) => { digitou.current = true; setNotas(e.target.value); }} onBlur={() => { if (digitou.current && notas !== (obra.notasInternas ?? '')) void mudarObra(obra.id, (o) => { o.notasInternas = notas; }); digitou.current = false; }} placeholder="Combinações, telefones, lembretes…" />
           <p className="text-xs text-texto3">Salva ao sair do campo.</p>
         </Cartao>
       </aside>
-      {ficha && <EditarFicha obra={obra} aberto={ficha} aoFechar={() => setFicha(false)} />}
+      {ficha && <EditarFicha obra={obra} aberto={ficha} aoFechar={() => setFicha(false)} semFinanceiro={semFinanceiro} />}
     </div>
   );
 }

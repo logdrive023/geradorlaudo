@@ -99,7 +99,13 @@ export const gravarPlano = (p: PlanoManutencao | null) => (p ? JSON.stringify(p)
 export function proxima(i: ItemManutencao, criadoEm: string): string {
   const base = new Date(`${i.ultima || criadoEm}T12:00:00`);
   const p = PERIODO[i.periodicidade];
-  if (p.dias) base.setDate(base.getDate() + p.dias); else base.setMonth(base.getMonth() + p.meses);
+  if (p.dias) base.setDate(base.getDate() + p.dias);
+  else {
+    const dia = base.getDate();
+    base.setDate(1);
+    base.setMonth(base.getMonth() + p.meses);
+    base.setDate(Math.min(dia, new Date(base.getFullYear(), base.getMonth() + 1, 0).getDate())); // 31/01 + 1 mês = 28/02
+  }
   return dataLocal(base);
 }
 

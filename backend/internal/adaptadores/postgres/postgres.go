@@ -201,6 +201,7 @@ func (b *Banco) SalvarLaudo(ctx context.Context, u conta.Usuario, l laudo.Regist
 			versao = laudos.versao + 1
 		where laudos.organizacao_id = excluded.organizacao_id and pode_ver('laudo', laudos.id, laudos.usuario_id, $3::uuid, $12)
 			and ($13::int = 0 or laudos.versao = $13::int)
+			and (laudos.status <> 'concluido' or $12 <> 'assistente')
 		returning versao`,
 		l.ID, u.OrganizacaoID, u.ID, string(l.Tipo), l.Titulo, l.Status, dados, textos, l.Conclusao, data(l.CriadoEm), data(l.AtualizadoEm), string(u.Papel), l.Versao).Scan(&versao)
 	if errors.Is(err, pgx.ErrNoRows) {
@@ -215,9 +216,13 @@ func (b *Banco) SalvarLaudo(ctx context.Context, u conta.Usuario, l laudo.Regist
 // porQueNaoGravou: a gravação não passou. Se o registro existe e a pessoa enxerga, foi versão velha (conflito).
 func (b *Banco) porQueNaoGravou(ctx context.Context, u conta.Usuario, tabela, tipo, id string) error {
 	var ve bool
-	err := b.pool.QueryRow(ctx, `select pode_ver($1, id, usuario_id, $3::uuid, $4) from `+tabela+` where id = $2 and organizacao_id = $5`,
-		tipo, id, u.ID, string(u.Papel), u.OrganizacaoID).Scan(&ve)
+	var status string
+	err := b.pool.QueryRow(ctx, `select pode_ver($1, id, usuario_id, $3::uuid, $4), status from `+tabela+` where id = $2 and organizacao_id = $5`,
+		tipo, id, u.ID, string(u.Papel), u.OrganizacaoID).Scan(&ve, &status)
 	if err == nil && ve {
+		if tabela == "laudos" && status == "concluido" && u.Papel == conta.Assistente {
+			return laudo.ErrConcluido
+		}
 		return laudo.ErrConflito
 	}
 	return laudo.ErrNaoEncontrado
@@ -364,10 +369,10 @@ func (b *Banco) SalvarFoto(ctx context.Context, u conta.Usuario, f laudo.FotoReg
 	defer tx.Rollback(ctx)
 
 	// trava o laudo: duas fotos chegando juntas não furam o limite
-	var dono string
+	var dono, status string
 	var ve bool
-	if err := tx.QueryRow(ctx, `select organizacao_id::text, pode_ver('laudo', id, usuario_id, $2::uuid, $3) from laudos
-		where id = $1 and excluido_em is null for update`, f.LaudoID, u.ID, string(u.Papel)).Scan(&dono, &ve); err != nil {
+	if err := tx.QueryRow(ctx, `select organizacao_id::text, pode_ver('laudo', id, usuario_id, $2::uuid, $3), status from laudos
+		where id = $1 and excluido_em is null for update`, f.LaudoID, u.ID, string(u.Papel)).Scan(&dono, &ve, &status); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return laudo.ErrNaoEncontrado
 		}
@@ -375,6 +380,9 @@ func (b *Banco) SalvarFoto(ctx context.Context, u conta.Usuario, f laudo.FotoReg
 	}
 	if dono != u.OrganizacaoID || !ve {
 		return laudo.ErrNaoEncontrado
+	}
+	if status == "concluido" && !conta.Pode(u.Papel, conta.EmitirLaudo) {
+		return laudo.ErrConcluido
 	}
 	var existe bool
 	var outras int
@@ -475,6 +483,12 @@ func (b *Banco) ApagarFoto(ctx context.Context, u conta.Usuario, laudoID, fotoID
 	if img == "" {
 		return nil, nil // já não existe
 	}
+	if !conta.Pode(u.Papel, conta.EmitirLaudo) {
+		var status string
+		if err := b.pool.QueryRow(ctx, `select status from laudos where id = $1`, laudoID).Scan(&status); err == nil && status == "concluido" {
+			return nil, laudo.ErrConcluido
+		}
+	}
 	if _, err := b.pool.Exec(ctx, `delete from fotos where id = $1 and laudo_id = $2`, fotoID, laudoID); err != nil {
 		return nil, traduzir(err)
 	}
@@ -504,6 +518,14 @@ func uuidOuNulo(s string) *string {
 	return &s
 }
 
+// uuidOuNuloTexto: "" quando não parece um uuid (o banco recusaria e a contagem se perderia).
+func uuidOuNuloTexto(s string) string {
+	if uuidOuNulo(s) == nil {
+		return ""
+	}
+	return s
+}
+
 func traduzir(err error) error {
 	if err == nil {
 		return nil
@@ -516,6 +538,8 @@ func traduzir(err error) error {
 		switch pg.Code {
 		case "22P02": // uuid ou valor mal formado
 			return &portas.ErroDados{Mensagem: "Identificador inválido."}
+		case "23505": // registro repetido (ex.: e-mail já cadastrado ou convidado)
+			return &portas.ErroDados{Mensagem: "Isso já existe (registro repetido)."}
 		case "23514", "23502", "22001", "22003":
 			return &portas.ErroDados{Mensagem: "Dados inválidos: " + pg.ConstraintName + pg.ColumnName}
 		}
@@ -544,8 +568,11 @@ func (b *Banco) CriarLink(ctx context.Context, u conta.Usuario, id, novo string)
 
 // ApagarLink desliga o link: quem tinha o endereço não vê mais nada.
 func (b *Banco) ApagarLink(ctx context.Context, u conta.Usuario, id string) error {
-	_, err := b.pool.Exec(ctx, `update laudos set link_token = null, link_criado_em = null
+	tag, err := b.pool.Exec(ctx, `update laudos set link_token = null, link_criado_em = null
 		where id = $1 and organizacao_id = $2 and pode_ver('laudo', id, usuario_id, $3::uuid, $4)`, id, u.OrganizacaoID, u.ID, string(u.Papel))
+	if err == nil && tag.RowsAffected() == 0 {
+		return laudo.ErrNaoEncontrado
+	}
 	return traduzir(err)
 }
 

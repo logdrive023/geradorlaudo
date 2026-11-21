@@ -19,6 +19,15 @@ function registrarDespesa(c: Compra, o: Obra) {
   c.lancamentoId = id;
 }
 
+const despesaPaga = (o: Obra, c: Compra) => !!o.lancamentos.find((l) => l.id === c.lancamentoId)?.pago;
+
+/** Compra cancelada ou apagada: a despesa "a pagar" que ela gerou sai do financeiro (a já paga fica: o dinheiro saiu). */
+function tirarDespesa(c: Compra, o: Obra) {
+  if (!c.lancamentoId) return;
+  const l = o.lancamentos.find((x) => x.id === c.lancamentoId);
+  if (l && !l.pago) { o.lancamentos = o.lancamentos.filter((x) => x.id !== l.id); c.lancamentoId = undefined; }
+}
+
 function CompraItem({ obra, c, aberto, alternar, avisar }: { obra: Obra; c: Compra; aberto: boolean; alternar: () => void; avisar: (t: string, tom?: 'ok' | 'erro') => void }) {
   const [cot, setCot] = useState<{ fornecedor: string; valor?: number; prazo: string }>({ fornecedor: '', prazo: '' });
   const set = (fn: (x: Compra, o: Obra) => void) => void editar(obra.id, c.id, fn);
@@ -28,7 +37,7 @@ function CompraItem({ obra, c, aberto, alternar, avisar }: { obra: Obra; c: Comp
   const i = FLUXO_COMPRA.indexOf(c.status);
 
   const mudarStatus = (s: StatusCompra) => {
-    if (s === 'aprovada' && !c.cotacoes.length) { avisar('Ponha pelo menos uma cotação antes de aprovar.', 'erro'); return; }
+    if ((s === 'aprovada' || s === 'comprada' || s === 'entregue') && !c.cotacoes.length) { avisar('Ponha pelo menos uma cotação (fornecedor e valor) antes.', 'erro'); return; }
     set((x, o) => {
       x.status = s;
       if (s === 'aprovada' && !x.escolhida && melhor) x.escolhida = melhor.id;
@@ -89,8 +98,14 @@ function CompraItem({ obra, c, aberto, alternar, avisar }: { obra: Obra; c: Comp
         </form>
       </div>
       <div className="flex flex-wrap gap-2 border-t border-borda pt-3">
-        {c.status !== 'cancelada' && c.status !== 'entregue' && <Botao tam="p" variante="fantasma" onClick={() => set((x) => { x.status = 'cancelada'; })}>Cancelar pedido</Botao>}
-        <Botao tam="p" variante="fantasma" className="ml-auto text-critico-texto" onClick={() => void mudarObra(obra.id, (o) => { o.compras = o.compras.filter((x) => x.id !== c.id); })}><Trash2 className="size-4" />Apagar</Botao>
+        {c.status !== 'cancelada' && c.status !== 'entregue' && <Botao tam="p" variante="fantasma" onClick={() => {
+          set((x, o) => { x.status = 'cancelada'; tirarDespesa(x, o); });
+          if (c.lancamentoId) avisar(despesaPaga(obra, c) ? 'Pedido cancelado. A despesa já paga continua no financeiro.' : 'Pedido cancelado e despesa "a pagar" retirada do financeiro.');
+        }}>Cancelar pedido</Botao>}
+        <Botao tam="p" variante="fantasma" className="ml-auto text-critico-texto" onClick={() => {
+          if (c.lancamentoId && !despesaPaga(obra, c) && !confirm('Apagar a compra e a despesa "a pagar" dela no financeiro?')) return;
+          void mudarObra(obra.id, (o) => { const x = o.compras.find((y) => y.id === c.id); if (x) tirarDespesa(x, o); o.compras = o.compras.filter((y) => y.id !== c.id); });
+        }}><Trash2 className="size-4" />Apagar</Botao>
       </div>
     </ItemAbre>
   );

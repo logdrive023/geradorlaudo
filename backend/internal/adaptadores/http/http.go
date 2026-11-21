@@ -122,6 +122,7 @@ func (s *Servidor) conclusao(w http.ResponseWriter, r *http.Request) {
 		responderErro(w, err)
 		return
 	}
+	s.registrarUso(r, "servidor", "conclusao")
 	json200(w, map[string]any{"texto": t})
 }
 
@@ -140,6 +141,7 @@ func (s *Servidor) lia(w http.ResponseWriter, r *http.Request) {
 		responderErro(w, err)
 		return
 	}
+	s.registrarUso(r, "servidor", "lia")
 	json200(w, map[string]any{"texto": t})
 }
 

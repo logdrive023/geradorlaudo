@@ -155,10 +155,14 @@ func (b *Banco) SalvarFotoObra(ctx context.Context, u conta.Usuario, obraID, fot
 	if n >= obra.MaxFotosObra {
 		return obra.ErrLimiteFotos
 	}
-	if _, err := tx.Exec(ctx, `insert into obra_fotos (id, obra_id, imagem_chave, miniatura_chave, bytes) values ($1, $2, $3, $4, $5)
+	tag, err := tx.Exec(ctx, `insert into obra_fotos (id, obra_id, imagem_chave, miniatura_chave, bytes) values ($1, $2, $3, $4, $5)
 		on conflict (id) do update set imagem_chave = excluded.imagem_chave, miniatura_chave = excluded.miniatura_chave, bytes = excluded.bytes
-		where obra_fotos.obra_id = excluded.obra_id`, fotoID, obraID, imagem, miniatura, bytes); err != nil {
+		where obra_fotos.obra_id = excluded.obra_id`, fotoID, obraID, imagem, miniatura, bytes)
+	if err != nil {
 		return traduzir(err)
+	}
+	if tag.RowsAffected() == 0 { // id de foto que é de outra obra
+		return laudo.ErrNaoEncontrado
 	}
 	return tx.Commit(ctx)
 }
@@ -178,9 +182,11 @@ func (b *Banco) ApagarFotoObra(ctx context.Context, u conta.Usuario, obraID, fot
 
 func (b *Banco) CriarLinkObra(ctx context.Context, u conta.Usuario, id, novo string, financeiro bool) (string, error) {
 	var token string
-	err := b.pool.QueryRow(ctx, `update obras set link_token = coalesce(link_token, $3), link_financeiro = $4
+	podeFin := conta.Pode(u.Papel, conta.VerFinanceiro)
+	err := b.pool.QueryRow(ctx, `update obras set link_token = coalesce(link_token, $3),
+			link_financeiro = case when $7 then $4 else coalesce(link_financeiro, false) end
 		where id = $1 and organizacao_id = $2 and pode_ver('obra', id, usuario_id, $5::uuid, $6) returning link_token`,
-		id, u.OrganizacaoID, novo, financeiro, u.ID, string(u.Papel)).Scan(&token)
+		id, u.OrganizacaoID, novo, financeiro, u.ID, string(u.Papel), podeFin).Scan(&token)
 	return token, traduzir(err)
 }
 
@@ -197,7 +203,7 @@ func (b *Banco) ObraPublica(ctx context.Context, token string) (obra.Registro, b
 	var criado, atualizado time.Time
 	var dados []byte
 	err := b.pool.QueryRow(ctx, `select `+colsObra+`, link_financeiro from obras where link_token = $1`, token).
-		Scan(&o.ID, &o.Nome, &o.Status, &dados, &o.UsuarioID, &criado, &atualizado, &fin)
+		Scan(&o.ID, &o.Nome, &o.Status, &dados, &o.UsuarioID, &criado, &atualizado, &o.Versao, &fin)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return o, false, nil, autor, laudo.ErrNaoEncontrado
 	}

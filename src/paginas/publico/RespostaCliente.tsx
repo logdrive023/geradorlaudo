@@ -61,10 +61,12 @@ export function RespostaCliente({ token, laudo, fotos }: { token: string; laudo:
       )}
 
       {!modo ? (
-        <div className="grid gap-2 sm:grid-cols-2">
-          <button onClick={() => setModo('aceite')} className="flex items-center gap-3 rounded-2xl border border-borda p-4 text-left transition hover:border-ok hover:bg-ok-suave/40">
-            <CheckCircle2 className="size-6 shrink-0 text-ok" /><span><b className="block">Aceito o laudo</b><span className="text-sm text-texto2">Li e estou de acordo</span></span>
-          </button>
+        <div className={cx('grid gap-2', laudo.status !== 'rascunho' && 'sm:grid-cols-2')}>
+          {laudo.status !== 'rascunho' ? (
+            <button onClick={() => setModo('aceite')} className="flex items-center gap-3 rounded-2xl border border-borda p-4 text-left transition hover:border-ok hover:bg-ok-suave/40">
+              <CheckCircle2 className="size-6 shrink-0 text-ok" /><span><b className="block">Aceito o laudo</b><span className="text-sm text-texto2">Li e estou de acordo</span></span>
+            </button>
+          ) : <p className="rounded-xl bg-sup2 px-3 py-2.5 text-sm text-texto2">Este laudo ainda é um rascunho. O aceite fica disponível na versão final; até lá você pode comentar.</p>}
           <button onClick={() => setModo('contestacao')} className="flex items-center gap-3 rounded-2xl border border-borda p-4 text-left transition hover:border-medio hover:bg-medio-suave/40">
             <MessageSquareWarning className="size-6 shrink-0 text-medio" /><span><b className="block">Contestar ou comentar</b><span className="text-sm text-texto2">Algo não confere</span></span>
           </button>

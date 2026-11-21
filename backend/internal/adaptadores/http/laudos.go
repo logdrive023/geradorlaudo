@@ -292,7 +292,9 @@ func (s *Servidor) salvarLaudo(w http.ResponseWriter, r *http.Request) {
 		r.Body = io.NopCloser(strings.NewReader(string(corpo)))
 	}
 	var l laudo.Registro
-	if !lerJSON(w, r, &l) {
+	r.Body = http.MaxBytesReader(w, r.Body, 1<<20) // o tamanho de verdade quem confere é o Validar (mensagem clara)
+	if err := json.NewDecoder(r.Body).Decode(&l); err != nil {
+		erro(w, http.StatusBadRequest, "Laudo grande demais ou com dados inválidos.")
 		return
 	}
 	l.ID = r.PathValue("id")
@@ -491,6 +493,8 @@ func responderDados(w http.ResponseWriter, err error) {
 		erro(w, http.StatusConflict, "Na fase de teste cada obra aceita no máximo 60 fotos no diário.")
 	case errors.Is(err, laudo.ErrLimiteFotos):
 		erro(w, http.StatusConflict, "Na fase de teste cada laudo aceita no máximo 5 fotos.")
+	case errors.Is(err, laudo.ErrConcluido):
+		erro(w, http.StatusForbidden, "Laudo concluído: só o engenheiro responsável altera ou reabre.")
 	case errors.Is(err, laudo.ErrConflito): // o app junta as alterações ou guarda uma cópia
 		erro(w, http.StatusPreconditionFailed, "Outra pessoa salvou uma versão mais nova antes.")
 	case errors.Is(err, laudo.ErrPrecisaImagem):

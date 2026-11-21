@@ -22,7 +22,7 @@ function Bloco({ ic: Ic, titulo, children }: { ic: React.ComponentType<{ classNa
 export type ValoresObra = Omit<DadosNovaObra, 'comEtapas'>;
 
 /** Campos da ficha da obra, com dicas. Usado para criar a obra e para editar a ficha depois. */
-export function CamposObra({ v, set }: { v: ValoresObra; set: (p: Partial<ValoresObra>) => void }) {
+export function CamposObra({ v, set, semFinanceiro }: { v: ValoresObra; set: (p: Partial<ValoresObra>) => void; semFinanceiro?: boolean }) {
   const dias = v.inicio && v.fim && v.fim >= v.inicio ? diasEntre(v.inicio, v.fim) : null;
   const porM2 = v.area && v.orcamentoPrevisto ? v.orcamentoPrevisto / v.area : null;
   const txt = (k: keyof ValoresObra) => (e: React.ChangeEvent<HTMLInputElement>) => set({ [k]: e.target.value } as Partial<ValoresObra>);
@@ -84,9 +84,9 @@ export function CamposObra({ v, set }: { v: ValoresObra; set: (p: Partial<Valore
               <Entrada inputMode="decimal" className="pl-9" value={v.area ?? ''} placeholder="0" onChange={(e) => { const n = Number(e.target.value.replace(',', '.')); set({ area: e.target.value && Number.isFinite(n) && n > 0 ? n : undefined }); }} />
             </span>
           </Campo>
-          <Campo rotulo="Orçamento" ajuda="Orçamento previsto: valor total do contrato. Depois você detalha por etapa no Financeiro.">
+          {!semFinanceiro && <Campo rotulo="Orçamento" ajuda="Orçamento previsto: valor total do contrato. Depois você detalha por etapa no Financeiro.">
             <EntradaReais aria-label="Orçamento previsto" valor={v.orcamentoPrevisto} aoMudar={(n) => set({ orcamentoPrevisto: n })} />
-          </Campo>
+          </Campo>}
         </div>
         {(dias != null || porM2 != null) && (
           <p className="flex flex-wrap gap-x-4 gap-y-1 rounded-xl bg-sup2 px-3 py-2 text-xs text-texto2">

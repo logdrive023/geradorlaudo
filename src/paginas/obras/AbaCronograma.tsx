@@ -53,7 +53,7 @@ function Gantt({ etapas, inicio, fim }: { etapas: Etapa[]; inicio: string; fim: 
   );
 }
 
-function EtapaItem({ obraId, e, aberto, alternar }: { obraId: string; e: Etapa; aberto: boolean; alternar: () => void }) {
+function EtapaItem({ obraId, e, aberto, alternar, semFinanceiro }: { obraId: string; e: Etapa; aberto: boolean; alternar: () => void; semFinanceiro?: boolean }) {
   const s = situacaoEtapa(e);
   const [novoItem, setNovoItem] = useState('');
   const feitos = e.checklist.filter((c) => c.feito).length;
@@ -69,12 +69,12 @@ function EtapaItem({ obraId, e, aberto, alternar }: { obraId: string; e: Etapa; 
         <span className="flex flex-wrap gap-x-3 text-xs text-texto2">
           {e.inicioPrev && <span>{dataBR(e.inicioPrev)} → {dataBR(e.fimPrev)}</span>}
           {e.checklist.length > 0 && <span>checklist {feitos}/{e.checklist.length}</span>}
-          {e.orcado != null && <span>{reais(e.orcado)}</span>}
+          {e.orcado != null && !semFinanceiro && <span>{reais(e.orcado)}</span>}
         </span>
       </span>
     }>
       <label className="grid gap-1 text-xs font-bold text-texto2">Nome da etapa
-        <Entrada defaultValue={e.nome} onBlur={(ev) => ev.target.value.trim() && ev.target.value !== e.nome && set((x) => { x.nome = ev.target.value.trim(); })} />
+        <Entrada key={e.nome} defaultValue={e.nome} onBlur={(ev) => ev.target.value.trim() && ev.target.value !== e.nome && set((x) => { x.nome = ev.target.value.trim(); })} />
       </label>
       <div className="grid gap-1">
         <span className="flex items-center gap-1 text-xs font-bold text-texto2">Classificação<Dica texto={<>{(Object.keys(NIVEL_ETAPA) as NivelEtapa[]).map((n) => <span key={n} className="block"><b>{NIVEL_ETAPA[n].nome}:</b> {NIVEL_ETAPA[n].texto}</span>)}</>} /></span>
@@ -105,9 +105,9 @@ function EtapaItem({ obraId, e, aberto, alternar }: { obraId: string; e: Etapa; 
           </label>
         ))}
       </div>
-      <label className="grid gap-1 text-xs font-bold text-texto2">Orçado da etapa
+      {!semFinanceiro && <label className="grid gap-1 text-xs font-bold text-texto2">Orçado da etapa
         <EntradaReais valor={e.orcado} aoMudar={(v) => set((x) => { x.orcado = v; })} aria-label="Orçado da etapa" />
-      </label>
+      </label>}
       <div className="grid gap-1.5">
         <span className="text-xs font-bold text-texto2">Checklist</span>
         {e.checklist.map((c) => (
@@ -130,7 +130,7 @@ function EtapaItem({ obraId, e, aberto, alternar }: { obraId: string; e: Etapa; 
 }
 
 /** Cronograma: etapas com previsto × real, medição (%) e checklist. */
-export function AbaCronograma({ obra }: { obra: Obra }) {
+export function AbaCronograma({ obra, semFinanceiro }: { obra: Obra; semFinanceiro?: boolean }) {
   const [aberta, setAberta] = useState<string | null>(null);
   const [nome, setNome] = useState('');
   const fis = avancoFisico(obra);
@@ -165,7 +165,7 @@ export function AbaCronograma({ obra }: { obra: Obra }) {
       </Cartao>
 
       <ul className="grid gap-2">
-        {obra.etapas.map((e) => <EtapaItem key={e.id} obraId={obra.id} e={e} aberto={aberta === e.id} alternar={() => setAberta(aberta === e.id ? null : e.id)} />)}
+        {obra.etapas.map((e) => <EtapaItem key={e.id} obraId={obra.id} e={e} aberto={aberta === e.id} alternar={() => setAberta(aberta === e.id ? null : e.id)} semFinanceiro={semFinanceiro} />)}
       </ul>
 
       <form className="flex gap-2" onSubmit={(ev) => {

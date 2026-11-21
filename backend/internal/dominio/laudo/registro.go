@@ -92,6 +92,8 @@ var (
 	ErrPrecisaImagem = errors.New("foto nova precisa da imagem")
 	// ErrConflito: alguém salvou uma versão mais nova antes (o app junta ou guarda uma cópia).
 	ErrConflito = errors.New("conflito de versão")
+	// ErrConcluido: laudo concluído só o engenheiro responsável (ou admin) altera.
+	ErrConcluido = errors.New("laudo concluído: só o engenheiro responsável altera ou reabre")
 )
 
 var statusLaudo = map[string]bool{"rascunho": true, "conferencia": true, "concluido": true}

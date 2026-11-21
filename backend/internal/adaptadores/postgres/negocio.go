@@ -91,6 +91,10 @@ func (b *Banco) AlterarUsuario(ctx context.Context, u conta.Usuario, id string, 
 		return err
 	}
 	defer tx.Rollback(ctx)
+	// trava todos os admins da organização: duas mudanças ao mesmo tempo não deixam a organização sem admin
+	if _, err := tx.Exec(ctx, `select id from usuarios where organizacao_id = $1 and papel = 'admin' for update`, u.OrganizacaoID); err != nil {
+		return traduzir(err)
+	}
 	var atual string
 	var estaAtivo bool
 	if err := tx.QueryRow(ctx, `select papel, ativo from usuarios where id = $1 and organizacao_id = $2 for update`, id, u.OrganizacaoID).
@@ -341,13 +345,20 @@ func (b *Banco) ResponderPorLink(ctx context.Context, tipo, token string, r port
 	if tipo == "laudo" {
 		extra = " and excluido_em is null"
 	}
-	var alvo, org string
-	err := b.pool.QueryRow(ctx, `select id::text, organizacao_id::text from `+tabela+` where link_token = $1`+extra, token).Scan(&alvo, &org)
+	var alvo, org, status, hash string
+	err := b.pool.QueryRow(ctx, `select id::text, organizacao_id::text, status, `+colunaHash(tipo)+` from `+tabela+` where link_token = $1`+extra, token).
+		Scan(&alvo, &org, &status, &hash)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return r, laudo.ErrNaoEncontrado
 	}
 	if err != nil {
 		return r, traduzir(err)
+	}
+	if tipo == "laudo" && r.Tipo == "aceite" && status == "rascunho" && hash == "" { // rascunho não emitido
+		return r, &portas.ErroDados{Mensagem: "Este laudo ainda é um rascunho. Você pode comentar ou contestar; o aceite fica para a versão final."}
+	}
+	if hash != "" { // laudo emitido: o aceite vale sobre o conteúdo registrado no servidor
+		r.HashConteudo = hash
 	}
 	r.AlvoTipo, r.AlvoID = tipo, alvo
 	err = b.pool.QueryRow(ctx, `insert into respostas_cliente (alvo_tipo, alvo_id, tipo, achado_id, nome, documento, texto, dados, hash_conteudo, ip_hash, agente)
@@ -364,6 +375,14 @@ func (b *Banco) ResponderPorLink(ctx context.Context, tipo, token string, r port
 }
 
 func mustJSON(v any) []byte { b, _ := json.Marshal(v); return b }
+
+// colunaHash: só o laudo tem resumo do conteúdo emitido.
+func colunaHash(tipo string) string {
+	if tipo == "laudo" {
+		return "coalesce(hash_conteudo, '')"
+	}
+	return "''"
+}
 
 func (b *Banco) Respostas(ctx context.Context, u conta.Usuario, tipo, id string) ([]portas.RespostaCliente, error) {
 	if _, err := b.podeVerAlvo(ctx, u, tipo, id); err != nil {
@@ -443,9 +462,16 @@ func (b *Banco) SalvarTexto(ctx context.Context, u conta.Usuario, t portas.Texto
 		on conflict (id) do update set tipo = excluded.tipo, sistema = excluded.sistema, gravidade = excluded.gravidade,
 			descricao = excluded.descricao, causa = excluded.causa, recomendacao = excluded.recomendacao, usos = excluded.usos, atualizado_em = now()
 		where biblioteca_textos.organizacao_id = excluded.organizacao_id
-		returning id::text, atualizado_em`, t.ID, u.OrganizacaoID, u.ID, t.Tipo, t.Sistema, t.Gravidade, t.Descricao, t.Causa, t.Recomendacao, t.Usos).
+			and ($11 or (biblioteca_textos.tipo, biblioteca_textos.sistema, biblioteca_textos.gravidade, biblioteca_textos.descricao,
+				biblioteca_textos.causa, biblioteca_textos.recomendacao) is not distinct from
+				(excluded.tipo, excluded.sistema, excluded.gravidade, excluded.descricao, excluded.causa, excluded.recomendacao))
+		returning id::text, atualizado_em`, t.ID, u.OrganizacaoID, u.ID, t.Tipo, t.Sistema, t.Gravidade, t.Descricao, t.Causa, t.Recomendacao, t.Usos,
+		u.Papel != conta.Assistente).
 		Scan(&t.ID, &t.AtualizadoEm)
 	if errors.Is(err, pgx.ErrNoRows) {
+		if u.Papel == conta.Assistente {
+			return t, &portas.ErroDados{Mensagem: "Só o administrador ou o engenheiro alteram textos da biblioteca."}
+		}
 		return t, laudo.ErrNaoEncontrado
 	}
 	return t, traduzir(err)
@@ -504,16 +530,26 @@ func (b *Banco) SalvarAgendamento(ctx context.Context, u conta.Usuario, a portas
 }
 
 func (b *Banco) ApagarAgendamento(ctx context.Context, u conta.Usuario, id string) error {
-	_, err := b.pool.Exec(ctx, `delete from agendamentos where id = $1 and organizacao_id = $2 and ($3 = 'admin' or usuario_id = $4::uuid)`,
+	tag, err := b.pool.Exec(ctx, `delete from agendamentos where id = $1 and organizacao_id = $2 and ($3 = 'admin' or usuario_id = $4::uuid)`,
 		id, u.OrganizacaoID, string(u.Papel), u.ID)
-	return traduzir(err)
+	if err != nil {
+		return traduzir(err)
+	}
+	if tag.RowsAffected() == 0 {
+		var existe bool
+		_ = b.pool.QueryRow(ctx, `select exists(select 1 from agendamentos where id = $1 and organizacao_id = $2)`, id, u.OrganizacaoID).Scan(&existe)
+		if existe {
+			return &portas.ErroDados{Mensagem: "Só quem marcou (ou o administrador) apaga esta vistoria."}
+		}
+	}
+	return nil
 }
 
 // ---------- uso e entradas externas ----------
 
 func (b *Banco) RegistrarUso(ctx context.Context, u conta.Usuario, laudoID, motor, evento string) {
 	if _, err := b.pool.Exec(ctx, `insert into uso_ia (organizacao_id, usuario_id, laudo_id, motor, evento) values ($1, $2, nullif($3, '')::uuid, $4, $5)`,
-		u.OrganizacaoID, u.ID, laudoID, motor, evento); err != nil {
+		u.OrganizacaoID, u.ID, uuidOuNuloTexto(laudoID), motor, evento); err != nil {
 		slog.Warn("uso de IA não gravou", "erro", err)
 	}
 }

@@ -132,15 +132,15 @@ export const REGIME: Record<Regime, string> = {
 export const hojeISO = () => dataLocal();
 export const diasEntre = (a: string, b: string) => Math.round((new Date(`${b}T12:00:00`).getTime() - new Date(`${a}T12:00:00`).getTime()) / 864e5);
 
-/** Avanço físico: média das etapas ponderada pelo orçado (sem orçado, peso igual). */
+/** Pesos das etapas: pelo orçado quando todas têm orçado; senão, peso igual (misturar os dois distorce o avanço). */
+const pesosEtapas = (etapas: Etapa[]) => (etapas.every((e) => e.orcado && e.orcado > 0) ? etapas.map((e) => e.orcado!) : etapas.map(() => 1));
+
+/** Avanço físico: média das etapas ponderada pelo orçado (se todas tiverem; senão, peso igual). */
 export function avancoFisico(o: Pick<Obra, 'etapas'>): number {
   if (!o.etapas.length) return 0;
-  const pesos = o.etapas.map((e) => (e.orcado && e.orcado > 0 ? e.orcado : 0));
+  const pesos = pesosEtapas(o.etapas);
   const total = pesos.reduce((s, p) => s + p, 0);
-  const v = total > 0
-    ? o.etapas.reduce((s, e, i) => s + e.percentual * pesos[i], 0) / total
-    : o.etapas.reduce((s, e) => s + e.percentual, 0) / o.etapas.length;
-  return Math.round(v);
+  return Math.round(o.etapas.reduce((s, e, i) => s + (e.percentual || 0) * pesos[i], 0) / total);
 }
 
 /** Avanço previsto para hoje, pelo cronograma (linear em cada etapa). */
@@ -153,7 +153,7 @@ export function avancoPrevisto(o: Pick<Obra, 'etapas'>, hoje = hojeISO()): numbe
     const dur = Math.max(1, diasEntre(e.inicioPrev!, e.fimPrev!));
     return (diasEntre(e.inicioPrev!, hoje) / dur) * 100;
   };
-  const pesos = com.map((e) => (e.orcado && e.orcado > 0 ? e.orcado : 1));
+  const pesos = pesosEtapas(com);
   const total = pesos.reduce((s, p) => s + p, 0);
   return Math.round(com.reduce((s, e, i) => s + esperado(e) * pesos[i], 0) / total);
 }
