@@ -16,13 +16,13 @@ import (
 // Gestão de obras: a obra é um documento JSON (etapas, diário, financeiro, compras); as fotos do diário
 // ficam no storage e aqui só a chave.
 
-const colsObra = `id::text, nome, status, dados, usuario_id::text, criado_em, atualizado_em`
+const colsObra = `id::text, nome, status, dados, usuario_id::text, criado_em, atualizado_em, versao`
 
 func lerObra(r pgx.Row) (obra.Registro, error) {
 	var o obra.Registro
 	var criado, atualizado time.Time
 	var dados []byte
-	if err := r.Scan(&o.ID, &o.Nome, &o.Status, &dados, &o.UsuarioID, &criado, &atualizado); err != nil {
+	if err := r.Scan(&o.ID, &o.Nome, &o.Status, &dados, &o.UsuarioID, &criado, &atualizado, &o.Versao); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return o, laudo.ErrNaoEncontrado
 		}
@@ -53,25 +53,29 @@ func (b *Banco) ListarObras(ctx context.Context, u conta.Usuario) ([]obra.Regist
 	return out, rows.Err()
 }
 
-func (b *Banco) SalvarObra(ctx context.Context, u conta.Usuario, o obra.Registro) error {
+func (b *Banco) SalvarObra(ctx context.Context, u conta.Usuario, o obra.Registro) (int, error) {
 	if !conta.Pode(u.Papel, conta.VerFinanceiro) { // o assistente não vê o financeiro: o que já está no servidor fica
 		var antigo []byte
 		if err := b.pool.QueryRow(ctx, `select dados from obras where id = $1 and organizacao_id = $2`, o.ID, u.OrganizacaoID).Scan(&antigo); err == nil {
 			o.Dados = obra.ManterFinanceiro(o.Dados, antigo)
 		}
 	}
-	tag, err := b.pool.Exec(ctx, `insert into obras (id, organizacao_id, usuario_id, nome, status, dados, criado_em, atualizado_em)
+	var versao int
+	err := b.pool.QueryRow(ctx, `insert into obras (id, organizacao_id, usuario_id, nome, status, dados, criado_em, atualizado_em)
 		values ($1, $2, $3, $4, $5, $6, $7, $8)
-		on conflict (id) do update set nome = excluded.nome, status = excluded.status, dados = excluded.dados, atualizado_em = excluded.atualizado_em
-		where obras.organizacao_id = excluded.organizacao_id and pode_ver('obra', obras.id, obras.usuario_id, $3::uuid, $9)`,
-		o.ID, u.OrganizacaoID, u.ID, o.Nome, o.Status, []byte(o.Dados), data(o.CriadoEm), data(o.AtualizadoEm), string(u.Papel))
+		on conflict (id) do update set nome = excluded.nome, status = excluded.status, dados = excluded.dados, atualizado_em = excluded.atualizado_em,
+			versao = obras.versao + 1
+		where obras.organizacao_id = excluded.organizacao_id and pode_ver('obra', obras.id, obras.usuario_id, $3::uuid, $9)
+			and ($10::int = 0 or obras.versao = $10::int)
+		returning versao`,
+		o.ID, u.OrganizacaoID, u.ID, o.Nome, o.Status, []byte(o.Dados), data(o.CriadoEm), data(o.AtualizadoEm), string(u.Papel), o.Versao).Scan(&versao)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return 0, b.porQueNaoGravou(ctx, u, "obras", "obra", o.ID)
+	}
 	if err != nil {
-		return traduzir(err)
+		return 0, traduzir(err)
 	}
-	if tag.RowsAffected() == 0 {
-		return laudo.ErrNaoEncontrado
-	}
-	return nil
+	return versao, nil
 }
 
 // ApagarObra apaga a obra e devolve as chaves das fotos para limpar o storage.

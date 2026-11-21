@@ -300,11 +300,12 @@ func (s *Servidor) salvarLaudo(w http.ResponseWriter, r *http.Request) {
 		erro(w, http.StatusBadRequest, err.Error())
 		return
 	}
-	if err := s.Banco.SalvarLaudo(r.Context(), usuarioDe(r), l); err != nil {
+	versao, err := s.Banco.SalvarLaudo(r.Context(), usuarioDe(r), l)
+	if err != nil {
 		responderDados(w, err)
 		return
 	}
-	json200(w, map[string]any{"ok": true})
+	json200(w, map[string]any{"ok": true, "versao": versao})
 }
 
 func (s *Servidor) apagarLaudo(w http.ResponseWriter, r *http.Request) {
@@ -490,6 +491,8 @@ func responderDados(w http.ResponseWriter, err error) {
 		erro(w, http.StatusConflict, "Na fase de teste cada obra aceita no máximo 60 fotos no diário.")
 	case errors.Is(err, laudo.ErrLimiteFotos):
 		erro(w, http.StatusConflict, "Na fase de teste cada laudo aceita no máximo 5 fotos.")
+	case errors.Is(err, laudo.ErrConflito): // o app junta as alterações ou guarda uma cópia
+		erro(w, http.StatusPreconditionFailed, "Outra pessoa salvou uma versão mais nova antes.")
 	case errors.Is(err, laudo.ErrPrecisaImagem):
 		erro(w, http.StatusPreconditionRequired, "Envie a imagem e a miniatura desta foto.")
 	case errors.As(err, &dados):

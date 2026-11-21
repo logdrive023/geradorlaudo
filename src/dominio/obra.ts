@@ -79,6 +79,8 @@ export interface Obra extends FichaObra {
   notasInternas?: string;                  // nunca vai para o link do cliente
   criadoEm: number;
   atualizadoEm: number;
+  /** versão no servidor em que esta cópia se baseia */
+  versao?: number;
 }
 
 /** Foto do diário (fica fora do documento: é grande). */

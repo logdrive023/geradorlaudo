@@ -84,11 +84,12 @@ func (s *Servidor) salvarObra(w http.ResponseWriter, r *http.Request) {
 		erro(w, http.StatusBadRequest, err.Error())
 		return
 	}
-	if err := s.Banco.SalvarObra(r.Context(), usuarioDe(r), o); err != nil {
+	versao, err := s.Banco.SalvarObra(r.Context(), usuarioDe(r), o)
+	if err != nil {
 		responderDados(w, err)
 		return
 	}
-	json200(w, map[string]any{"ok": true})
+	json200(w, map[string]any{"ok": true, "versao": versao})
 }
 
 func (s *Servidor) apagarObra(w http.ResponseWriter, r *http.Request) {

@@ -114,6 +114,8 @@ export interface Laudo {
   imagemLocalizacao?: Blob;
   criadoEm: number;
   atualizadoEm: number;
+  /** versão no servidor em que esta cópia se baseia (salvar em cima de versão velha é recusado) */
+  versao?: number;
 }
 
 export interface Usuario {

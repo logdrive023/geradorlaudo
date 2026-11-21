@@ -143,7 +143,7 @@ func data(v int64) time.Time {
 
 func (b *Banco) ListarLaudos(ctx context.Context, u conta.Usuario) ([]laudo.Registro, error) {
 	rows, err := b.pool.Query(ctx, `select l.id::text, l.tipo, l.titulo, l.status, l.dados, l.textos, l.conclusao, l.usuario_id::text,
-			l.criado_em, l.atualizado_em, (select count(*) from fotos f where f.laudo_id = l.id)
+			l.criado_em, l.atualizado_em, l.versao, (select count(*) from fotos f where f.laudo_id = l.id)
 		from laudos l where l.organizacao_id = $1 and l.excluido_em is null and pode_ver('laudo', l.id, l.usuario_id, $2::uuid, $3)
 		order by l.atualizado_em desc limit 5000`, u.OrganizacaoID, u.ID, string(u.Papel))
 	if err != nil {
@@ -166,7 +166,7 @@ func lerLaudo(r pgx.Row, comContagem bool) (laudo.Registro, error) {
 	var tipo string
 	var dados, textos []byte
 	var criado, atualizado time.Time
-	dest := []any{&l.ID, &tipo, &l.Titulo, &l.Status, &dados, &textos, &l.Conclusao, &l.UsuarioID, &criado, &atualizado}
+	dest := []any{&l.ID, &tipo, &l.Titulo, &l.Status, &dados, &textos, &l.Conclusao, &l.UsuarioID, &criado, &atualizado, &l.Versao}
 	if comContagem {
 		dest = append(dest, &l.Fotos)
 	}
@@ -186,29 +186,45 @@ func lerLaudo(r pgx.Row, comContagem bool) (laudo.Registro, error) {
 	return l, nil
 }
 
-func (b *Banco) SalvarLaudo(ctx context.Context, u conta.Usuario, l laudo.Registro) error {
+func (b *Banco) SalvarLaudo(ctx context.Context, u conta.Usuario, l laudo.Registro) (int, error) {
 	dados, _ := json.Marshal(l.Dados)
 	textos := []byte("{}")
 	if l.Textos != nil {
 		textos, _ = json.Marshal(l.Textos)
 	}
-	tag, err := b.pool.Exec(ctx, `insert into laudos (id, organizacao_id, usuario_id, tipo, titulo, status, dados, textos, conclusao, criado_em, atualizado_em)
+	// só grava se o app partiu da versão atual (ou é app antigo, versão 0); cada gravação sobe a versão
+	var versao int
+	err := b.pool.QueryRow(ctx, `insert into laudos (id, organizacao_id, usuario_id, tipo, titulo, status, dados, textos, conclusao, criado_em, atualizado_em)
 		values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
 		on conflict (id) do update set tipo = excluded.tipo, titulo = excluded.titulo, status = excluded.status, dados = excluded.dados,
-			textos = excluded.textos, conclusao = excluded.conclusao, atualizado_em = excluded.atualizado_em, excluido_em = null
-		where laudos.organizacao_id = excluded.organizacao_id and pode_ver('laudo', laudos.id, laudos.usuario_id, $3::uuid, $12)`,
-		l.ID, u.OrganizacaoID, u.ID, string(l.Tipo), l.Titulo, l.Status, dados, textos, l.Conclusao, data(l.CriadoEm), data(l.AtualizadoEm), string(u.Papel))
+			textos = excluded.textos, conclusao = excluded.conclusao, atualizado_em = excluded.atualizado_em, excluido_em = null,
+			versao = laudos.versao + 1
+		where laudos.organizacao_id = excluded.organizacao_id and pode_ver('laudo', laudos.id, laudos.usuario_id, $3::uuid, $12)
+			and ($13::int = 0 or laudos.versao = $13::int)
+		returning versao`,
+		l.ID, u.OrganizacaoID, u.ID, string(l.Tipo), l.Titulo, l.Status, dados, textos, l.Conclusao, data(l.CriadoEm), data(l.AtualizadoEm), string(u.Papel), l.Versao).Scan(&versao)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return 0, b.porQueNaoGravou(ctx, u, "laudos", "laudo", l.ID)
+	}
 	if err != nil {
-		return traduzir(err)
+		return 0, traduzir(err)
 	}
-	if tag.RowsAffected() == 0 { // id existe em outra organização
-		return laudo.ErrNaoEncontrado
+	return versao, nil
+}
+
+// porQueNaoGravou: a gravação não passou. Se o registro existe e a pessoa enxerga, foi versão velha (conflito).
+func (b *Banco) porQueNaoGravou(ctx context.Context, u conta.Usuario, tabela, tipo, id string) error {
+	var ve bool
+	err := b.pool.QueryRow(ctx, `select pode_ver($1, id, usuario_id, $3::uuid, $4) from `+tabela+` where id = $2 and organizacao_id = $5`,
+		tipo, id, u.ID, string(u.Papel), u.OrganizacaoID).Scan(&ve)
+	if err == nil && ve {
+		return laudo.ErrConflito
 	}
-	return nil
+	return laudo.ErrNaoEncontrado
 }
 
 func (b *Banco) LerLaudo(ctx context.Context, u conta.Usuario, id string) (laudo.Registro, []laudo.FotoRegistro, error) {
-	l, err := lerLaudo(b.pool.QueryRow(ctx, `select id::text, tipo, titulo, status, dados, textos, conclusao, usuario_id::text, criado_em, atualizado_em
+	l, err := lerLaudo(b.pool.QueryRow(ctx, `select id::text, tipo, titulo, status, dados, textos, conclusao, usuario_id::text, criado_em, atualizado_em, versao
 		from laudos where id = $1 and organizacao_id = $2 and excluido_em is null and pode_ver('laudo', id, usuario_id, $3::uuid, $4)`,
 		id, u.OrganizacaoID, u.ID, string(u.Papel)), false)
 	if err != nil {
@@ -536,7 +552,7 @@ func (b *Banco) ApagarLink(ctx context.Context, u conta.Usuario, id string) erro
 // LaudoPublico: o laudo pelo link, com fotos e os dados públicos do responsável técnico.
 func (b *Banco) LaudoPublico(ctx context.Context, token string) (laudo.Registro, []laudo.FotoRegistro, conta.Usuario, error) {
 	var autor conta.Usuario
-	l, err := lerLaudo(b.pool.QueryRow(ctx, `select id::text, tipo, titulo, status, dados, textos, conclusao, usuario_id::text, criado_em, atualizado_em
+	l, err := lerLaudo(b.pool.QueryRow(ctx, `select id::text, tipo, titulo, status, dados, textos, conclusao, usuario_id::text, criado_em, atualizado_em, versao
 		from laudos where link_token = $1 and excluido_em is null`, token), false)
 	if err != nil {
 		return l, nil, autor, traduzir(err)

@@ -22,7 +22,8 @@ type Registro struct {
 	UsuarioID    string            `json:"usuarioId"`
 	CriadoEm     int64             `json:"criadoEm"`
 	AtualizadoEm int64             `json:"atualizadoEm"`
-	Fotos        int               `json:"fotos"` // só na listagem
+	Versao       int               `json:"versao"` // sobe a cada gravação; 0 vindo do app = sem conferir (app antigo)
+	Fotos        int               `json:"fotos"`  // só na listagem
 }
 
 type Textos struct {
@@ -89,6 +90,8 @@ var (
 	ErrNaoEncontrado = errors.New("não encontrado")
 	ErrLimiteFotos   = errors.New("limite de fotos do laudo")
 	ErrPrecisaImagem = errors.New("foto nova precisa da imagem")
+	// ErrConflito: alguém salvou uma versão mais nova antes (o app junta ou guarda uma cópia).
+	ErrConflito = errors.New("conflito de versão")
 )
 
 var statusLaudo = map[string]bool{"rascunho": true, "conferencia": true, "concluido": true}

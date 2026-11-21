@@ -19,7 +19,8 @@ type Banco interface {
 	ApagarSessao(ctx context.Context, resumoToken []byte) error
 
 	ListarLaudos(ctx context.Context, u conta.Usuario) ([]laudo.Registro, error)
-	SalvarLaudo(ctx context.Context, u conta.Usuario, l laudo.Registro) error
+	// SalvarLaudo devolve a nova versão; laudo.ErrConflito se l.Versao não é a atual.
+	SalvarLaudo(ctx context.Context, u conta.Usuario, l laudo.Registro) (int, error)
 	LerLaudo(ctx context.Context, u conta.Usuario, id string) (laudo.Registro, []laudo.FotoRegistro, error)
 	// ApagarLaudo apaga o laudo e devolve as chaves dos arquivos para limpar o storage.
 	ApagarLaudo(ctx context.Context, u conta.Usuario, id string) ([]string, error)
@@ -38,7 +39,7 @@ type Banco interface {
 
 	// gestão de obras
 	ListarObras(ctx context.Context, u conta.Usuario) ([]obra.Registro, error)
-	SalvarObra(ctx context.Context, u conta.Usuario, o obra.Registro) error
+	SalvarObra(ctx context.Context, u conta.Usuario, o obra.Registro) (int, error)
 	ApagarObra(ctx context.Context, u conta.Usuario, id string) ([]string, error)
 	ChavesFotoObra(ctx context.Context, u conta.Usuario, obraID, fotoID string) (imagem, miniatura string, err error)
 	ContarFotosObra(ctx context.Context, u conta.Usuario, obraID string) (int, error)

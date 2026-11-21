@@ -169,8 +169,33 @@ db.fotos.hook('deleting', (pk, f, tx) => { if (!daNuvem(tx)) { fotosPend.delete(
 
 const registroLaudo = (l: Laudo) => ({
   tipo: l.tipo, titulo: l.titulo, status: l.status, dados: l.dados, conclusao: l.conclusao, textos: l.textos,
-  criadoEm: l.criadoEm, atualizadoEm: l.atualizadoEm,
+  criadoEm: l.criadoEm, atualizadoEm: l.atualizadoEm, versao: l.versao ?? 0,
 });
+
+/** Guarda a versão que o servidor deu, sem marcar o registro para subir de novo. */
+async function guardarVersao(tabela: 'laudos' | 'obras', id: string, versao: number) {
+  await db.transaction('rw', db[tabela], async (tx) => {
+    (tx as unknown as Record<symbol, boolean>)[DA_NUVEM] = true;
+    await db[tabela].update(id, { versao });
+  });
+}
+
+/**
+ * Outra pessoa salvou este laudo antes (412). Nada se perde: o que estava aqui vira uma cópia
+ * "(sua versão)", com as fotos, e o laudo original recebe a versão do servidor.
+ */
+async function conflitoLaudo(l: Laudo) {
+  const id = novoId();
+  const fotos = await db.fotos.where('laudoId').equals(l.id).toArray();
+  await db.transaction('rw', db.laudos, db.fotos, async () => {
+    await db.laudos.add({ ...l, id, titulo: `${l.titulo} (sua versão)`, versao: 0, criadoEm: Date.now(), atualizadoEm: Date.now() });
+    await db.fotos.bulkAdd(fotos.map((f) => ({ ...f, id: novoId(), laudoId: id })));
+  });
+  fotos.forEach((f) => fotosPend.delete(f.id)); // as fotos do original seguem a versão do servidor
+  await baixarLaudo(l.id, l.usuarioId);
+  emitir({ tipo: 'erro', mensagem: `"${l.titulo}" foi alterado em outro aparelho. Trouxemos a versão mais nova e guardamos a sua como "${l.titulo} (sua versão)".` });
+}
+const conflito = (e: unknown) => e instanceof ErroServidor && e.status === 412;
 const registroFoto = (f: Foto) => ({
   ordem: f.ordem, nomeArquivo: f.nomeArquivo, largura: f.largura, altura: f.altura, tiradaEm: f.tiradaEm, gps: f.gps,
   status: f.status, analise: f.analise, observacao: f.observacao, erro: f.erro, criadoEm: f.criadoEm,
@@ -220,7 +245,16 @@ async function enviar() {
       laudosPend.delete(id);
       const l = await db.laudos.get(id);
       if (!l) continue;
-      await passo(async () => { await api(`/api/laudos/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(registroLaudo(l)) }); conhecer(id); }, () => laudosPend.add(id));
+      await passo(async () => {
+        try {
+          const r = await api<{ versao?: number }>(`/api/laudos/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(registroLaudo(l)) });
+          if (r?.versao) await guardarVersao('laudos', id, r.versao);
+        } catch (e) {
+          if (!conflito(e)) throw e;
+          await conflitoLaudo(l);
+        }
+        conhecer(id);
+      }, () => laudosPend.add(id));
     }
     for (const id of [...fotosPend]) {
       const f = await db.fotos.get(id);
@@ -283,7 +317,7 @@ export function sincronizar(usuarioId: string): Promise<void> {
         const l = locais.get(s.id);
         if (l && laudosPend.has(s.id)) continue; // edição local ainda não subiu: não sobrescreve
         if (l && l.atualizadoEm > s.atualizadoEm) { laudosPend.add(s.id); continue; } // o aparelho tem a versão mais nova: sobe
-        if (!l || l.atualizadoEm < s.atualizadoEm) {
+        if (!l || l.atualizadoEm < s.atualizadoEm || (s.versao && (l.versao ?? 0) !== s.versao)) {
           try { await baixarLaudo(s.id, usuarioId); } catch (e) { if (e instanceof ErroServidor && e.status === 401) throw e; }
         }
       }
@@ -384,8 +418,38 @@ db.obraFotos.hook('deleting', (pk, f, tx) => { if (!daNuvem(tx)) { fotosObraPend
 
 /** A obra trafega como {id, nome, status, dados}; "dados" é o resto do documento. */
 function registroObra(o: Obra) {
-  const { id, nome, status, usuarioId: _u, criadoEm, atualizadoEm, ...dados } = o;
-  return { id, nome, status, dados, criadoEm, atualizadoEm };
+  const { id, nome, status, usuarioId: _u, criadoEm, atualizadoEm, versao, ...dados } = o;
+  return { id, nome, status, dados, criadoEm, atualizadoEm, versao: versao ?? 0 };
+}
+
+/** Junta listas pelo id: fica o que está no servidor e entra o que só existe aqui. */
+function juntarPorId<T extends { id: string }>(servidor: T[] = [], local: T[] = []): T[] {
+  const ids = new Set(servidor.map((x) => x.id));
+  return [...servidor, ...local.filter((x) => !ids.has(x.id))];
+}
+
+/**
+ * Outra pessoa salvou esta obra antes (412). Junta as duas: vale o que está no servidor e entram
+ * as etapas, diários, lançamentos e compras que só existem aqui. Depois sobe a obra juntada.
+ */
+async function conflitoObra(o: Obra) {
+  const { obras } = await api<{ obras: RegistroObraServidor[] }>('/api/obras');
+  const s = obras.find((x) => x.id === o.id);
+  if (!s) throw new ErroServidor(404, 'Esta obra não está mais no servidor.');
+  const d = s.dados as Partial<Obra>;
+  const junta: Obra = {
+    ...VAZIA, ...o, ...d, id: o.id, nome: s.nome, status: s.status, usuarioId: o.usuarioId, criadoEm: s.criadoEm,
+    etapas: juntarPorId(d.etapas, o.etapas), diarios: juntarPorId(d.diarios, o.diarios),
+    lancamentos: juntarPorId(d.lancamentos, o.lancamentos), compras: juntarPorId(d.compras, o.compras),
+    laudoIds: [...new Set([...(d.laudoIds ?? []), ...o.laudoIds])],
+    atualizadoEm: Math.max(Date.now(), s.atualizadoEm + 1), versao: s.versao,
+  };
+  const r = await api<{ versao?: number }>(`/api/obras/${o.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(registroObra(junta)) });
+  await db.transaction('rw', db.obras, async (tx) => {
+    (tx as unknown as Record<symbol, boolean>)[DA_NUVEM] = true;
+    await db.obras.put({ ...junta, versao: r?.versao ?? s.versao });
+  });
+  emitir({ tipo: 'erro', mensagem: `A obra "${s.nome}" foi alterada em outro aparelho. Juntamos as duas versões: confira.` });
 }
 
 type Passo = (fn: () => Promise<void>, devolver: () => void) => Promise<void>;
@@ -404,7 +468,13 @@ async function enviarObras(passo: Passo) {
     const o = await db.obras.get(id);
     if (!o) continue;
     await passo(async () => {
-      await api(`/api/obras/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(registroObra(o)) });
+      try {
+        const r = await api<{ versao?: number }>(`/api/obras/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(registroObra(o)) });
+        if (r?.versao) await guardarVersao('obras', id, r.versao);
+      } catch (e) {
+        if (!conflito(e)) throw e;
+        await conflitoObra(o);
+      }
       conhecerObra(id);
     }, () => obrasPend.add(id));
   }
@@ -422,7 +492,7 @@ async function enviarObras(passo: Passo) {
   }
 }
 
-interface RegistroObraServidor { id: string; nome: string; status: Obra['status']; dados: Omit<Obra, 'id' | 'nome' | 'status' | 'usuarioId' | 'criadoEm' | 'atualizadoEm'>; criadoEm: number; atualizadoEm: number }
+interface RegistroObraServidor { id: string; nome: string; status: Obra['status']; dados: Omit<Obra, 'id' | 'nome' | 'status' | 'usuarioId' | 'criadoEm' | 'atualizadoEm' | 'versao'>; criadoEm: number; atualizadoEm: number; versao?: number }
 
 const VAZIA = { endereco: '', cliente: '', etapas: [], diarios: [], lancamentos: [], compras: [], laudoIds: [] };
 
@@ -433,8 +503,8 @@ async function sincronizarObras(usuarioId: string) {
     const l = locais.get(s.id);
     if (l && obrasPend.has(s.id)) continue; // edição local ainda não subiu: não sobrescreve
     if (l && l.atualizadoEm > s.atualizadoEm) { obrasPend.add(s.id); continue; } // o aparelho tem a versão mais nova: sobe
-    if (l && l.atualizadoEm >= s.atualizadoEm) continue;
-    const o: Obra = { ...VAZIA, ...s.dados, id: s.id, nome: s.nome, status: s.status, usuarioId: l?.usuarioId ?? usuarioId, criadoEm: s.criadoEm, atualizadoEm: s.atualizadoEm };
+    if (l && l.atualizadoEm >= s.atualizadoEm && !(s.versao && (l.versao ?? 0) !== s.versao)) continue;
+    const o: Obra = { ...VAZIA, ...s.dados, id: s.id, nome: s.nome, status: s.status, usuarioId: l?.usuarioId ?? usuarioId, criadoEm: s.criadoEm, atualizadoEm: s.atualizadoEm, versao: s.versao };
     // fotos do diário que ainda não estão no aparelho
     const ids = o.diarios.flatMap((d) => d.fotoIds);
     const tem = new Set((await db.obraFotos.where('obraId').equals(o.id).primaryKeys()) as string[]);

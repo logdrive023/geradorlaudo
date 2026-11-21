@@ -30,6 +30,7 @@ type Registro struct {
 	UsuarioID    string          `json:"usuarioId,omitempty"`
 	CriadoEm     int64           `json:"criadoEm"`
 	AtualizadoEm int64           `json:"atualizadoEm"`
+	Versao       int             `json:"versao"` // sobe a cada gravação; 0 vindo do app = sem conferir
 }
 
 // Validar confere tamanho, nome e status; o JSON precisa ser um objeto.
