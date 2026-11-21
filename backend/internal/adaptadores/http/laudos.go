@@ -106,6 +106,19 @@ func (s *Servidor) laudoPublico(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	l.UsuarioID = ""
+	for i := range fotos { // o cliente vê só o que o engenheiro aprovou
+		fotos[i].Observacao, fotos[i].Erro = "", ""
+		if a := fotos[i].Analise; a != nil {
+			a.PorIA = nil
+			aceitos := a.Achados[:0]
+			for _, x := range a.Achados {
+				if x.Aceito != nil && *x.Aceito {
+					aceitos = append(aceitos, x)
+				}
+			}
+			a.Achados = aceitos
+		}
+	}
 	w.Header().Set("Cache-Control", "no-store")
 	json200(w, map[string]any{"laudo": l, "fotos": fotos, "autor": map[string]string{
 		"nome": autor.Nome, "profissao": autor.Profissao, "registro": autor.Registro, "telefone": autor.Telefone, "cidade": autor.Cidade, "uf": autor.UF,
@@ -270,6 +283,10 @@ func (s *Servidor) salvarLaudo(w http.ResponseWriter, r *http.Request) {
 		_ = json.Unmarshal(corpo, &cab)
 		if cab.Status == "concluido" {
 			erro(w, http.StatusForbidden, "Só o engenheiro responsável conclui o laudo.")
+			return
+		}
+		if atual, _, err := s.Banco.LerLaudo(r.Context(), u, r.PathValue("id")); err == nil && atual.Status == "concluido" {
+			erro(w, http.StatusForbidden, "Laudo concluído: só o engenheiro responsável altera ou reabre.")
 			return
 		}
 		r.Body = io.NopCloser(strings.NewReader(string(corpo)))

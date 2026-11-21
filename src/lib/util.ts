@@ -1,6 +1,8 @@
 export const novoId = () => crypto.randomUUID();
 
-export const hoje = () => new Date().toISOString().slice(0, 10);
+/** Data AAAA-MM-DD no fuso do aparelho (toISOString é UTC: depois das 21h em Brasília já seria amanhã). */
+export const dataLocal = (d: Date = new Date()) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+export const hoje = () => dataLocal();
 
 export function dataBR(v?: string | number): string {
   if (v === undefined || v === '') return '';

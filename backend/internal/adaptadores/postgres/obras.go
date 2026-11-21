@@ -34,7 +34,7 @@ func lerObra(r pgx.Row) (obra.Registro, error) {
 
 func (b *Banco) ListarObras(ctx context.Context, u conta.Usuario) ([]obra.Registro, error) {
 	rows, err := b.pool.Query(ctx, `select `+colsObra+` from obras where organizacao_id = $1 and pode_ver('obra', id, usuario_id, $2::uuid, $3)
-		order by atualizado_em desc limit 300`, u.OrganizacaoID, u.ID, string(u.Papel))
+		order by atualizado_em desc limit 2000`, u.OrganizacaoID, u.ID, string(u.Papel))
 	if err != nil {
 		return nil, traduzir(err)
 	}

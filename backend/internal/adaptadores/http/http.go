@@ -263,8 +263,13 @@ func (l *limitador) envolver(next http.Handler) http.Handler {
 }
 
 func ipDe(r *http.Request) string {
-	if f := r.Header.Get("X-Forwarded-For"); f != "" { // atrás do proxy do Render
-		return strings.TrimSpace(strings.Split(f, ",")[0])
+	if f := r.Header.Get("X-Forwarded-For"); f != "" { // atrás do proxy do Render: vale o último (o que o proxy acrescentou)
+		partes := strings.Split(f, ",")
+		for i := len(partes) - 1; i >= 0; i-- {
+			if ip := strings.TrimSpace(partes[i]); ip != "" {
+				return ip
+			}
+		}
 	}
 	h, _, err := net.SplitHostPort(r.RemoteAddr)
 	if err != nil {

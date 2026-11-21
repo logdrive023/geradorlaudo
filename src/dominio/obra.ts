@@ -1,4 +1,5 @@
 import { etapasParaTipo, type EtapaModelo, type NivelEtapa } from './etapas';
+import { dataLocal } from '../lib/util';
 
 /**
  * Gestão de obras: a obra é um documento só (etapas, diário de obra, financeiro, compras e laudos ligados).
@@ -126,7 +127,7 @@ export const REGIME: Record<Regime, string> = {
 
 // ---------- cálculos ----------
 
-export const hojeISO = () => new Date().toISOString().slice(0, 10);
+export const hojeISO = () => dataLocal();
 export const diasEntre = (a: string, b: string) => Math.round((new Date(`${b}T12:00:00`).getTime() - new Date(`${a}T12:00:00`).getTime()) / 864e5);
 
 /** Avanço físico: média das etapas ponderada pelo orçado (sem orçado, peso igual). */
@@ -199,7 +200,7 @@ export type DadosNovaObra = FichaObra & { nome: string; endereco: string; client
 export function etapasDoTipo(modelos: EtapaModelo[], tipo: TipoObra | undefined, novoId: () => string, inicio?: string, fim?: string): Etapa[] {
   const lista = etapasParaTipo(modelos, tipo);
   const total = inicio && fim ? Math.max(1, diasEntre(inicio, fim)) : 0;
-  const dia = (n: number) => { const d = new Date(`${inicio}T12:00:00`); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); };
+  const dia = (n: number) => { const d = new Date(`${inicio}T12:00:00`); d.setDate(d.getDate() + n); return dataLocal(d); };
   return lista.map((e, i) => ({
     id: novoId(), nome: e.nome, nivel: e.nivel, percentual: 0, checklist: e.checklist.map((t) => ({ id: novoId(), texto: t, feito: false })),
     ...(total ? { inicioPrev: dia(Math.round((i * total) / lista.length)), fimPrev: dia(Math.round(((i + 1) * total) / lista.length)) } : {}),
@@ -231,7 +232,7 @@ export function prazoObra(o: Pick<Obra, 'inicio' | 'fim'>, hoje = hojeISO()) {
  */
 export function resumoSemana(o: Obra, hoje = hojeISO()): string {
   const ini = new Date(`${hoje}T12:00:00`); ini.setDate(ini.getDate() - 6);
-  const de = ini.toISOString().slice(0, 10);
+  const de = dataLocal(ini);
   const br = (d: string) => d.split('-').reverse().slice(0, 2).join('/');
   const dias = o.diarios.filter((d) => d.data >= de && d.data <= hoje).sort((a, b) => a.data.localeCompare(b.data));
   const real = avancoFisico(o), prev = avancoPrevisto(o, hoje);

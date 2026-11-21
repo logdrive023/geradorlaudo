@@ -1,6 +1,6 @@
 import { CalendarHeart } from 'lucide-react';
 import { NOME_UF, UFS, cidadesDe, feriadosDoAno, type Local } from '../../lib/feriados';
-import { cx } from '../../lib/util';
+import { cx, dataLocal } from '../../lib/util';
 
 const CHAVE = 'laudotech.feriados.local';
 export function lerLocal(padrao: Local): Local {
@@ -22,7 +22,7 @@ export const corDe = (f: { tipo: string; escopo: keyof typeof COR_FERIADO }) => 
 export function LegendaFeriados({ local, aoMudar }: { local: Local; aoMudar: (l: Local) => void }) {
   const mudar = (l: Local) => { gravarLocal(l); aoMudar(l); };
   const cidades = cidadesDe(local.uf);
-  const hoje = new Date().toISOString().slice(0, 10);
+  const hoje = dataLocal();
   const proximos = [...feriadosDoAno(new Date().getFullYear(), local), ...feriadosDoAno(new Date().getFullYear() + 1, local)].filter((f) => f.data >= hoje).slice(0, 4);
   const SEL = 'h-11 w-full min-w-0 rounded-xl border border-borda-forte bg-sup px-3 text-sm font-bold text-texto outline-none focus:border-tinta';
   return (

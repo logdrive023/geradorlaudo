@@ -4,7 +4,7 @@ import { db } from '../db/db';
 import type { Acompanhamento, Foto, Laudo, StatusAcao } from '../dominio/modelo';
 import { GUT_EIXOS, GUT_SUGERIDA, STATUS_ACAO, dataCurta, itensPlano, planilhaPlano, reais, resumoPlano, type ItemPlano } from '../dominio/plano';
 import { Botao, Cartao, Dica, Entrada, SeloGravidade } from './ui';
-import { Rotulado } from './Pecas';
+import { Rotulado, lerReais } from './Pecas';
 import { baixar, cx } from '../lib/util';
 
 /** Grava o acompanhamento dentro do achado (sobe para o servidor junto com a foto). */
@@ -27,8 +27,7 @@ function Item({ i, aberto, alternar }: { i: ItemPlano; aberto: boolean; alternar
   const [custo, setCusto] = useState(i.acomp.custo != null ? String(i.acomp.custo).replace('.', ',') : '');
   const [resp, setResp] = useState(i.acomp.responsavel ?? '');
   const gravarCusto = () => {
-    const v = Number(custo.replace(/\./g, '').replace(',', '.'));
-    void salvar(i, { custo: custo.trim() && Number.isFinite(v) && v >= 0 ? v : undefined });
+    void salvar(i, { custo: lerReais(custo) }); // mesma leitura de valor do resto do app
   };
   return (
     <li className={cx('overflow-hidden rounded-2xl border bg-sup transition', aberto ? 'border-borda-forte shadow-[0_8px_24px_rgba(18,26,43,.06)]' : 'border-borda')}>

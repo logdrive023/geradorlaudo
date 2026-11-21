@@ -1,4 +1,5 @@
 import { GRAVIDADE, type Acompanhamento, type Achado, type Foto, type Gravidade, type Laudo, type StatusAcao } from './modelo';
+import { dataLocal } from '../lib/util';
 import { achadosValidos } from './regras';
 
 /**
@@ -27,7 +28,7 @@ export const GUT_EIXOS: { k: keyof Gut; nome: string; explica: string }[] = [
 ];
 export const pontosGut = (x: Gut) => x.g * x.u * x.t;
 
-const iso = (d: Date) => d.toISOString().slice(0, 10);
+const iso = (d: Date) => dataLocal(d);
 
 export function prazoSugerido(dataVistoria: string | undefined, g: Gravidade): string {
   const base = dataVistoria ? new Date(`${dataVistoria}T12:00:00`) : new Date();

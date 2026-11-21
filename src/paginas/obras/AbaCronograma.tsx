@@ -6,7 +6,7 @@ import { reais } from '../../dominio/plano';
 import { Botao, Cartao, Dica, Entrada } from '../../componentes/ui';
 import { Anel, BarraDupla, EntradaReais, ItemAbre, Ponto } from '../../componentes/Pecas';
 import { NIVEL_ETAPA, type NivelEtapa } from '../../dominio/etapas';
-import { cx, dataBR, novoId } from '../../lib/util';
+import { cx, dataBR, novoId, dataLocal } from '../../lib/util';
 
 const SITUACAO: Record<SituacaoEtapa, { nome: string; cls: string; cor: string }> = {
   nao_iniciada: { nome: 'Não iniciada', cls: 'bg-sup2 text-texto2', cor: 'var(--borda-forte)' },
@@ -23,7 +23,7 @@ function Gantt({ etapas, inicio, fim }: { etapas: Etapa[]; inicio: string; fim: 
   const t0 = new Date(`${inicio}T12:00:00`).getTime();
   const t1 = new Date(`${fim}T12:00:00`).getTime();
   const pos = (d: string) => Math.max(0, Math.min(100, ((new Date(`${d}T12:00:00`).getTime() - t0) / Math.max(1, t1 - t0)) * 100));
-  const hoje = pos(new Date().toISOString().slice(0, 10));
+  const hoje = pos(dataLocal());
   return (
     <div className="relative grid gap-1.5" aria-label="Linha do tempo das etapas">
       {/* linha de hoje: só sobre a área das barras (depois da coluna de nomes) */}
@@ -92,7 +92,7 @@ function EtapaItem({ obraId, e, aberto, alternar }: { obraId: string; e: Etapa; 
         <input type="range" min={0} max={100} step={5} value={e.percentual} aria-label="Percentual executado" className="w-full accent-[var(--obra)]"
           onChange={(ev) => set((x) => {
             x.percentual = Number(ev.target.value);
-            const hoje = new Date().toISOString().slice(0, 10);
+            const hoje = dataLocal();
             if (x.percentual > 0 && !x.inicioReal) x.inicioReal = hoje;
             if (x.percentual >= 100 && !x.fimReal) x.fimReal = hoje;
             if (x.percentual < 100) x.fimReal = undefined;

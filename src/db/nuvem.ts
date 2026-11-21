@@ -12,6 +12,9 @@ import { novoId, resumoSenha } from '../lib/util';
  */
 
 export const MAX_FOTOS_POR_LAUDO = 5; // fase de teste (o servidor também confere)
+// tamanho máximo das listas que o servidor devolve (backend: limit 5000 / 2000)
+const LIMITE_LAUDOS = 5000;
+const LIMITE_OBRAS = 2000;
 
 const CHAVE_TOKEN = 'laudotech.token';
 const base = () => SERVIDOR_PADRAO.replace(/\/$/, '');
@@ -113,10 +116,35 @@ const esquecer = (id: string) => { const c = lerConhecidos(); if (c.delete(id)) 
 
 // ---------- envio (o que mudou no aparelho sobe) ----------
 
-const laudosPend = new Set<string>();
-const laudosDel = new Set<string>();
-const fotosPend = new Set<string>();
-const fotosDel = new Map<string, string>(); // foto → laudo
+// Filas de envio guardadas no aparelho: fechar o app (ou ficar sem rede) não perde o que ainda não subiu.
+class FilaSet extends Set<string> {
+  private chave = '';
+  constructor(chave: string) {
+    super();
+    this.chave = chave;
+    try { for (const v of JSON.parse(localStorage.getItem(chave) ?? '[]') as string[]) super.add(v); } catch { /* vazia */ }
+  }
+  private gravar() { if (this.chave) try { localStorage.setItem(this.chave, JSON.stringify([...this])); } catch { /* modo privado */ } }
+  add(v: string) { super.add(v); this.gravar(); return this; }
+  delete(v: string) { const r = super.delete(v); this.gravar(); return r; }
+  clear() { super.clear(); this.gravar(); }
+}
+class FilaMap extends Map<string, string> {
+  private chave = '';
+  constructor(chave: string) {
+    super();
+    this.chave = chave;
+    try { for (const [k, v] of JSON.parse(localStorage.getItem(chave) ?? '[]') as [string, string][]) super.set(k, v); } catch { /* vazia */ }
+  }
+  private gravar() { if (this.chave) try { localStorage.setItem(this.chave, JSON.stringify([...this])); } catch { /* modo privado */ } }
+  set(k: string, v: string) { super.set(k, v); this.gravar(); return this; }
+  delete(k: string) { const r = super.delete(k); this.gravar(); return r; }
+  clear() { super.clear(); this.gravar(); }
+}
+const laudosPend = new FilaSet('laudotech.fila.laudos');
+const laudosDel = new FilaSet('laudotech.fila.laudos-apagar');
+const fotosPend = new FilaSet('laudotech.fila.fotos');
+const fotosDel = new FilaMap('laudotech.fila.fotos-apagar'); // foto → laudo
 let timer: ReturnType<typeof setTimeout> | undefined;
 let enviando = false;
 
@@ -253,6 +281,8 @@ export function sincronizar(usuarioId: string): Promise<void> {
       const locais = new Map((await db.laudos.toArray()).map((l) => [l.id, l]));
       for (const s of laudos) {
         const l = locais.get(s.id);
+        if (l && laudosPend.has(s.id)) continue; // edição local ainda não subiu: não sobrescreve
+        if (l && l.atualizadoEm > s.atualizadoEm) { laudosPend.add(s.id); continue; } // o aparelho tem a versão mais nova: sobe
         if (!l || l.atualizadoEm < s.atualizadoEm) {
           try { await baixarLaudo(s.id, usuarioId); } catch (e) { if (e instanceof ErroServidor && e.status === 401) throw e; }
         }
@@ -263,9 +293,11 @@ export function sincronizar(usuarioId: string): Promise<void> {
       try { primeiraVez = localStorage.getItem(CHAVE_CONHECIDOS) === null; } catch { /* modo privado */ }
       const conhecidos = primeiraVez ? new Set(locais.keys()) : lerConhecidos();
       const apagadosLa: string[] = [];
+      const listaCheia = laudos.length >= LIMITE_LAUDOS; // lista cortada: não dá para saber o que foi apagado
       for (const l of locais.values()) {
         if (noServidor.has(l.id) || l.usuarioId !== usuarioId) continue;
-        if (conhecidos.has(l.id)) { apagadosLa.push(l.id); continue; } // apagado no servidor: não volta
+        if (listaCheia && conhecidos.has(l.id)) continue;
+        if (!primeiraVez && conhecidos.has(l.id)) { apagadosLa.push(l.id); continue; } // apagado no servidor: não volta
         laudosPend.add(l.id);
         (await db.fotos.where('laudoId').equals(l.id).primaryKeys()).forEach((fid) => fotosPend.add(fid as string));
       }
@@ -334,10 +366,10 @@ export async function abrirLaudoPublico(token: string): Promise<LaudoPublico> {
 
 // ================= gestão de obras (mesmo padrão dos laudos) =================
 
-const obrasPend = new Set<string>();
-const obrasDel = new Set<string>();
-const fotosObraPend = new Map<string, string>(); // foto → obra
-const fotosObraDel = new Map<string, string>();
+const obrasPend = new FilaSet('laudotech.fila.obras');
+const obrasDel = new FilaSet('laudotech.fila.obras-apagar');
+const fotosObraPend = new FilaMap('laudotech.fila.fotos-obra'); // foto → obra
+const fotosObraDel = new FilaMap('laudotech.fila.fotos-obra-apagar');
 const CHAVE_OBRAS = 'laudotech.nuvem.obras';
 const lerObrasConhecidas = (): Set<string> => { try { return new Set(JSON.parse(localStorage.getItem(CHAVE_OBRAS) || '[]') as string[]); } catch { return new Set(); } };
 const gravarObrasConhecidas = (c: Set<string>) => { try { localStorage.setItem(CHAVE_OBRAS, JSON.stringify([...c])); } catch { /* modo privado */ } };
@@ -399,6 +431,8 @@ async function sincronizarObras(usuarioId: string) {
   const locais = new Map((await db.obras.toArray()).map((o) => [o.id, o]));
   for (const s of obras) {
     const l = locais.get(s.id);
+    if (l && obrasPend.has(s.id)) continue; // edição local ainda não subiu: não sobrescreve
+    if (l && l.atualizadoEm > s.atualizadoEm) { obrasPend.add(s.id); continue; } // o aparelho tem a versão mais nova: sobe
     if (l && l.atualizadoEm >= s.atualizadoEm) continue;
     const o: Obra = { ...VAZIA, ...s.dados, id: s.id, nome: s.nome, status: s.status, usuarioId: l?.usuarioId ?? usuarioId, criadoEm: s.criadoEm, atualizadoEm: s.atualizadoEm };
     // fotos do diário que ainda não estão no aparelho
@@ -422,8 +456,10 @@ async function sincronizarObras(usuarioId: string) {
   try { primeira = localStorage.getItem(CHAVE_OBRAS) === null; } catch { /* modo privado */ }
   const conhecidas = lerObrasConhecidas();
   const apagadas: string[] = [];
+  const obrasCheia = obras.length >= LIMITE_OBRAS; // lista cortada: não dá para saber o que foi apagado
   for (const o of locais.values()) {
     if (noServidor.has(o.id) || o.usuarioId !== usuarioId) continue;
+    if (obrasCheia && conhecidas.has(o.id)) continue;
     if (!primeira && conhecidas.has(o.id)) { apagadas.push(o.id); continue; } // apagada no servidor: não volta
     obrasPend.add(o.id);
     (await db.obraFotos.where('obraId').equals(o.id).primaryKeys()).forEach((fid) => fotosObraPend.set(fid as string, o.id));

@@ -57,6 +57,7 @@ async function analisar(laudo: Laudo, foto: Foto): Promise<Saida & { porIA?: Res
 export async function analisarFoto(laudo: Laudo, fotoId: string) {
   const foto = await db.fotos.get(fotoId);
   if (!foto) return;
+  emAnalise.add(fotoId);
   await db.fotos.update(fotoId, { status: 'analisando', erro: undefined });
   try {
     const { r, origem, contrato, ia, porIA } = await analisar(laudo, foto);
@@ -69,12 +70,18 @@ export async function analisarFoto(laudo: Laudo, fotoId: string) {
     await db.fotos.update(fotoId, { status: 'analisada', analise });
   } catch (e) {
     await db.fotos.update(fotoId, { status: 'erro', erro: (e as Error).message });
+  } finally {
+    emAnalise.delete(fotoId);
   }
 }
 
+/** Fotos sendo analisadas agora neste aparelho (as outras "analisando" ficaram presas). */
+const emAnalise = new Set<string>();
+
 /** Analisa as fotos pendentes, 3 por vez (2 no Gemini grátis, que tem limite por minuto). */
 export async function analisarPendentes(laudo: Laudo, aoAvancar?: (feitas: number, total: number) => void) {
-  const fila = (await fotosDoLaudo(laudo.id)).filter((f) => f.status === 'pendente' || f.status === 'erro');
+  // "analisando" sem análise rodando neste aparelho = ficou presa (o app fechou no meio): entra de novo
+  const fila = (await fotosDoLaudo(laudo.id)).filter((f) => f.status === 'pendente' || f.status === 'erro' || (f.status === 'analisando' && !emAnalise.has(f.id)));
   let feitas = 0;
   const trabalhador = async () => {
     for (let f = fila.shift(); f; f = fila.shift()) {

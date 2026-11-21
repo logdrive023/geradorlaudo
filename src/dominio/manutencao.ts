@@ -1,4 +1,5 @@
 import type { Foto, Laudo } from './modelo';
+import { dataLocal } from '../lib/util';
 import { achadosValidos } from './regras';
 
 /**
@@ -99,7 +100,7 @@ export function proxima(i: ItemManutencao, criadoEm: string): string {
   const base = new Date(`${i.ultima || criadoEm}T12:00:00`);
   const p = PERIODO[i.periodicidade];
   if (p.dias) base.setDate(base.getDate() + p.dias); else base.setMonth(base.getMonth() + p.meses);
-  return base.toISOString().slice(0, 10);
+  return dataLocal(base);
 }
 
 /** Planilha (CSV com ; e BOM, abre certo no Excel). */

@@ -65,6 +65,7 @@ func Publico(dados json.RawMessage, comFinanceiro bool) json.RawMessage {
 	if !comFinanceiro {
 		delete(obj, "lancamentos")
 		delete(obj, "compras")
+		delete(obj, "orcamentoPrevisto")
 		if raw, ok := obj["etapas"]; ok { // esconde o orçado de cada etapa
 			var etapas []map[string]json.RawMessage
 			if json.Unmarshal(raw, &etapas) == nil {

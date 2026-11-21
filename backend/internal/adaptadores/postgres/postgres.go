@@ -145,7 +145,7 @@ func (b *Banco) ListarLaudos(ctx context.Context, u conta.Usuario) ([]laudo.Regi
 	rows, err := b.pool.Query(ctx, `select l.id::text, l.tipo, l.titulo, l.status, l.dados, l.textos, l.conclusao, l.usuario_id::text,
 			l.criado_em, l.atualizado_em, (select count(*) from fotos f where f.laudo_id = l.id)
 		from laudos l where l.organizacao_id = $1 and l.excluido_em is null and pode_ver('laudo', l.id, l.usuario_id, $2::uuid, $3)
-		order by l.atualizado_em desc limit 500`, u.OrganizacaoID, u.ID, string(u.Papel))
+		order by l.atualizado_em desc limit 5000`, u.OrganizacaoID, u.ID, string(u.Papel))
 	if err != nil {
 		return nil, err
 	}
@@ -395,7 +395,7 @@ func (b *Banco) SalvarFoto(ctx context.Context, u conta.Usuario, f laudo.FotoReg
 		t := data(a.AnalisadoEm)
 		analisado = &t
 	}
-	_, err = tx.Exec(ctx, `insert into fotos (id, laudo_id, ordem, nome_arquivo, imagem_chave, miniatura_chave, bytes, largura, altura,
+	tag, err := tx.Exec(ctx, `insert into fotos (id, laudo_id, ordem, nome_arquivo, imagem_chave, miniatura_chave, bytes, largura, altura,
 			tirada_em, gps, status, ambiente, elemento, legenda, sem_anomalia, qualidade_foto, contrato_ia, origem_analise, analisado_em,
 			observacao, erro, criado_em)
 		values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11::point, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23)
@@ -412,6 +412,9 @@ func (b *Banco) SalvarFoto(ctx context.Context, u conta.Usuario, f laudo.FotoReg
 		tirada, gps, f.Status, amb, elem, leg, sem, qual, contrato, origem, analisado, nulo(f.Observacao), nulo(f.Erro), data(f.CriadoEm))
 	if err != nil {
 		return traduzir(err)
+	}
+	if tag.RowsAffected() == 0 { // o id é de uma foto de outro laudo: não mexe nos achados dela
+		return laudo.ErrNaoEncontrado
 	}
 
 	var porIA any

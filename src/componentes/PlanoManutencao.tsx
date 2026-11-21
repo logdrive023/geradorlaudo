@@ -4,9 +4,9 @@ import { tocarLaudo } from '../db/db';
 import type { Foto, Laudo } from '../dominio/modelo';
 import { CATALOGO, PERIODO, RESPONSAVEL, criarPlano, gravarPlano, lerPlano, planilhaManutencao, proxima, type ItemManutencao, type Periodicidade, type PlanoManutencao, type Responsavel } from '../dominio/manutencao';
 import { Botao, Cartao, Dica } from './ui';
-import { baixar, cx, novoId } from '../lib/util';
+import { baixar, cx, novoId, dataLocal } from '../lib/util';
 
-const hoje = () => new Date().toISOString().slice(0, 10);
+const hoje = () => dataLocal();
 const br = (d: string) => d.split('-').reverse().join('/');
 const SEL = 'h-9 rounded-lg border border-borda-forte bg-sup px-2 text-xs font-bold text-texto';
 

@@ -17,9 +17,13 @@ export function Escolha<T extends string>({ valor, aoMudar, opcoes, vazio, class
 
 /** Lê "1.234,56" ou "1234.5" como número (vazio = undefined). */
 export function lerReais(t: string): number | undefined {
-  const s = t.trim();
+  const s = t.trim().replace(/^R\$\s*/i, '').replace(/\s/g, '');
   if (!s) return undefined;
-  const v = Number(s.includes(',') ? s.replace(/\./g, '').replace(',', '.') : s);
+  let n: string;
+  if (s.includes(',')) n = s.replace(/\./g, '').replace(',', '.'); // 1.234,56
+  else if (/^\d{1,3}(\.\d{3})+$/.test(s)) n = s.replace(/\./g, ''); // 1.500 = mil e quinhentos
+  else n = s; // 1234.5
+  const v = Number(n);
   return Number.isFinite(v) && v >= 0 ? v : undefined;
 }
 const mostrarReais = (v?: number) => (v == null ? '' : v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
