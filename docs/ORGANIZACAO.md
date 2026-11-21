@@ -20,7 +20,7 @@ Proteções:
 - O assistente recebe a obra **sem** financeiro; quando ele salva, o servidor mantém o financeiro que já estava lá.
 - Convite: o admin gera um link (vale 7 dias, uso único); a própria pessoa escolhe a senha. Ninguém mais vê a senha.
 
-Código: `conta.Pode(papel, acao)` em `backend/internal/dominio/conta/conta.go` é a matriz de permissões.
+Código: `conta.Pode(papel, acao)` em `internal/dominio/conta/conta.go` (repo geradorlaudo-backend) é a matriz de permissões.
 
 ## Estrutura no banco (migração 0006)
 

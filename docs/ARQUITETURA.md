@@ -1,4 +1,6 @@
-# Arquitetura — backend Go + Postgres (desenho, ainda não implementado)
+# Arquitetura — backend Go + Postgres
+
+> O código do backend agora fica no repositório privado **logdrive023/geradorlaudo-backend** (branch `feat/react-vite-ia`). Este documento é o desenho original.
 
 Hoje o LaudoTech roda **só no navegador** (React + IndexedDB/Dexie). Este documento desenha o próximo passo:
 uma API em **Go** organizada por **domínio** e um banco **Postgres**. Nada daqui foi criado ainda.

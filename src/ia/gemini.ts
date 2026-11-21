@@ -1,5 +1,5 @@
 import { ApiError, GoogleGenAI } from '@google/genai';
-import contratoV1 from '../../backend/contratos/analise-foto.v1.schema.json';
+import contratoV1 from './contratos/analise-foto.v1.schema.json';
 import { type Gravidade } from '../dominio/modelo';
 import { instrucaoAnalise, lerPrompt } from './instrucoes';
 import { blobParaBase64, tipoImagem } from '../lib/imagem';
@@ -21,7 +21,7 @@ export const MODELO_GEMINI_PADRAO = 'gemini-3.8-flash';
 
 const GRAUS: Gravidade[] = ['critico', 'medio', 'minimo'];
 
-/** Contrato analise-foto.v1: o MESMO arquivo que o backend Go usa (backend/contratos). */
+/** Contrato analise-foto.v1: cópia do arquivo que o backend Go usa (repo geradorlaudo-backend, pasta contratos). Mudou lá, copie aqui. */
 const { $id: _id, title: _t, ...ESQUEMA } = contratoV1;
 void _id; void _t;
 

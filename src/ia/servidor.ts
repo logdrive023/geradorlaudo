@@ -2,8 +2,8 @@ import type { PedidoAnalise, ResultadoIA } from './tipos';
 import { instrucaoAnalise, lerPrompt } from './instrucoes';
 
 /**
- * Motor "Servidor LaudoTech": o app chama a API Go (backend/) e a chave da IA fica só no servidor.
- * Contrato da resposta: analise-foto.v1 (backend/contratos).
+ * Motor "Servidor LaudoTech": o app chama a API Go (repo geradorlaudo-backend) e a chave da IA fica só no servidor.
+ * Contrato da resposta: analise-foto.v1 (src/ia/contratos, cópia do backend).
  */
 
 // Sem VITE_API_URL: em produção, a API no Render; em desenvolvimento, a API local.

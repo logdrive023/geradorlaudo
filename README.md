@@ -3,8 +3,8 @@
 **Fotos viram laudo.** Você manda as fotos da vistoria, a Lia (IA) analisa e escreve tudo — ambiente, legenda,
 achados, grau de risco, causa e recomendação — e você só confere. O laudo sai no padrão, pronto para assinar.
 
-Versão de teste: roda **só no navegador** (dados no IndexedDB). O backend Go + Postgres está desenhado em
-[docs/ARQUITETURA.md](docs/ARQUITETURA.md).
+Funciona offline no navegador (IndexedDB) e sincroniza com a API Go + Postgres, que fica no repositório
+privado **logdrive023/geradorlaudo-backend** (branch `feat/react-vite-ia`). Desenho: [docs/ARQUITETURA.md](docs/ARQUITETURA.md).
 
 ## Rodar
 

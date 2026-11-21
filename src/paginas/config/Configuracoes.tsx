@@ -175,7 +175,7 @@ function IA({ cfg }: { cfg: Configuracao }) {
 
       {cfg.motorIA === 'servidor' && (
         <Cartao className="grid gap-4 p-5">
-          <Campo rotulo="Endereço do servidor" ajuda="A API Go do LaudoTech (pasta backend/). Localmente: http://localhost:8080. No Render: o endereço do serviço laudotech-api.">
+          <Campo rotulo="Endereço do servidor" ajuda="A API Go do LaudoTech. Localmente: http://localhost:8080. No Render: o endereço do serviço laudotech-api.">
             <Entrada value={url} onChange={(e) => setUrl(e.target.value)} placeholder={SERVIDOR_PADRAO} inputMode="url" />
           </Campo>
           <div className="flex flex-wrap gap-2">

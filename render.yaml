@@ -1,4 +1,4 @@
-# Render — LaudoTech: site estático (app) + API Go (backend/).
+# Render — LaudoTech: site estático (app) + API Go (repo logdrive023/geradorlaudo-backend).
 # New → Blueprint → este repo. Publica a branch feat/react-vite-ia.
 services:
   - type: web
@@ -18,14 +18,14 @@ services:
         source: /*
         destination: /index.html
 
-  # API Go (backend/). A chave do Gemini é preenchida no painel (sync: false), nunca no repositório.
+  # API Go: código no repo privado geradorlaudo-backend (branch feat/react-vite-ia). A chave do Gemini é preenchida no painel (sync: false), nunca no repositório.
   - type: web
     name: laudotech-api
     runtime: docker
     plan: free
     region: virginia
+    repo: https://github.com/logdrive023/geradorlaudo-backend
     branch: feat/react-vite-ia
-    rootDir: backend
     dockerfilePath: ./Dockerfile
     healthCheckPath: /api/health
     autoDeploy: false

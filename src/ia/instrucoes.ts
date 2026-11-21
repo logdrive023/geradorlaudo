@@ -6,7 +6,7 @@ import { LISTA_TIPOS, TIPOS } from '../dominio/tipos';
 /**
  * TODOS os prompts da IA num lugar só. Os padrões ficam aqui; o que o usuário edita em
  * Ajustes › Prompts da IA fica no banco (tabela `prompts`) e vale por cima do padrão.
- * O backend Go tem os mesmos padrões (backend/internal/dominio/laudo/instrucoes.go).
+ * O backend Go tem os mesmos padrões (repo geradorlaudo-backend: internal/dominio/laudo/instrucoes.go).
  *
  * Marcadores trocados na hora de usar: {tipo} {normas} {foco} {anomalias} {sistemas} {contexto}
  */
