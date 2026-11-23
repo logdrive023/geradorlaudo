@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router';
+import { TrocarPlano } from './TrocarPlano';
+import { CenaCarregando } from '../../componentes/CenaCarregando';
 import { CalendarClock, CalendarDays, ExternalLink, Package, ReceiptText, RotateCw, Sparkles, Wallet } from 'lucide-react';
-import { cancelarPlano, lerCobrancas, mudarDiaCobranca, reativarPlano, type Cobranca, type HistoricoCobranca as Historico } from '../../db/organizacao';
+import { avisarPlanoMudou, cancelarPlano, lerCobrancas, mudarDiaCobranca, reativarPlano, type Cobranca, type HistoricoCobranca as Historico } from '../../db/organizacao';
 import { milhar, precoBR } from '../../dominio/planos';
 import { Botao, Cartao, Modal, useAviso } from '../../componentes/ui';
 import { cx } from '../../lib/util';
@@ -45,7 +48,9 @@ function LinhaCobranca({ c }: { c: Cobranca }) {
         <b className="text-sm tabular-nums">{reais(c.valorCentavos)}</b>
         <span className="flex items-center gap-1.5">
           <span className={cx('rounded-full px-2 py-0.5 text-[11px] font-extrabold', st.c)}>{st.t}</span>
-          {c.link && c.status !== 'cancelado' && c.status !== 'estornado' && <a href={c.link} target="_blank" rel="noopener noreferrer" className="flex items-center gap-0.5 text-[11px] font-extrabold text-tinta">{c.status === 'pago' ? 'recibo' : 'pagar'}<ExternalLink className="size-3" /></a>}
+          {c.status === 'pago'
+            ? <Link to={`/recibo/${c.tipo === 'pacote' ? 'pacote' : 'mensalidade'}/${c.id}`} target="_blank" className="flex items-center gap-0.5 text-[11px] font-extrabold text-tinta">recibo<ExternalLink className="size-3" /></Link>
+            : c.link && (c.status === 'pendente' || c.status === 'vencido') && <a href={c.link} target="_blank" rel="noopener noreferrer" className="flex items-center gap-0.5 text-[11px] font-extrabold text-tinta">pagar<ExternalLink className="size-3" /></a>}
         </span>
       </span>
     </li>
@@ -53,7 +58,8 @@ function LinhaCobranca({ c }: { c: Cobranca }) {
 }
 
 /** Cobrança (só o admin): o plano e a próxima cobrança, mudar o dia, cancelar, próximas cobranças e histórico. */
-export function HistoricoCobranca({ irAjuda }: { irAjuda: () => void }) {
+export function HistoricoCobranca({ irAjuda, abrirTroca }: { irAjuda: () => void; abrirTroca?: boolean }) {
+  const [troca, setTroca] = useState(!!abrirTroca);
   const [h, setH] = useState<Historico | null>(null);
   const [erro, setErro] = useState('');
   const [mudandoDia, setMudandoDia] = useState<number | null>(null);
@@ -71,7 +77,7 @@ export function HistoricoCobranca({ irAjuda }: { irAjuda: () => void }) {
       <Botao variante="claro" onClick={carregar}><RotateCw className="size-4" />Tentar de novo</Botao>
     </Cartao>
   );
-  if (!h) return <div className="h-48 animate-pulse rounded-2xl bg-sup2" />;
+  if (!h) return <CenaCarregando texto="Abrindo as cobranças…" />;
 
   const cancelado = h.status === 'cancelada';
   const atraso = h.status === 'inadimplente';
@@ -94,13 +100,13 @@ export function HistoricoCobranca({ irAjuda }: { irAjuda: () => void }) {
   };
   const confirmarCancelar = async () => {
     setOcupado(true);
-    try { const r = await cancelarPlano(motivo); avisar(r.acessoAte ? `Plano cancelado. Você usa tudo até ${data(r.acessoAte)}.` : 'Plano cancelado.'); setCancelar(false); carregar(); }
+    try { const r = await cancelarPlano(motivo); avisar(r.acessoAte ? `Plano cancelado. Você usa tudo até ${data(r.acessoAte)}.` : 'Plano cancelado.'); setCancelar(false); carregar(); avisarPlanoMudou(); }
     catch (e) { avisar((e as Error).message, 'erro'); }
     setOcupado(false);
   };
   const reativar = async () => {
     setOcupado(true);
-    try { await reativarPlano(); avisar('Plano reativado. Que bom que ficou!'); carregar(); }
+    try { await reativarPlano(); avisar('Plano reativado. Que bom que ficou!'); carregar(); avisarPlanoMudou(); }
     catch (e) { avisar((e as Error).message, 'erro'); }
     setOcupado(false);
   };
@@ -154,6 +160,7 @@ export function HistoricoCobranca({ irAjuda }: { irAjuda: () => void }) {
         {cancelado && <p className="rounded-xl bg-sup2 px-3 py-2.5 text-sm text-texto2">Seu plano foi cancelado{h.canceladoEm ? ` em ${dia(h.canceladoEm)}` : ''}. Seus laudos e obras continuam salvos.</p>}
 
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-borda pt-3 text-sm">
+          <Botao tam="p" variante="obra" onClick={() => setTroca(true)}>{h.pago ? 'Trocar de plano' : 'Escolher um plano'}</Botao>
           {h.pago && !cancelado && <button onClick={() => setCancelar(true)} className="font-extrabold text-critico-texto">Cancelar plano</button>}
           {cancelado && <Botao tam="p" variante="obra" carregando={ocupado} onClick={reativar}>Reativar plano</Botao>}
           <button onClick={irAjuda} className="font-extrabold text-tinta">Dúvidas e suporte</button>
@@ -222,6 +229,9 @@ export function HistoricoCobranca({ irAjuda }: { irAjuda: () => void }) {
           ) : <p className="text-sm text-texto2">Ainda sem fotos analisadas pela IA do servidor.</p>}
         </Cartao>
       </div>
+
+      <TrocarPlano aberto={troca} aoFechar={() => setTroca(false)} atual={h.plano.id} proximaCobranca={cancelado ? undefined : h.proximaCobranca}
+        aoTrocar={(msg) => { avisar(msg); carregar(); }} />
 
       {/* cancelar: claro e sem pegadinha */}
       <Modal aberto={cancelar} aoFechar={() => setCancelar(false)} titulo="Cancelar o plano?">

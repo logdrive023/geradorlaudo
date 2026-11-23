@@ -1,5 +1,5 @@
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router';
-import { CalendarDays, FilePlus2, HardHat, LayoutGrid, LogOut, Settings, Users } from 'lucide-react';
+import { CalendarDays, CreditCard, FilePlus2, HardHat, LayoutGrid, LogOut, Settings, Users } from 'lucide-react';
 import { logadoNaNuvem } from '../db/nuvem';
 import { useState } from 'react';
 import { useSessao } from '../lib/sessao';
@@ -21,6 +21,7 @@ export function Casco() {
     { para: '/painel', rotulo: 'Laudos', ic: LayoutGrid },
     { para: '/obras', rotulo: 'Obras', ic: HardHat },
     ...(logadoNaNuvem() ? [{ para: '/agenda', rotulo: 'Agenda', ic: CalendarDays }] : []),
+    ...(usuario.papel !== 'assistente' && logadoNaNuvem() ? [{ para: '/plano', rotulo: 'Plano', ic: CreditCard }] : []),
     { para: '/configuracoes', rotulo: 'Configurações', ic: Settings },
     ...(usuario.papel === 'admin' ? [{ para: '/usuarios', rotulo: 'Equipe', ic: Users }] : []),
   ];

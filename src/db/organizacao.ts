@@ -41,6 +41,9 @@ export async function lerFotos(forcar = false): Promise<InfoFotos> {
   return v;
 }
 export const esquecerFotos = () => { cacheFotos = null; };
+/** Avisa as telas abertas que o plano mudou (troca, compra, cancelamento). */
+export const avisarPlanoMudou = () => { cacheFotos = null; window.dispatchEvent(new Event('laudotech:plano')); };
+export function ouvirPlano(fn: () => void) { window.addEventListener('laudotech:plano', fn); return () => window.removeEventListener('laudotech:plano', fn); }
 // ---------- histórico de cobrança (só o admin) ----------
 export interface Cobranca {
   id: string; tipo: 'mensalidade' | 'avulsa' | 'pacote'; descricao: string; valorCentavos: number;
@@ -57,6 +60,14 @@ export const lerCobrancas = () => api<HistoricoCobranca>('/api/org/cobrancas');
 export const mudarDiaCobranca = (diaCobranca: number) => api<{ proximaCobranca: string }>('/api/org/assinatura', json({ diaCobranca }, 'PATCH'));
 export const cancelarPlano = (motivo: string) => api<{ acessoAte?: string }>('/api/org/assinatura/cancelar', json({ motivo }));
 export const reativarPlano = () => api<{ ok: boolean }>('/api/org/assinatura/reativar', { method: 'POST' });
+export const trocarPlano = (plano: string) => api<{ de: PlanoServidor; para: PlanoServidor; proximaCobranca: string }>('/api/org/assinatura/plano', json({ plano }));
+
+export interface Recibo {
+  id: string; numero: string; tipo: 'mensalidade' | 'avulsa' | 'pacote'; descricao: string; referencia?: string; fotos?: number;
+  valorCentavos: number; pagoEm: string; forma: string; transacao?: string; comprovante?: string; emitidoEm: string;
+  cliente: { nome: string; cnpj?: string; responsavel: string; email: string };
+}
+export const lerRecibo = (tipo: string, id: string) => api<Recibo>(`/api/org/recibo/${tipo}/${id}`);
 
 /** Pede um pacote: com a cobrança ligada vem o link de pagamento; sem, vem um aviso. */
 export async function comprarFotos(pacote: string): Promise<{ link?: string; aviso?: string }> {

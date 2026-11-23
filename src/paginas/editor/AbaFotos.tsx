@@ -195,8 +195,8 @@ export function AbaFotos({ laudo, fotos, irPara }: { laudo: Laudo; fotos: Foto[]
             {cota && cota.restam >= 0 && <>
               <span aria-hidden>·</span>
               {cota.restam === 0
-                ? <Link to="/configuracoes?aba=plano" className="underline">as fotos com IA do mês acabaram: ver pacotes</Link>
-                : <span>restam {milhar(cota.restam)} com IA no mês{cota.restam <= 30 && <> · <Link to="/configuracoes?aba=plano" className="underline">comprar mais</Link></>}</span>}
+                ? <Link to="/plano" className="underline">as fotos com IA do mês acabaram: ver pacotes</Link>
+                : <span>restam {milhar(cota.restam)} com IA no mês{cota.restam <= 30 && <> · <Link to="/plano" className="underline">comprar mais</Link></>}</span>}
             </>}
           </p>
 

@@ -1,13 +1,15 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router';
+import { Link, useSearchParams } from 'react-router';
 import { CalendarClock, Camera, CheckCircle2, ExternalLink, Package, RotateCw, Sparkles } from 'lucide-react';
-import { comprarFotos, lerFotos, type InfoFotos } from '../../db/organizacao';
+import { comprarFotos, lerFotos, ouvirPlano, type InfoFotos } from '../../db/organizacao';
 import { logadoNaNuvem } from '../../db/nuvem';
 import { PACOTES, milhar, porFoto, precoBR } from '../../dominio/planos';
 import { Botao, Cartao, Dica, useAviso } from '../../componentes/ui';
 import { cx } from '../../lib/util';
 import { HistoricoCobranca } from './HistoricoCobranca';
 import { AjudaPlano } from './AjudaPlano';
+import { MolduraTransicao } from '../../componentes/MolduraTransicao';
+import { CenaCarregando } from '../../componentes/CenaCarregando';
 
 type Parte = 'uso' | 'cobranca' | 'ajuda';
 
@@ -18,13 +20,18 @@ const proximoMes = () => {
 
 /** Plano e fotos com IA: quanto já usou no mês, saldo dos pacotes e compra de mais fotos (só o admin compra). */
 export function PlanoFotos({ admin }: { admin: boolean }) {
-  const [parte, setParte] = useState<Parte>('uso');
+  // a parte fica no endereço (/plano?parte=cobranca): dá para mandar o link e o voltar do navegador funciona
+  const [busca, setBusca] = useSearchParams();
+  const pedida = busca.get('parte') as Parte | null;
+  const parte: Parte = pedida === 'ajuda' || (pedida === 'cobranca' && admin) ? pedida : 'uso';
+  const setParte = (p: Parte) => setBusca(p === 'uso' ? {} : { parte: p }, { replace: true });
+  const abrirTroca = busca.get('trocar') === '1';
   const [info, setInfo] = useState<InfoFotos | null>(null);
   const [erro, setErro] = useState('');
   const [comprando, setComprando] = useState<string | null>(null);
   const { avisar, el } = useAviso();
   const carregar = (forcar = false) => { setErro(''); lerFotos(forcar).then(setInfo).catch((e) => setErro((e as Error).message)); };
-  useEffect(() => { if (logadoNaNuvem()) carregar(true); }, []);
+  useEffect(() => { if (logadoNaNuvem()) carregar(true); return ouvirPlano(() => carregar(true)); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!logadoNaNuvem()) return <Cartao className="p-5 text-sm text-texto2">Entre com a sua conta para ver o seu plano e as fotos com IA do mês.</Cartao>;
   if (erro) return (
@@ -33,7 +40,7 @@ export function PlanoFotos({ admin }: { admin: boolean }) {
       <Botao variante="claro" onClick={() => carregar(true)}><RotateCw className="size-4" />Tentar de novo</Botao>
     </Cartao>
   );
-  if (!info) return <div className="h-60 animate-pulse rounded-2xl bg-sup2" />;
+  if (!info) return <CenaCarregando texto="Abrindo o seu plano…" />;
 
   const { cota, plano } = info;
   const semLimite = cota.restam < 0;
@@ -57,6 +64,8 @@ export function PlanoFotos({ admin }: { admin: boolean }) {
   const partes: { id: Parte; t: string }[] = [{ id: 'uso', t: 'Uso' }, ...(admin ? [{ id: 'cobranca' as Parte, t: 'Cobrança' }] : []), { id: 'ajuda', t: 'Ajuda' }];
   return (
     <>
+    {/* trocar de aba usa a mesma moldura de carregamento da troca de tela */}
+    <MolduraTransicao chave={parte} />
     {/* três partes curtas: quanto usou, quanto paga, e ajuda */}
     <div className="mb-4 inline-flex rounded-full bg-sup p-1 ring-1 ring-borda" role="tablist" aria-label="Plano">
       {partes.map((p) => (
@@ -64,7 +73,7 @@ export function PlanoFotos({ admin }: { admin: boolean }) {
           className={cx('h-9 rounded-full px-4 text-sm font-extrabold transition', parte === p.id ? 'bg-obra text-[#121A2B]' : 'text-texto2 hover:text-texto')}>{p.t}</button>
       ))}
     </div>
-    {parte === 'cobranca' && admin && <HistoricoCobranca irAjuda={() => setParte('ajuda')} />}
+    {parte === 'cobranca' && admin && <HistoricoCobranca irAjuda={() => setParte('ajuda')} abrirTroca={abrirTroca} />}
     {parte === 'ajuda' && <AjudaPlano />}
     {parte === 'uso' && <>
     <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
@@ -135,7 +144,9 @@ export function PlanoFotos({ admin }: { admin: boolean }) {
             <li className="flex gap-2"><CheckCircle2 className={cx('mt-0.5 size-4 shrink-0', plano.obras ? 'text-ok' : 'text-texto3')} />{plano.obras ? 'Gestão de obras' : 'Sem gestão de obras (só no Completo)'}</li>
             <li className="flex gap-2"><CheckCircle2 className="mt-0.5 size-4 shrink-0 text-ok" />{plano.usuariosMax ? `Até ${plano.usuariosMax} ${plano.usuariosMax === 1 ? 'pessoa' : 'pessoas'}` : 'Pessoas sem limite'}</li>
           </ul>
-          <Link to="/#planos" className="mt-1 text-sm font-extrabold text-tinta">Ver todos os planos</Link>
+          {admin
+            ? <button onClick={() => setBusca({ parte: 'cobranca', trocar: '1' }, { replace: true })} className="pilula pilula-obra mt-2 w-full">Trocar de plano</button>
+            : <Link to="/#planos" className="mt-1 text-sm font-extrabold text-tinta">Ver todos os planos</Link>}
         </Cartao>
 
         {!admin && info.pedidos.length > 0 && (

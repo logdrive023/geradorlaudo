@@ -167,6 +167,7 @@ h1, h2, h3 { font-family: var(--font-display); letter-spacing: -0.02em; }
   .folha { box-shadow: none; margin: 0; page-break-after: always; break-after: page; }
   .folha:last-child { page-break-after: auto; }
   .folha-escala { transform: none !important; height: auto !important; }
+  .recibo-folha { min-height: 297mm; width: 210mm; }
 }
 
 /* edição direta na folha A4 */

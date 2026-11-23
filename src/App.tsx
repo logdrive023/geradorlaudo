@@ -10,6 +10,8 @@ import { NaoEncontrada } from './paginas/site/NaoEncontrada';
 import { Entrar } from './paginas/entrar/Entrar';
 import { Painel } from './paginas/painel/Painel';
 import { Editor } from './paginas/editor/Editor';
+import { Plano } from './paginas/plano/Plano';
+import { Recibo } from './paginas/plano/Recibo';
 import { Configuracoes } from './paginas/config/Configuracoes';
 import { Usuarios } from './paginas/admin/Usuarios';
 import { VerLaudo } from './paginas/publico/VerLaudo';
@@ -59,6 +61,7 @@ export function App() {
           <Route path="/termos" element={<Termos />} />
           <Route path="/privacidade" element={<Privacidade />} />
           <Route path="/sobre" element={<Sobre />} />
+          <Route path="/recibo/:tipo/:id" element={<Protegido admin><Recibo /></Protegido>} />
           <Route element={<Protegido><Casco /></Protegido>}>
             <Route path="/painel" element={<Painel />} />
             <Route path="/laudo/:id" element={<Editor />} />
@@ -66,6 +69,7 @@ export function App() {
             <Route path="/agenda" element={<Agenda />} />
             <Route path="/obra/:id" element={<ObraTela />} />
             <Route path="/configuracoes" element={<Configuracoes />} />
+            <Route path="/plano" element={<Plano />} />
             <Route path="/usuarios" element={<Protegido admin><Usuarios /></Protegido>} />
           </Route>
           <Route path="*" element={<NaoEncontrada />} />

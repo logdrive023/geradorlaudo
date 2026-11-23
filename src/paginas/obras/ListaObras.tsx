@@ -206,7 +206,7 @@ export function ListaObras() {
             <p className="text-sm text-texto2">O plano {semObras} é só de laudos. No Completo você tem cronograma, diário, financeiro e compras, e o dobro de fotos com IA.</p>
             <div className="grid gap-2 sm:grid-cols-2">
               <button onClick={() => setAviso(false)} className="pilula pilula-clara">Agora não</button>
-              <Link to="/configuracoes?aba=plano" className="pilula pilula-obra">Ver planos</Link>
+              <Link to="/plano" className="pilula pilula-obra">Ver planos</Link>
             </div>
           </div>
         </div>
