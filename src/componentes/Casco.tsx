@@ -1,5 +1,5 @@
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router';
-import { CalendarDays, CreditCard, FilePlus2, HardHat, LayoutGrid, LogOut, Settings, Users } from 'lucide-react';
+import { CalendarDays, ChevronsLeft, CreditCard, FilePlus2, HardHat, LayoutGrid, LogOut, Settings, Users } from 'lucide-react';
 import { logadoNaNuvem } from '../db/nuvem';
 import { useState } from 'react';
 import { useSessao } from '../lib/sessao';
@@ -14,6 +14,9 @@ export function Casco() {
   const { usuario, sair } = useSessao();
   const nav = useNavigate();
   const [novo, setNovo] = useState(false);
+  // menu do computador recolhível (só ícones); a escolha fica guardada no aparelho
+  const [recolhido, setRecolhido] = useState(() => { try { return localStorage.getItem('laudotech.menu') === 'recolhido'; } catch { return false; } });
+  const alternarMenu = () => setRecolhido((r) => { try { localStorage.setItem('laudotech.menu', r ? 'aberto' : 'recolhido'); } catch { /* modo privado */ } return !r; });
   const caminho = useLocation().pathname;
   const noLaudo = caminho.startsWith('/laudo/'); // dentro do laudo, o celular usa o cabeçalho do próprio laudo
   if (!usuario) return null;
@@ -28,26 +31,34 @@ export function Casco() {
   const iniciais = usuario.nome.split(' ').map((p) => p[0]).slice(0, 2).join('').toUpperCase();
 
   return (
-    <div className="min-h-dvh md:pl-64">
-      <aside className="nao-imprimir fixed inset-y-0 left-0 z-30 hidden w-64 flex-col border-r border-borda bg-sup md:flex">
-        <div className="flex h-16 items-center px-5"><Logo /></div>
-        <div className="px-4">
-          <button onClick={() => setNovo(true)} className="pilula pilula-obra w-full">
-            <FilePlus2 className="size-5" /> Novo laudo
+    // --menu: largura do menu no computador (as telas fixas usam a mesma medida)
+    <div style={{ '--menu': recolhido ? '72px' : '256px' } as React.CSSProperties}
+      className="min-h-dvh transition-[padding] duration-200 ease-out motion-reduce:transition-none md:pl-[var(--menu)]">
+      <aside className="nao-imprimir fixed inset-y-0 left-0 z-30 hidden w-[var(--menu)] flex-col border-r border-borda bg-sup transition-[width] duration-200 ease-out motion-reduce:transition-none md:flex">
+        {/* recolher / abrir (desliza suave; o conteúdo do menu só é cortado, não remontado) */}
+        <button onClick={alternarMenu} aria-label={recolhido ? 'Abrir o menu' : 'Recolher o menu'} title={recolhido ? 'Abrir o menu' : 'Recolher o menu'} aria-expanded={!recolhido}
+          className="absolute -right-3.5 top-[74px] z-10 grid size-7 place-items-center rounded-full border border-borda bg-sup text-texto2 shadow-sm transition hover:border-borda-forte hover:text-texto">
+          <ChevronsLeft className={cx('size-4 transition-transform duration-200 motion-reduce:transition-none', recolhido && 'rotate-180')} />
+        </button>
+        {/* recolhido: só o ícone (a caixa corta antes do nome, que some junto) */}
+        <div className={cx('flex h-16 items-center overflow-hidden whitespace-nowrap pl-5 transition-[width] duration-200 ease-out motion-reduce:transition-none', recolhido ? 'w-[56px]' : 'w-full')}><Logo /></div>
+        <div className={cx('transition-[padding] duration-200 motion-reduce:transition-none', recolhido ? 'px-3' : 'px-4')}>
+          <button onClick={() => setNovo(true)} title="Novo laudo" aria-label="Novo laudo" className={cx('pilula pilula-obra w-full overflow-hidden whitespace-nowrap', recolhido && '!px-0')}>
+            <FilePlus2 className="size-5 shrink-0" /><span className={cx('transition-opacity duration-150', recolhido && 'sr-only')}>Novo laudo</span>
           </button>
         </div>
-        <nav className="mt-5 flex flex-col gap-1 px-3">
+        <nav className="mt-5 flex flex-col gap-1 overflow-hidden px-3">
           {itens.map(({ para, rotulo, ic: Ic }) => (
-            <NavLink key={para} to={para} className={({ isActive }) => cx('flex h-11 items-center gap-3 rounded-xl px-3 font-bold transition',
+            <NavLink key={para} to={para} title={recolhido ? rotulo : undefined} aria-label={rotulo} className={({ isActive }) => cx('flex h-11 items-center gap-3 whitespace-nowrap rounded-xl px-[13px] font-bold transition-colors',
               isActive ? 'bg-tinta/10 text-tinta' : 'text-texto2 hover:bg-sup2 hover:text-texto')}>
-              <Ic className="size-5" />{rotulo}
+              <Ic className="size-5 shrink-0" /><span className={cx('transition-opacity duration-150 motion-reduce:transition-none', recolhido ? 'opacity-0' : 'opacity-100')}>{rotulo}</span>
             </NavLink>
           ))}
         </nav>
-        <div className="mt-auto border-t border-borda p-3">
-          <div className="flex items-center gap-3 rounded-xl p-2">
-            <span className="grid size-10 place-items-center rounded-full bg-tinta font-extrabold text-white dark:text-[#0E1320]">{iniciais}</span>
-            <div className="min-w-0 flex-1">
+        <div className="mt-auto overflow-hidden border-t border-borda p-3">
+          <div className={cx('flex items-center gap-3 rounded-xl p-2', recolhido && 'flex-col !gap-2 !p-0')}>
+            <span title={recolhido ? usuario.nome : undefined} className="grid size-10 shrink-0 place-items-center rounded-full bg-tinta font-extrabold text-white dark:text-[#0E1320]">{iniciais}</span>
+            <div className={cx('min-w-0 flex-1', recolhido && 'hidden')}>
               <div className="truncate font-bold">{usuario.nome}</div>
               <div className="truncate text-xs text-texto3">{usuario.papel === 'admin' ? 'Administrador · acesso total' : usuario.papel === 'assistente' ? 'Assistente de campo' : usuario.registro || usuario.profissao}</div>
             </div>

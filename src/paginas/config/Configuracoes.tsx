@@ -108,7 +108,7 @@ function Perfil({ u }: { u: Usuario }) {
       </aside>
 
       {mudou && (
-        <div className="fixed inset-x-0 bottom-[72px] z-30 border-t border-borda bg-sup/95 p-3 backdrop-blur md:bottom-0 md:left-64">
+        <div className="fixed inset-x-0 bottom-[72px] z-30 border-t border-borda bg-sup/95 p-3 backdrop-blur md:bottom-0 md:left-[var(--menu,16rem)]">
           <div className="mx-auto flex max-w-4xl items-center justify-between gap-3">
             <span className="text-sm font-bold text-texto2">Você tem alterações não salvas</span>
             <div className="flex gap-2"><Botao variante="fantasma" onClick={() => setF(u)}>Descartar</Botao><Botao variante="obra" onClick={salvar}>Salvar</Botao></div>

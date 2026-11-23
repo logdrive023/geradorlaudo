@@ -4,7 +4,7 @@ import { Link, useSearchParams } from 'react-router';
 import { CalendarClock, Camera, CheckCircle2, ExternalLink, Package, RotateCw, Sparkles, WifiOff } from 'lucide-react';
 import { comprarFotos, lerFotos, ouvirPlano, type InfoFotos } from '../../db/organizacao';
 import { logadoNaNuvem } from '../../db/nuvem';
-import { PACOTES, milhar, porFoto, precoBR } from '../../dominio/planos';
+import { PACOTES, PLANOS, milhar, porFoto, precoBR } from '../../dominio/planos';
 import { Botao, Cartao, Dica, useAviso } from '../../componentes/ui';
 import { cx } from '../../lib/util';
 import { HistoricoCobranca } from './HistoricoCobranca';
@@ -129,6 +129,28 @@ export function PlanoFotos({ admin }: { admin: boolean }) {
             </div>
           </div>
           {acabou && <p className="rounded-xl bg-critico-suave px-3 py-2.5 text-sm text-critico-texto">As fotos novas ficam na fila e são analisadas quando você comprar um pacote ou no começo do mês que vem. Nada se perde.</p>}
+          {/* aos 80% (e ao acabar): as duas saídas, já com a conta feita */}
+          {!semLimite && cota.fotosMes > 0 && pct >= 80 && (() => {
+            const prox = PLANOS.find((p) => p.fotosMes > (PLANOS.find((x) => x.id === plano.id)?.fotosMes ?? cota.fotosMes) && p.preco > plano.precoCentavos / 100);
+            const delta = prox ? prox.preco - plano.precoCentavos / 100 : 0;
+            return (
+              <div className="grid gap-3 rounded-2xl border border-medio/40 bg-medio-suave/40 p-4">
+                <b className="text-sm">{acabou ? 'As fotos do mês acabaram.' : `Você já usou ${pct}% das fotos do mês.`} Duas saídas:</b>
+                <div className={cx('grid gap-2', prox && admin && 'sm:grid-cols-2')}>
+                  <div className="rounded-xl bg-sup p-3 text-sm">
+                    <b className="block">Só este mês: pacote extra</b>
+                    <span className="text-texto2">{milhar(PACOTES[0].fotos)} fotos por {precoBR(PACOTES[0].preco)}, não vencem.</span>
+                  </div>
+                  {prox && admin && (
+                    <button onClick={() => setBusca({ parte: 'cobranca', trocar: '1' }, { replace: true })} className="rounded-xl border-2 border-obra bg-sup p-3 text-left text-sm transition hover:bg-obra-suave/40">
+                      <b className="block">Todo mês: plano {prox.nome}</b>
+                      <span className="text-texto2">+{precoBR(delta)}/mês com +{milhar(prox.fotosMes - (PLANOS.find((x) => x.id === plano.id)?.fotosMes ?? cota.fotosMes))} fotos todo mês.</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })()}
         </Cartao>
 
         {/* pacotes */}

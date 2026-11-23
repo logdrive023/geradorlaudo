@@ -5,7 +5,7 @@ import { TrocarPlano } from './TrocarPlano';
 import { CenaCarregando } from '../../componentes/CenaCarregando';
 import { CalendarClock, CalendarDays, ExternalLink, Package, ReceiptText, RotateCw, Sparkles, Wallet, WifiOff } from 'lucide-react';
 import { avisarPlanoMudou, cancelarPlano, lerCobrancas, mudarDiaCobranca, reativarPlano, type Cobranca, type HistoricoCobranca as Historico } from '../../db/organizacao';
-import { milhar, precoBR } from '../../dominio/planos';
+import { PLANOS, milhar, precoBR } from '../../dominio/planos';
 import { Botao, Cartao, Modal, useAviso } from '../../componentes/ui';
 import { cx } from '../../lib/util';
 
@@ -61,6 +61,7 @@ function LinhaCobranca({ c }: { c: Cobranca }) {
 /** Cobrança (só o admin): o plano e a próxima cobrança, mudar o dia, cancelar, próximas cobranças e histórico. */
 export function HistoricoCobranca({ irAjuda, abrirTroca }: { irAjuda: () => void; abrirTroca?: boolean }) {
   const [troca, setTroca] = useState(!!abrirTroca);
+  const [trocaInicial, setTrocaInicial] = useState<string | undefined>(undefined);
   const [h, setH] = useState<Historico | null>(null);
   const [erro, setErro] = useState('');
   const [mudandoDia, setMudandoDia] = useState<number | null>(null);
@@ -234,7 +235,8 @@ export function HistoricoCobranca({ irAjuda, abrirTroca }: { irAjuda: () => void
         </Cartao>
       </div>
 
-      <TrocarPlano aberto={troca} aoFechar={() => setTroca(false)} atual={h.plano.id} proximaCobranca={cancelado ? undefined : h.proximaCobranca}
+      <TrocarPlano aberto={troca} aoFechar={() => { setTroca(false); setTrocaInicial(undefined); }} atual={h.plano.id} proximaCobranca={cancelado ? undefined : h.proximaCobranca}
+        usoMes={Math.max(0, ...h.usoMensal.slice(0, 3).map((m) => m.total))} inicial={trocaInicial}
         aoTrocar={(msg) => { avisar(msg); carregar(); }} />
 
       {/* cancelar: claro e sem pegadinha */}
@@ -252,6 +254,25 @@ export function HistoricoCobranca({ irAjuda, abrirTroca }: { irAjuda: () => void
               {MOTIVOS.map((m) => <option key={m}>{m}</option>)}
             </select>
           </label>
+          {/* uma oferta só, ligada ao motivo, e o cancelar continua ali embaixo */}
+          {(() => {
+            const atualPreco = PLANOS.find((p) => p.id === h.plano.id)?.preco ?? 0;
+            const menor = PLANOS.find((p) => p.preco < atualPreco);
+            if ((motivo === 'Está caro para mim' || motivo === 'Uso pouco') && menor) return (
+              <div className="grid gap-2 rounded-2xl border-2 border-obra bg-obra-suave/40 p-4">
+                <b className="text-sm">Que tal o plano {menor.nome} por {precoBR(menor.preco)}/mês?</b>
+                <span className="text-sm text-texto2">Você paga {precoBR(atualPreco - menor.preco)} a menos por mês e continua com laudos ilimitados e {milhar(menor.fotosMes)} fotos com IA. Se faltar, um pacote extra resolve.</span>
+                <Botao tam="p" variante="obra" className="justify-self-start" onClick={() => { setCancelar(false); setTrocaInicial(menor.id); setTroca(true); }}>Ver o plano {menor.nome}</Botao>
+              </div>
+            );
+            if (motivo === 'Faltou algum recurso') return (
+              <div className="grid gap-2 rounded-2xl bg-sup2 p-4 text-sm text-texto2">
+                <span>Conte o que faltou: muita coisa do LaudoTech nasceu de pedido de quem usa.</span>
+                <button onClick={() => { setCancelar(false); irAjuda(); }} className="justify-self-start font-extrabold text-tinta">Falar com o suporte</button>
+              </div>
+            );
+            return null;
+          })()}
           <div className="flex flex-wrap justify-end gap-2">
             <Botao variante="obra" onClick={() => setCancelar(false)}>Manter meu plano</Botao>
             <Botao variante="claro" className="text-critico-texto" carregando={ocupado} onClick={confirmarCancelar}>Cancelar plano</Botao>

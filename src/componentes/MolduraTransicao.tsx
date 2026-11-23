@@ -19,7 +19,7 @@ export function MolduraTransicao({ chave, ms = 550 }: { chave: string; ms?: numb
   }, [chave, ms]);
   if (estado === 'oculta') return null;
   return (
-    <div aria-hidden className={cx('nao-imprimir pointer-events-none fixed inset-0 z-20 grid place-items-center bg-papel/75 backdrop-blur-[3px] transition-opacity duration-200 md:left-64',
+    <div aria-hidden className={cx('nao-imprimir pointer-events-none fixed inset-0 z-20 grid place-items-center bg-papel/75 backdrop-blur-[3px] transition-opacity duration-200 md:left-[var(--menu,16rem)]',
       estado === 'saindo' ? 'opacity-0' : 'opacity-100')}>
       <div className="w-full max-w-[300px] rounded-[26px] border border-borda bg-sup/90 p-2 shadow-[0_20px_60px_rgba(18,26,43,.18)]">
         <CenaCarregando entrar={false} />

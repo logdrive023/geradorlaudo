@@ -58,6 +58,9 @@ export function Lia({ humor = 'normal', tam = 44, tom = 'claro', children, acao,
   );
 }
 
+/** Abre a Lia de qualquer tela: num assunto (cat) ou já perguntando algo. */
+export const abrirLia = (o: { cat?: string; pergunta?: string } = {}) => window.dispatchEvent(new CustomEvent('laudotech:lia', { detail: o }));
+
 /** Botão flutuante "Pergunte à Lia": central de ajuda por assunto + conversa. Toda resposta leva a algum lugar. */
 export function PergunteLia({ ajuda = AJUDA, site = false, subir = false }: { ajuda?: Categoria[]; site?: boolean; subir?: boolean } = {}) {
   const [aberto, setAberto] = useState(false);
@@ -75,6 +78,19 @@ export function PergunteLia({ ajuda = AJUDA, site = false, subir = false }: { aj
   const naConferencia = loc.search.includes('aba=conferir');
 
   useEffect(() => { if (!menu) fim.current?.scrollIntoView({ behavior: 'smooth' }); }, [msgs, pensando, menu]);
+  // na página do plano, a Lia já abre no assunto "Plano e cobrança"
+  useEffect(() => { if (loc.pathname.startsWith('/plano') && ajuda.some((c) => c.id === 'plano')) setCat('plano'); }, [loc.pathname, ajuda]);
+  // outras telas podem abrir a Lia (ex.: Plano › Ajuda) num assunto ou com uma pergunta
+  useEffect(() => {
+    const abrir = (e: Event) => {
+      const o = (e as CustomEvent<{ cat?: string; pergunta?: string }>).detail ?? {};
+      setAberto(true);
+      if (o.cat && ajuda.some((c) => c.id === o.cat)) { setCat(o.cat); setMenu(true); }
+      if (o.pergunta) void enviarRef.current(o.pergunta);
+    };
+    window.addEventListener('laudotech:lia', abrir);
+    return () => window.removeEventListener('laudotech:lia', abrir);
+  }, [ajuda]);
 
   const irPara = (d: Destino) => {
     setAberto(false);
@@ -102,6 +118,8 @@ export function PergunteLia({ ajuda = AJUDA, site = false, subir = false }: { aj
     setPensando(false);
   };
 
+  const enviarRef = useRef(enviar);
+  enviarRef.current = enviar;
   const categoria = ajuda.find((c) => c.id === cat) ?? ajuda[0];
 
   return (

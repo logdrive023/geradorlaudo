@@ -12,6 +12,8 @@ export type Destino =
 export interface Pergunta { p: string; r: string; ir?: Destino; chaves?: string }
 export interface Categoria { id: string; nome: string; perguntas: Pergunta[] }
 
+import { DUVIDAS_PLANO } from '../dominio/suporte';
+
 const AJ = (aba: string, rotulo: string): Destino => ({ tipo: 'rota', para: `/configuracoes?aba=${aba}`, rotulo });
 
 export const AJUDA: Categoria[] = [
@@ -138,6 +140,8 @@ export const AJUDA: Categoria[] = [
       { p: 'Como deixo o app escuro?', r: 'Em Ajustes › Aparência: Claro, Escuro ou Do sistema.', ir: AJ('aparencia', 'Abrir Aparência'), chaves: 'escuro tema aparência dark' },
     ],
   },
+  // as mesmas dúvidas da aba Plano › Ajuda (uma base só: src/dominio/suporte.ts)
+  { id: 'plano', nome: 'Plano e cobrança', perguntas: DUVIDAS_PLANO.map(({ p, r, ir, chaves }) => ({ p, r, ir, chaves })) },
   {
     id: 'dados', nome: 'Dados e backup',
     perguntas: [
