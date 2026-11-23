@@ -41,6 +41,23 @@ export async function lerFotos(forcar = false): Promise<InfoFotos> {
   return v;
 }
 export const esquecerFotos = () => { cacheFotos = null; };
+// ---------- histórico de cobrança (só o admin) ----------
+export interface Cobranca {
+  id: string; tipo: 'mensalidade' | 'avulsa' | 'pacote'; descricao: string; valorCentavos: number;
+  status: 'pendente' | 'pago' | 'vencido' | 'cancelado' | 'estornado';
+  vencimento?: string; pagoEm?: string; link?: string; referencia?: string; fotos?: number; criadoEm: string;
+}
+export interface UsoMes { mes: string; total: number; doPlano: number; doPacote: number }
+export interface HistoricoCobranca {
+  plano: PlanoServidor; status: string; proximaCobranca?: string; proximoValorCentavos: number;
+  pago: boolean; noGateway: boolean; diaCobranca?: number; canceladoEm?: string; acessoAte?: string;
+  cobrancas: Cobranca[]; usoMensal: UsoMes[]; pacotes: { comprado: number; usado: number; saldo: number };
+}
+export const lerCobrancas = () => api<HistoricoCobranca>('/api/org/cobrancas');
+export const mudarDiaCobranca = (diaCobranca: number) => api<{ proximaCobranca: string }>('/api/org/assinatura', json({ diaCobranca }, 'PATCH'));
+export const cancelarPlano = (motivo: string) => api<{ acessoAte?: string }>('/api/org/assinatura/cancelar', json({ motivo }));
+export const reativarPlano = () => api<{ ok: boolean }>('/api/org/assinatura/reativar', { method: 'POST' });
+
 /** Pede um pacote: com a cobrança ligada vem o link de pagamento; sem, vem um aviso. */
 export async function comprarFotos(pacote: string): Promise<{ link?: string; aviso?: string }> {
   cacheFotos = null;

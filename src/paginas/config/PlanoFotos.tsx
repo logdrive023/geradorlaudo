@@ -6,6 +6,10 @@ import { logadoNaNuvem } from '../../db/nuvem';
 import { PACOTES, milhar, porFoto, precoBR } from '../../dominio/planos';
 import { Botao, Cartao, Dica, useAviso } from '../../componentes/ui';
 import { cx } from '../../lib/util';
+import { HistoricoCobranca } from './HistoricoCobranca';
+import { AjudaPlano } from './AjudaPlano';
+
+type Parte = 'uso' | 'cobranca' | 'ajuda';
 
 const proximoMes = () => {
   const d = new Date();
@@ -14,6 +18,7 @@ const proximoMes = () => {
 
 /** Plano e fotos com IA: quanto já usou no mês, saldo dos pacotes e compra de mais fotos (só o admin compra). */
 export function PlanoFotos({ admin }: { admin: boolean }) {
+  const [parte, setParte] = useState<Parte>('uso');
   const [info, setInfo] = useState<InfoFotos | null>(null);
   const [erro, setErro] = useState('');
   const [comprando, setComprando] = useState<string | null>(null);
@@ -49,7 +54,19 @@ export function PlanoFotos({ admin }: { admin: boolean }) {
     setComprando(null);
   };
 
+  const partes: { id: Parte; t: string }[] = [{ id: 'uso', t: 'Uso' }, ...(admin ? [{ id: 'cobranca' as Parte, t: 'Cobrança' }] : []), { id: 'ajuda', t: 'Ajuda' }];
   return (
+    <>
+    {/* três partes curtas: quanto usou, quanto paga, e ajuda */}
+    <div className="mb-4 inline-flex rounded-full bg-sup p-1 ring-1 ring-borda" role="tablist" aria-label="Plano">
+      {partes.map((p) => (
+        <button key={p.id} role="tab" aria-selected={parte === p.id} onClick={() => setParte(p.id)}
+          className={cx('h-9 rounded-full px-4 text-sm font-extrabold transition', parte === p.id ? 'bg-obra text-[#121A2B]' : 'text-texto2 hover:text-texto')}>{p.t}</button>
+      ))}
+    </div>
+    {parte === 'cobranca' && admin && <HistoricoCobranca irAjuda={() => setParte('ajuda')} />}
+    {parte === 'ajuda' && <AjudaPlano />}
+    {parte === 'uso' && <>
     <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
       {el}
       <div className="grid content-start gap-4">
@@ -121,7 +138,7 @@ export function PlanoFotos({ admin }: { admin: boolean }) {
           <Link to="/#planos" className="mt-1 text-sm font-extrabold text-tinta">Ver todos os planos</Link>
         </Cartao>
 
-        {info.pedidos.length > 0 && (
+        {!admin && info.pedidos.length > 0 && (
           <Cartao className="grid gap-2 p-4">
             <h3 className="font-bold">Pacotes pedidos</h3>
             <ul className="grid gap-2">
@@ -143,5 +160,7 @@ export function PlanoFotos({ admin }: { admin: boolean }) {
         )}
       </aside>
     </div>
+    </>}
+    </>
   );
 }
