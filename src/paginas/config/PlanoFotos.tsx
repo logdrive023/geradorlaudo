@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { comPaciencia } from '../../lib/paciencia';
 import { Link, useSearchParams } from 'react-router';
-import { CalendarClock, Camera, CheckCircle2, ExternalLink, Package, RotateCw, Sparkles } from 'lucide-react';
+import { CalendarClock, Camera, CheckCircle2, ExternalLink, Package, RotateCw, Sparkles, WifiOff } from 'lucide-react';
 import { comprarFotos, lerFotos, ouvirPlano, type InfoFotos } from '../../db/organizacao';
 import { logadoNaNuvem } from '../../db/nuvem';
 import { PACOTES, milhar, porFoto, precoBR } from '../../dominio/planos';
@@ -8,7 +9,6 @@ import { Botao, Cartao, Dica, useAviso } from '../../componentes/ui';
 import { cx } from '../../lib/util';
 import { HistoricoCobranca } from './HistoricoCobranca';
 import { AjudaPlano } from './AjudaPlano';
-import { MolduraTransicao } from '../../componentes/MolduraTransicao';
 import { CenaCarregando } from '../../componentes/CenaCarregando';
 
 type Parte = 'uso' | 'cobranca' | 'ajuda';
@@ -26,21 +26,38 @@ export function PlanoFotos({ admin }: { admin: boolean }) {
   const parte: Parte = pedida === 'ajuda' || (pedida === 'cobranca' && admin) ? pedida : 'uso';
   const setParte = (p: Parte) => setBusca(p === 'uso' ? {} : { parte: p }, { replace: true });
   const abrirTroca = busca.get('trocar') === '1';
+  // ao trocar de aba: o carregamento da casa por um instante, no lugar do conteúdo
+  const [trocando, setTrocando] = useState(false);
+  const primeira = useRef(true);
+  useEffect(() => {
+    if (primeira.current) { primeira.current = false; return; }
+    setTrocando(true);
+    const t = setTimeout(() => setTrocando(false), 450);
+    return () => clearTimeout(t);
+  }, [parte]);
   const [info, setInfo] = useState<InfoFotos | null>(null);
   const [erro, setErro] = useState('');
   const [comprando, setComprando] = useState<string | null>(null);
   const { avisar, el } = useAviso();
-  const carregar = (forcar = false) => { setErro(''); lerFotos(forcar).then(setInfo).catch((e) => setErro((e as Error).message)); };
-  useEffect(() => { if (logadoNaNuvem()) carregar(true); return ouvirPlano(() => carregar(true)); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  const [acordando, setAcordando] = useState(false);
+  const parar = useRef<() => void>(undefined);
+  // sem resposta, tenta de novo sozinho por até 1 minuto (o servidor grátis pode estar acordando)
+  const carregar = (forcar = false) => { setErro(''); parar.current?.(); parar.current = comPaciencia(() => lerFotos(forcar), setInfo, setErro, setAcordando); };
+  useEffect(() => {
+    if (logadoNaNuvem()) carregar(true);
+    const sair = ouvirPlano(() => carregar(true));
+    return () => { sair(); parar.current?.(); };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!logadoNaNuvem()) return <Cartao className="p-5 text-sm text-texto2">Entre com a sua conta para ver o seu plano e as fotos com IA do mês.</Cartao>;
   if (erro) return (
     <Cartao className="grid justify-items-center gap-3 p-6 text-center">
-      <p className="text-texto2">{erro}</p>
+      <span className="grid size-12 place-items-center rounded-2xl bg-medio-suave text-medio-texto"><WifiOff className="size-6" /></span>
+      <p className="max-w-md text-texto2">{erro}</p>
       <Botao variante="claro" onClick={() => carregar(true)}><RotateCw className="size-4" />Tentar de novo</Botao>
     </Cartao>
   );
-  if (!info) return <CenaCarregando texto="Abrindo o seu plano…" />;
+  if (!info) return <CenaCarregando texto={acordando ? 'Acordando o servidor… (pode levar até 1 minuto)' : 'Abrindo o seu plano…'} />;
 
   const { cota, plano } = info;
   const semLimite = cota.restam < 0;
@@ -64,8 +81,6 @@ export function PlanoFotos({ admin }: { admin: boolean }) {
   const partes: { id: Parte; t: string }[] = [{ id: 'uso', t: 'Uso' }, ...(admin ? [{ id: 'cobranca' as Parte, t: 'Cobrança' }] : []), { id: 'ajuda', t: 'Ajuda' }];
   return (
     <>
-    {/* trocar de aba usa a mesma moldura de carregamento da troca de tela */}
-    <MolduraTransicao chave={parte} />
     {/* três partes curtas: quanto usou, quanto paga, e ajuda */}
     <div className="mb-4 inline-flex rounded-full bg-sup p-1 ring-1 ring-borda" role="tablist" aria-label="Plano">
       {partes.map((p) => (
@@ -73,6 +88,9 @@ export function PlanoFotos({ admin }: { admin: boolean }) {
           className={cx('h-9 rounded-full px-4 text-sm font-extrabold transition', parte === p.id ? 'bg-obra text-[#121A2B]' : 'text-texto2 hover:text-texto')}>{p.t}</button>
       ))}
     </div>
+    {/* um carregamento só, no lugar do conteúdo da aba (a aba nova já monta por trás e busca os dados) */}
+    {trocando && <CenaCarregando entrar={false} />}
+    <div className={cx(trocando && 'hidden')}>
     {parte === 'cobranca' && admin && <HistoricoCobranca irAjuda={() => setParte('ajuda')} abrirTroca={abrirTroca} />}
     {parte === 'ajuda' && <AjudaPlano />}
     {parte === 'uso' && <>
@@ -172,6 +190,7 @@ export function PlanoFotos({ admin }: { admin: boolean }) {
       </aside>
     </div>
     </>}
+    </div>
     </>
   );
 }

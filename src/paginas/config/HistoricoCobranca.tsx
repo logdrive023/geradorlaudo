@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { comPaciencia } from '../../lib/paciencia';
 import { Link } from 'react-router';
 import { TrocarPlano } from './TrocarPlano';
 import { CenaCarregando } from '../../componentes/CenaCarregando';
-import { CalendarClock, CalendarDays, ExternalLink, Package, ReceiptText, RotateCw, Sparkles, Wallet } from 'lucide-react';
+import { CalendarClock, CalendarDays, ExternalLink, Package, ReceiptText, RotateCw, Sparkles, Wallet, WifiOff } from 'lucide-react';
 import { avisarPlanoMudou, cancelarPlano, lerCobrancas, mudarDiaCobranca, reativarPlano, type Cobranca, type HistoricoCobranca as Historico } from '../../db/organizacao';
 import { milhar, precoBR } from '../../dominio/planos';
 import { Botao, Cartao, Modal, useAviso } from '../../componentes/ui';
@@ -68,16 +69,19 @@ export function HistoricoCobranca({ irAjuda, abrirTroca }: { irAjuda: () => void
   const [ocupado, setOcupado] = useState(false);
   const [todas, setTodas] = useState(false);
   const { avisar, el } = useAviso();
-  const carregar = () => { setErro(''); lerCobrancas().then(setH).catch((e) => setErro((e as Error).message)); };
-  useEffect(carregar, []);
+  const [acordando, setAcordando] = useState(false);
+  const parar = useRef<() => void>(undefined);
+  const carregar = () => { setErro(''); parar.current?.(); parar.current = comPaciencia(lerCobrancas, setH, setErro, setAcordando); };
+  useEffect(() => { carregar(); return () => parar.current?.(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (erro) return (
     <Cartao className="grid justify-items-center gap-3 p-6 text-center">
-      <p className="text-texto2">{erro}</p>
+      <span className="grid size-12 place-items-center rounded-2xl bg-medio-suave text-medio-texto"><WifiOff className="size-6" /></span>
+      <p className="max-w-md text-texto2">{erro}</p>
       <Botao variante="claro" onClick={carregar}><RotateCw className="size-4" />Tentar de novo</Botao>
     </Cartao>
   );
-  if (!h) return <CenaCarregando texto="Abrindo as cobranças…" />;
+  if (!h) return <CenaCarregando entrar={false} texto={acordando ? 'Acordando o servidor… (pode levar até 1 minuto)' : 'Abrindo as cobranças…'} />;
 
   const cancelado = h.status === 'cancelada';
   const atraso = h.status === 'inadimplente';

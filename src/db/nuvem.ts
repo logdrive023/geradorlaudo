@@ -34,9 +34,18 @@ const emitir = (e: EventoNuvem) => ouvintes.forEach((fn) => fn(e));
 
 class ErroServidor extends Error { constructor(public status: number, msg: string) { super(msg); } }
 
+/** Sem resposta do servidor (sem internet, ou o servidor grátis "dormindo" e acordando): vale tentar de novo. */
+export const semConexao = (e: unknown) => e instanceof ErroServidor && (e.status === 0 || e.status === 502 || e.status === 503 || e.status === 504);
+
 export async function api<T>(caminho: string, init: RequestInit = {}): Promise<T> {
   const t = lerToken();
-  const r = await fetch(base() + caminho, { ...init, headers: { ...(init.headers ?? {}), ...(t ? { Authorization: `Bearer ${t}` } : {}) } });
+  let r: Response;
+  try {
+    r = await fetch(base() + caminho, { ...init, headers: { ...(init.headers ?? {}), ...(t ? { Authorization: `Bearer ${t}` } : {}) } });
+  } catch {
+    // o navegador só diz "Failed to fetch": aqui vira uma mensagem que a pessoa entende
+    throw new ErroServidor(0, 'Não deu para falar com o servidor. Confira a internet; se estiver tudo certo, ele pode estar acordando (leva até 1 minuto).');
+  }
   if (r.status === 401) {
     gravarToken(null);
     emitir({ tipo: 'sair' });

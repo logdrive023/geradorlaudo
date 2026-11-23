@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { comPaciencia } from '../../lib/paciencia';
 import { Link, useParams } from 'react-router';
 import { ArrowLeft, BadgeCheck, ExternalLink, Printer } from 'lucide-react';
 import { lerRecibo, type Recibo as DadosRecibo } from '../../db/organizacao';
@@ -29,7 +30,8 @@ export function Recibo() {
   const { tipo = '', id = '' } = useParams();
   const [r, setR] = useState<DadosRecibo | null>(null);
   const [erro, setErro] = useState('');
-  useEffect(() => { lerRecibo(tipo, id).then(setR).catch((e) => setErro((e as Error).message)); }, [tipo, id]);
+  const [acordando, setAcordando] = useState(false);
+  useEffect(() => comPaciencia(() => lerRecibo(tipo, id), setR, setErro, setAcordando), [tipo, id]);
   useEffect(() => { if (r) document.title = `Recibo ${r.numero} · LaudoTech`; }, [r]);
 
   if (erro) return (
@@ -37,7 +39,7 @@ export function Recibo() {
       <div className="grid max-w-sm gap-3"><p className="text-texto2">{erro}</p><Link to="/plano?parte=cobranca" className="pilula pilula-clara">Voltar ao plano</Link></div>
     </div>
   );
-  if (!r) return <Carregando texto="Abrindo o recibo…" />;
+  if (!r) return <Carregando texto={acordando ? 'Acordando o servidor… (pode levar até 1 minuto)' : 'Abrindo o recibo…'} />;
 
   const referencia = r.tipo === 'pacote' ? 'Avulso (não vence)' : nomeMes(r.referencia) || '—';
   const motivo = r.tipo === 'pacote'
