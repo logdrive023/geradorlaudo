@@ -1,6 +1,7 @@
 import { Link } from 'react-router';
-import { ArrowRight, BadgeCheck, Building2, Check, Fingerprint, HardHat, Landmark, Minus, QrCode, ScanSearch, ShieldCheck, User, Users, X } from 'lucide-react';
+import { ArrowRight, BadgeCheck, Building2, Camera, Check, Fingerprint, HardHat, Landmark, Minus, Package, QrCode, ScanSearch, ShieldCheck, User, Users, X } from 'lucide-react';
 import { cx } from '../../lib/util';
+import { PACOTES, PLANOS, milhar, porFoto, precoBR } from '../../dominio/planos';
 
 /* Seções de venda da página inicial: para quem é, comparação, confiança e planos.
    Regra: só prometer o que existe; o que ainda não tem tela aparece como "em breve". */
@@ -45,8 +46,8 @@ const LINHAS: [string, Marca, Marca, Marca][] = [
   ['Gestão da obra no mesmo app (cronograma, diário, financeiro)', 'sim', 'nao', 'nao'],
   ['Legenda e tabela sem digitar', 'sim', 'nao', 'parcial'],
 ];
-const Celula = ({ v }: { v: Marca }) => (
-  <td className="px-2 py-3 text-center">
+const Celula = ({ v, className }: { v: Marca; className?: string }) => (
+  <td className={cx('px-2 py-3 text-center', className)}>
     {v === 'sim' ? <Check className="mx-auto size-5 text-ok" aria-label="sim" /> : v === 'nao' ? <X className="mx-auto size-5 text-critico/70" aria-label="não" /> : <Minus className="mx-auto size-5 text-medio" aria-label="em parte" />}
   </td>
 );
@@ -71,7 +72,7 @@ export function Comparacao() {
               {LINHAS.map(([t, a, b, c]) => (
                 <tr key={t} className="border-b border-borda last:border-0">
                   <td className="p-4 font-semibold">{t}</td>
-                  <td className="bg-[#121A2B]/[.04]"><Celula v={a} /></td><Celula v={b} /><Celula v={c} />
+                  <Celula v={a} className="bg-[#121A2B]/[.04]" /><Celula v={b} /><Celula v={c} />
                 </tr>
               ))}
             </tbody>
@@ -119,30 +120,47 @@ export function Confianca() {
 }
 
 /* ---------- planos ---------- */
-const PLANOS = [
-  { nome: 'Teste', preco: 'Por convite', nota: 'agora, na fase de testes', destaque: true, itens: ['Laudos com IA (até 5 fotos por laudo)', 'Gestão de obras', 'Plano de ação e link do cliente', 'PDF, Word e Excel'] },
-  { nome: 'Profissional', preco: 'Em breve', nota: 'para quem assina sozinho', itens: ['Laudos e fotos sem o limite de teste', 'Seu modelo e sua logo em todos', 'Código de verificação no laudo', 'Agenda de vistorias'] },
-  { nome: 'Escritório', preco: 'Em breve', nota: 'para equipes', itens: ['Tudo do Profissional', 'Admin, engenheiros e assistentes', 'Laudos e obras atribuídos a cada um', 'Registro de atividades'] },
-];
-
 export function Planos() {
   return (
     <section id="planos" className="mx-auto max-w-[1180px] scroll-mt-20 px-4 py-20 md:py-28">
-      <h2 className="max-w-3xl text-4xl font-extrabold leading-tight md:text-5xl">Acesso por <span className="grifo">convite</span>.</h2>
-      <p className="mt-3 max-w-2xl text-lg text-texto2">Na fase de testes o acesso é por convite. Quando os planos chegarem, você é avisado antes de qualquer cobrança.</p>
+      <h2 className="max-w-3xl text-4xl font-extrabold leading-tight md:text-5xl">Laudos ilimitados. Você paga pelas <span className="grifo">fotos com IA</span>.</h2>
+      <p className="mt-3 max-w-2xl text-lg text-texto2">Cada plano traz fotos analisadas pela IA todo mês. Um laudo usa umas 60. Acabou antes? Compre um pacote extra, que não vence.</p>
       <div className="mt-10 grid gap-4 lg:grid-cols-3">
         {PLANOS.map((p) => (
-          <div key={p.nome} className={cx('flex flex-col rounded-[22px] border p-6', p.destaque ? 'border-[#121A2B] bg-[#121A2B] text-white shadow-[0_6px_0_var(--obra)]' : 'border-borda bg-sup')}>
+          <div key={p.id} className={cx('relative flex flex-col rounded-[22px] border p-6', p.destaque ? 'border-[#121A2B] bg-[#121A2B] text-white shadow-[0_6px_0_var(--obra)]' : 'border-borda bg-sup')}>
+            {p.destaque && <span className="absolute -top-3 left-6 rounded-full bg-obra px-3 py-1 text-xs font-extrabold text-[#121A2B]">mais escolhido</span>}
             <span className={cx('text-sm font-extrabold uppercase tracking-wider', p.destaque ? 'text-obra' : 'text-texto3')}>{p.nome}</span>
-            <span className="mt-2 font-display text-4xl font-extrabold">{p.preco}</span>
-            <span className={cx('text-sm', p.destaque ? 'text-[#B6BECC]' : 'text-texto2')}>{p.nota}</span>
-            <ul className="mt-5 grid gap-2 text-sm">
+            <span className="mt-2 flex items-baseline gap-1"><span className="font-display text-4xl font-extrabold">{precoBR(p.preco)}</span><span className={cx('text-sm', p.destaque ? 'text-[#B6BECC]' : 'text-texto2')}>/mês</span></span>
+            <span className={cx('text-sm', p.destaque ? 'text-[#B6BECC]' : 'text-texto2')}>{p.para}</span>
+            <span className={cx('mt-4 flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-extrabold', p.destaque ? 'bg-white/10' : 'bg-obra-suave text-obra-texto')}>
+              <Camera className={cx('size-4 shrink-0', p.destaque && 'text-obra')} />{milhar(p.fotosMes)} fotos com IA/mês · ~{Math.round(p.fotosMes / 60)} laudos
+            </span>
+            <ul className="mb-6 mt-4 grid gap-2 text-sm">
               {p.itens.map((i) => <li key={i} className="flex items-start gap-2"><Check className={cx('mt-0.5 size-4 shrink-0', p.destaque ? 'text-obra' : 'text-ok')} />{i}</li>)}
             </ul>
-            {p.destaque && <Link to="/entrar" className="pilula pilula-obra mt-6 w-full">Entrar <ArrowRight className="size-5" /></Link>}
+            <Link to="/entrar" className={cx('pilula mt-auto w-full', p.destaque ? 'pilula-obra' : 'pilula-clara')}>Entrar <ArrowRight className="size-5" /></Link>
           </div>
         ))}
       </div>
+      {/* pacotes extras */}
+      <div className="mt-6 grid gap-4 rounded-[22px] border border-borda bg-sup p-5 md:grid-cols-[minmax(0,1fr)_auto] md:items-center md:p-6">
+        <div className="flex items-start gap-3">
+          <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-obra-suave text-obra-texto"><Package className="size-5" /></span>
+          <span>
+            <b className="block text-lg">Precisou de mais? Pacote extra.</b>
+            <span className="text-sm text-texto2">Você compra pelo app quando precisar. Não vence no fim do mês: só é usado quando as fotos do plano acabam.</span>
+          </span>
+        </div>
+        <div className="grid gap-2 sm:grid-cols-2">
+          {PACOTES.map((p) => (
+            <div key={p.id} className="rounded-2xl bg-sup2 px-4 py-3">
+              <b className="font-display text-xl">{milhar(p.fotos)} fotos</b>
+              <span className="block text-sm"><b>{precoBR(p.preco)}</b> <span className="text-texto3">· {porFoto(p)}/foto</span></span>
+            </div>
+          ))}
+        </div>
+      </div>
+      <p className="mt-4 text-sm text-texto3">Nesta fase de testes o acesso é por convite e sem cobrança. Fotos sem IA (diário de obra, logo, capa) não contam. Com duas IAs ligadas, cada foto conta duas.</p>
     </section>
   );
 }

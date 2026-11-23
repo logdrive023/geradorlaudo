@@ -153,7 +153,7 @@ export function Termos() {
         ]} />
       </S>
       <S id="teste" n={++n} t="Versão de teste e preços">
-        <p>O LaudoTech está em versão de teste, oferecida gratuitamente e com limites de uso (por exemplo, quantidade de fotos por laudo). Funcionalidades podem mudar, ser suspensas ou ter limites ajustados. Antes de qualquer cobrança, os planos e preços serão informados com antecedência, e a contratação dependerá do seu aceite.</p>
+        <p>O LaudoTech está em versão de teste, oferecida gratuitamente e com limites de uso (por exemplo, quantidade de fotos analisadas pela IA por mês). Funcionalidades podem mudar, ser suspensas ou ter limites ajustados. Antes de qualquer cobrança, os planos e preços serão informados com antecedência, e a contratação dependerá do seu aceite.</p>
       </S>
       <S id="disponibilidade" n={++n} t="Disponibilidade">
         <p>Empregamos esforços razoáveis para manter o serviço disponível e seguro, mas não garantimos funcionamento ininterrupto ou livre de erros. Recomendamos manter cópia dos laudos finalizados (PDF e Word) e usar a exportação de backup disponível em Ajustes.</p>

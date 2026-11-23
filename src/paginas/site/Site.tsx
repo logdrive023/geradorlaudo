@@ -102,7 +102,8 @@ const DUVIDAS = [
   ['E depois da vistoria?', 'O plano de ação transforma cada anomalia em tarefa com prazo (sugerido pela gravidade), responsável e custo estimado. Sai no PDF e em planilha Excel.'],
   ['Quais tipos de laudo?', 'Vistoria cautelar, entrega de imóvel, locação, inspeção predial, vícios construtivos, estrutural, reforma (NBR 16280), perícia judicial, avaliação (NBR 14653) e contábil. Cada um com seu padrão, que você pode personalizar.'],
   ['Dá para usar com a minha equipe?', 'Dá: a organização tem três papéis. O admin controla tudo; o engenheiro vê os laudos dele e os atribuídos, confere e assina; o assistente faz o campo (fotos, dados, diário) só no que for atribuído a ele, sem ver o financeiro nem emitir laudo.'],
-  ['Como faço para usar?', 'Nesta fase o acesso é por convite: o administrador do escritório convida a equipe e cada pessoa cria a própria senha. Os planos (Profissional e Escritório) serão anunciados antes de qualquer cobrança.'],
+  ['Como faço para usar?', 'Nesta fase o acesso é por convite: o administrador do escritório convida a equipe e cada pessoa cria a própria senha. Na fase de testes não há cobrança; você é avisado antes de qualquer cobrança.'],
+  ['Quanto custa?', 'Laudo R$ 119/mês (500 fotos com IA), Completo R$ 197/mês (1.000 fotos, com gestão de obras) e Escritório R$ 399/mês (2.500 fotos, até 5 pessoas). Laudos são ilimitados: o limite é de fotos analisadas pela IA. Precisou de mais, compre um pacote extra (250 fotos por R$ 49 ou 1.000 por R$ 149), que não vence.'],
   ['Como provo que o laudo é meu e não foi alterado?', 'As fotos guardam data e local, e cada achado passa pela sua aprovação. Ao emitir, o laudo ganha um código de verificação no PDF: quem recebe confere online se ele é autêntico e quem é o responsável.'],
   ['Quais normas o laudo cita?', 'ABNT NBR 13752 (perícias), NBR 16747 (inspeção predial), NBR 15575 (desempenho), NBR 5674 (manutenção), conforme o tipo de laudo.'],
 ];

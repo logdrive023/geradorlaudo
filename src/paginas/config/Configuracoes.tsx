@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { BookMarked, CheckCircle2, Download, ListOrdered, FileStack, MessageSquareText, ImagePlus, KeyRound, Monitor, Moon, Palette, ShieldCheck, Sparkles, Sun, Trash2, Upload, User } from 'lucide-react';
+import { BookMarked, CheckCircle2, CreditCard, Download, ListOrdered, FileStack, MessageSquareText, ImagePlus, KeyRound, Monitor, Moon, Palette, ShieldCheck, Sparkles, Sun, Trash2, Upload, User } from 'lucide-react';
 import { db, lerConfig, salvarConfig } from '../../db/db';
 import { useSessao } from '../../lib/sessao';
 import { Botao, Campo, Cartao, Entrada, Modal, useAviso, useUrl } from '../../componentes/ui';
@@ -14,6 +14,7 @@ import { BibliotecaTextos } from './BibliotecaTextos';
 import { CabecalhoTela } from '../../componentes/CabecalhoTela';
 import { SERVIDOR_PADRAO } from '../../ia/servidor';
 import { Prompts } from './Prompts';
+import { PlanoFotos } from './PlanoFotos';
 import { IasServidor } from './IasServidor';
 import { Recolhivel } from '../../componentes/Wizard';
 
@@ -24,9 +25,10 @@ const MODELOS_GEMINI_UI = [
   { id: 'gemini-3.5-flash', nome: 'Gemini 3.5 Flash', nota: 'alternativa' },
 ];
 
-type Aba = 'perfil' | 'modelos' | 'biblioteca' | 'etapas' | 'prompts' | 'ia' | 'aparencia' | 'seguranca' | 'dados';
+type Aba = 'perfil' | 'plano' | 'modelos' | 'biblioteca' | 'etapas' | 'prompts' | 'ia' | 'aparencia' | 'seguranca' | 'dados';
 const ABAS: { id: Aba; rotulo: string; ic: typeof User }[] = [
   { id: 'perfil', rotulo: 'Perfil', ic: User },
+  { id: 'plano', rotulo: 'Plano', ic: CreditCard },
   { id: 'modelos', rotulo: 'Modelos', ic: FileStack },
   { id: 'biblioteca', rotulo: 'Biblioteca', ic: BookMarked },
   { id: 'etapas', rotulo: 'Etapas', ic: ListOrdered },
@@ -345,7 +347,7 @@ export function Configuracoes() {
         ]} />
       {/* dois grupos curtos: o que é seu e o que é do escritório */}
       <nav className="mt-5 grid gap-3" role="tablist" aria-label="Ajustes">
-        {([['Você', ['perfil', 'aparencia', 'seguranca', 'dados']], ['Escritório', ['modelos', 'biblioteca', 'etapas', 'ia', 'prompts']]] as const).map(([grupo, ids]) => {
+        {([['Você', ['perfil', 'aparencia', 'seguranca', 'dados']], ['Escritório', ['plano', 'modelos', 'biblioteca', 'etapas', 'ia', 'prompts']]] as const).map(([grupo, ids]) => {
           const itens = abas.filter((a) => (ids as readonly string[]).includes(a.id));
           if (!itens.length) return null;
           return (
@@ -365,6 +367,7 @@ export function Configuracoes() {
       </nav>
       <div className="mt-5">
         {aba === 'perfil' && <Perfil u={usuario} />}
+        {aba === 'plano' && <PlanoFotos admin={usuario.papel === 'admin'} />}
         {aba === 'modelos' && <Modelos />}
         {aba === 'etapas' && <EtapasObra />}
         {aba === 'biblioteca' && <BibliotecaTextos />}

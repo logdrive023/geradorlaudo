@@ -21,6 +21,30 @@ export interface Org {
   permissoes: Record<string, boolean>;
   /** registro de atividades ligado no servidor (AUDITORIA=ligada) */
   auditoria?: boolean;
+  plano?: PlanoServidor;
+  cota?: CotaFotos;
+}
+
+// ---------- plano e fotos com IA ----------
+export interface PlanoServidor { id: string; nome: string; precoCentavos: number; fotosMes: number; usuariosMax: number; obras: boolean }
+/** restam = -1 quando o plano não tem limite */
+export interface CotaFotos { fotosMes: number; usadas: number; extras: number; restam: number }
+export interface PedidoFotos { id: string; pacote: string; fotos: number; valorCentavos: number; status: 'pendente' | 'pago' | 'cancelado'; link?: string; criadoEm: string; pagoEm?: string }
+export interface InfoFotos { cota: CotaFotos; plano: PlanoServidor; pacotes: { id: string; fotos: number; precoCentavos: number }[]; pedidos: PedidoFotos[]; compraLigada: boolean }
+
+let cacheFotos: { em: number; v: InfoFotos } | null = null;
+/** Plano e fotos do mês (guarda 1 min para não perguntar ao servidor a cada tela). */
+export async function lerFotos(forcar = false): Promise<InfoFotos> {
+  if (!forcar && cacheFotos && Date.now() - cacheFotos.em < 60_000) return cacheFotos.v;
+  const v = await api<InfoFotos>('/api/org/fotos');
+  cacheFotos = { em: Date.now(), v };
+  return v;
+}
+export const esquecerFotos = () => { cacheFotos = null; };
+/** Pede um pacote: com a cobrança ligada vem o link de pagamento; sem, vem um aviso. */
+export async function comprarFotos(pacote: string): Promise<{ link?: string; aviso?: string }> {
+  cacheFotos = null;
+  return api<{ link?: string; aviso?: string }>('/api/org/fotos', json({ pacote }));
 }
 
 const json = (corpo: unknown, metodo = 'POST'): RequestInit => ({ method: metodo, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(corpo) });

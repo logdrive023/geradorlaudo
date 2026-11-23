@@ -29,7 +29,7 @@ export const AJUDA_SITE: Categoria[] = [
     id: 'teste', nome: 'Testar e preço',
     perguntas: [
       { p: 'Como faço para usar?', r: 'Nesta fase o acesso é por convite: o administrador do escritório convida a equipe pelo app e cada pessoa cria a própria senha.', ir: { tipo: 'rota', para: '/entrar', rotulo: 'Entrar' }, chaves: 'testar grátis cadastro' },
-      { p: 'Quanto custa?', r: 'Nesta fase o acesso é por convite. Depois vêm os planos Profissional (quem assina sozinho) e Escritório (equipes). Você é avisado antes de qualquer cobrança.', ir: { tipo: 'ancora', id: 'planos', rotulo: 'Ver os planos' }, chaves: 'preço custa valor plano mensalidade' },
+      { p: 'Quanto custa?', r: 'Laudo R$ 119/mês (500 fotos com IA), Completo R$ 197/mês (1.000 fotos e gestão de obras) e Escritório R$ 399/mês (2.500 fotos, até 5 pessoas). Laudos ilimitados; você paga pelas fotos que a IA analisa. Acabou? Pacote extra de 250 fotos por R$ 49, que não vence. Na fase de testes, por convite e sem cobrança.', ir: { tipo: 'ancora', id: 'planos', rotulo: 'Ver os planos' }, chaves: 'preço custa valor plano mensalidade fotos pacote limite' },
       { p: 'Quanto tempo eu ganho?', r: 'Depende da sua rotina. A calculadora da página faz a conta com os seus números (é uma estimativa).', ir: { tipo: 'ancora', id: 'conta', rotulo: 'Fazer a conta' }, chaves: 'tempo ganho economiza' },
     ],
   },

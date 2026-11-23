@@ -11,7 +11,7 @@ import { novoId, resumoSenha } from '../lib/util';
  * e, ao entrar, o que está no servidor desce para o aparelho.
  */
 
-export const MAX_FOTOS_POR_LAUDO = 5; // fase de teste (o servidor também confere)
+export const MAX_FOTOS_POR_LAUDO = 1000; // trava de segurança (o servidor também confere); o plano limita as fotos com IA do mês
 // tamanho máximo das listas que o servidor devolve (backend: limit 5000 / 2000)
 const LIMITE_LAUDOS = 5000;
 const LIMITE_OBRAS = 2000;

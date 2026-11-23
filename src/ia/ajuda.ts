@@ -79,7 +79,7 @@ export const AJUDA: Categoria[] = [
     perguntas: [
       { p: 'Tem aplicativo para celular?', r: 'O LaudoTech instala direto do navegador: no Chrome (Android), menu › "Instalar app"; no iPhone, Safari › Compartilhar › "Adicionar à Tela de Início". Abre como app, sem loja.', chaves: 'app aplicativo instalar celular android iphone' },
       { p: 'Meus laudos ficam salvos onde?', r: 'Entrando com a sua conta, ficam no servidor (banco seguro) e também no aparelho. Se trocar de celular, é só entrar de novo que eles voltam.', chaves: 'salvo nuvem servidor banco trocar celular perder' },
-      { p: 'Quantas fotos posso pôr por laudo?', r: 'Nesta fase de teste, até 5 fotos por laudo.', ir: { tipo: 'aba', aba: 'fotos', rotulo: 'Ir para Fotos' }, chaves: 'quantas fotos limite máximo 5' },
+      { p: 'Quantas fotos posso pôr por laudo?', r: 'Quantas precisar (até 1.000 por laudo). O que o plano limita são as fotos analisadas pela IA no mês: veja quantas restam em Ajustes › Plano. Acabou? Compre um pacote extra; as fotos novas ficam na fila até lá.', ir: { tipo: 'rota', para: '/configuracoes?aba=plano', rotulo: 'Ver meu plano' }, chaves: 'quantas fotos limite máximo pacote plano acabou' },
       { p: 'Funciona sem internet?', r: 'O que você já abriu continua no aparelho. A análise da IA e o envio para o servidor precisam de internet; quando ela volta, eu sincronizo sozinha.', chaves: 'offline sem internet sinal' },
     ],
   },

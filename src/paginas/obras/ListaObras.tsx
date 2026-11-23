@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { AlarmClock, BookOpenText, ChevronRight, HardHat, MapPin, Plus, Search, ShoppingCart, TriangleAlert, User } from 'lucide-react';
@@ -12,6 +12,8 @@ import { BarraDupla, Rotulado } from '../../componentes/Pecas';
 import { Lia } from '../../componentes/Lia';
 import { cx, dataBR, haQuanto } from '../../lib/util';
 import { NovaObra } from './NovaObra';
+import { logadoNaNuvem } from '../../db/nuvem';
+import { lerFotos } from '../../db/organizacao';
 
 const normal = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 
@@ -110,6 +112,11 @@ export function ListaObras() {
   const [status, setStatus] = useState<'todas' | StatusObra>('todas');
   const [atencao, setAtencao] = useState<0 | 1 | 2>(0); // 1 = com atraso, 2 = crítica atrasada
   const [nova, setNova] = useState(false);
+  // plano sem gestão de obras (Laudo): mostra o convite para o Completo em vez de criar obra
+  const [semObras, setSemObras] = useState<string | null>(null);
+  const [aviso, setAviso] = useState(false);
+  useEffect(() => { if (logadoNaNuvem()) lerFotos().then((i) => setSemObras(i.plano.obras ? null : i.plano.nome)).catch(() => {}); }, []);
+  const novaObra = () => (semObras ? setAviso(true) : setNova(true));
 
   const filtradas = useMemo(() => {
     const t = normal(busca.trim());
@@ -132,7 +139,7 @@ export function ListaObras() {
             <p className="text-sm font-bold text-[#A9B1C1]">Gestão de obras</p>
             <h1 className="mt-1 text-[28px] font-extrabold leading-tight md:text-4xl">Suas <span className="grifo">obras</span></h1>
           </div>
-          <button onClick={() => setNova(true)} className="pilula pilula-obra"><Plus className="size-5" />Nova obra</button>
+          <button onClick={novaObra} className="pilula pilula-obra"><Plus className="size-5" />Nova obra</button>
         </div>
         <Lia className="relative mt-4 max-w-2xl" tom="escuro" tam={40} humor={atrasadas ? 'atenta' : 'feliz'}>
           {obras.length === 0 ? 'Cadastre a obra e eu ajudo no diário, no cronograma, nas compras e no financeiro.'
@@ -180,7 +187,7 @@ export function ListaObras() {
       <div className="mt-4">
         {obras.length === 0 ? (
           <Vazio icone={<HardHat className="size-7" />} titulo="Nenhuma obra ainda" texto="Cadastre a obra para ter diário, cronograma, compras e financeiro num lugar só, e um link para o cliente acompanhar.">
-            <button onClick={() => setNova(true)} className="pilula pilula-obra"><Plus className="size-5" />Nova obra</button>
+            <button onClick={novaObra} className="pilula pilula-obra"><Plus className="size-5" />Nova obra</button>
           </Vazio>
         ) : filtradas.length === 0 ? (
           <Vazio icone={<Search className="size-7" />} titulo="Nada encontrado" texto="Tente outro termo ou outro status." />
@@ -191,6 +198,19 @@ export function ListaObras() {
         )}
       </div>
       <NovaObra aberto={nova} aoFechar={() => setNova(false)} />
+      {aviso && semObras && (
+        <div role="dialog" aria-modal="true" className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4" onClick={() => setAviso(false)}>
+          <div className="grid max-w-sm gap-3 rounded-[22px] bg-sup p-6 text-center shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <span className="mx-auto grid size-12 place-items-center rounded-2xl bg-obra-suave text-obra-texto"><HardHat className="size-6" /></span>
+            <b className="text-lg">Gestão de obras é do plano Completo</b>
+            <p className="text-sm text-texto2">O plano {semObras} é só de laudos. No Completo você tem cronograma, diário, financeiro e compras, e o dobro de fotos com IA.</p>
+            <div className="grid gap-2 sm:grid-cols-2">
+              <button onClick={() => setAviso(false)} className="pilula pilula-clara">Agora não</button>
+              <Link to="/configuracoes?aba=plano" className="pilula pilula-obra">Ver planos</Link>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

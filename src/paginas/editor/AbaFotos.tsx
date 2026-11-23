@@ -15,7 +15,9 @@ import { FotoMarcada } from '../../componentes/FotoMarcada';
 import { BarraWizard } from '../../componentes/Wizard';
 import { Lia } from '../../componentes/Lia';
 import { cx, dois, novoId } from '../../lib/util';
-import { MAX_FOTOS_POR_LAUDO, ouvirNuvem } from '../../db/nuvem';
+import { MAX_FOTOS_POR_LAUDO, logadoNaNuvem, ouvirNuvem } from '../../db/nuvem';
+import { lerFotos, type CotaFotos } from '../../db/organizacao';
+import { milhar } from '../../dominio/planos';
 import type { Aba } from './Editor';
 
 type Filtro = 'todas' | 'conferir' | 'conferidas' | 'erro';
@@ -76,6 +78,10 @@ export function AbaFotos({ laudo, fotos, irPara }: { laudo: Laudo; fotos: Foto[]
   const motor = useLiveQuery(async () => { const c = await lerConfig(); return c.motorIA === 'claude' && c.apiKey ? 'claude' : c.motorIA === 'gemini' && c.geminiKey ? 'gemini' : c.motorIA === 'servidor' ? 'servidor' : 'demo'; }, [], 'demo');
   const { avisar, el } = useAviso();
   const cheio = fotos.length >= MAX_FOTOS_POR_LAUDO;
+  // fotos com IA do plano (só na IA do servidor, a que conta)
+  const [cota, setCota] = useState<CotaFotos | null>(null);
+  const verCota = (forcar = false) => { if (motor === 'servidor' && logadoNaNuvem()) lerFotos(forcar).then((i) => setCota(i.cota)).catch(() => {}); };
+  useEffect(() => verCota(), [motor]); // eslint-disable-line react-hooks/exhaustive-deps
   // o servidor recusou algo (ex.: limite de fotos): mostra aqui
   useEffect(() => ouvirNuvem((e) => { if (e.tipo === 'erro') avisar(e.mensagem, 'erro'); }), [avisar]);
   const p = progressoFotos(fotos);
@@ -88,9 +94,9 @@ export function AbaFotos({ laudo, fotos, irPara }: { laudo: Laudo; fotos: Foto[]
     const imagens = [...lista].filter((f) => f.type.startsWith('image/'));
     if (!imagens.length) return;
     const vagas = Math.max(0, MAX_FOTOS_POR_LAUDO - fotos.length);
-    if (!vagas) { avisar(`Na fase de teste cada laudo aceita até ${MAX_FOTOS_POR_LAUDO} fotos.`, 'erro'); return; }
+    if (!vagas) { avisar(`Cada laudo aceita até ${milhar(MAX_FOTOS_POR_LAUDO)} fotos. Divida em dois laudos.`, 'erro'); return; }
     const arqs = imagens.slice(0, vagas);
-    if (imagens.length > vagas) avisar(`Só ${vagas === 1 ? 'cabia mais 1 foto' : `cabiam mais ${vagas} fotos`} (limite de ${MAX_FOTOS_POR_LAUDO} no teste).`, 'erro');
+    if (imagens.length > vagas) avisar(`Só ${vagas === 1 ? 'cabia mais 1 foto' : `cabiam mais ${vagas} fotos`} (máximo de ${milhar(MAX_FOTOS_POR_LAUDO)} por laudo).`, 'erro');
     setSubindo({ feitas: 0, total: arqs.length });
     let ordem = fotos.length ? Math.max(...fotos.map((f) => f.ordem)) + 1 : 0;
     for (const [i, a] of arqs.entries()) {
@@ -106,11 +112,13 @@ export function AbaFotos({ laudo, fotos, irPara }: { laudo: Laudo; fotos: Foto[]
     setAnalisando({ feitas: 0, total: arqs.length });
     await analisarPendentes(laudo, (feitas, total) => setAnalisando({ feitas, total }));
     setAnalisando(null);
+    verCota(true);
   };
   const analisar = async () => {
     setAnalisando({ feitas: 0, total: p.pendentes });
     await analisarPendentes(laudo, (feitas, total) => setAnalisando({ feitas, total }));
     setAnalisando(null);
+    verCota(true);
   };
   const mover = async (f: Foto, dir: -1 | 1) => {
     const i = fotos.findIndex((x) => x.id === f.id);
@@ -170,7 +178,7 @@ export function AbaFotos({ laudo, fotos, irPara }: { laudo: Laudo; fotos: Foto[]
               </li>
             ))}
           </ol>
-          <p className="mt-3 text-center text-xs font-bold text-texto3">Fase de teste: até {MAX_FOTOS_POR_LAUDO} fotos por laudo.</p>
+          {cota && cota.restam >= 0 && <p className="mt-3 text-center text-xs font-bold text-texto3">Seu plano: restam <b className="text-texto">{milhar(cota.restam)}</b> fotos com IA neste mês.</p>}
           <div className="mt-3 grid gap-2 sm:flex sm:justify-center">
             <button onClick={escolher} className="pilula pilula-obra"><ImagePlus className="size-5" />Escolher fotos</button>
             <button onClick={tirar} className="pilula pilula-clara"><Camera className="size-5" />Tirar foto agora</button>
@@ -182,8 +190,14 @@ export function AbaFotos({ laudo, fotos, irPara }: { laudo: Laudo; fotos: Foto[]
             <button onClick={escolher} disabled={cheio} className="flex h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-sup font-extrabold text-texto2 hover:text-texto disabled:opacity-45"><ImagePlus className="size-5" />Adicionar fotos</button>
             <button onClick={tirar} disabled={cheio} className="flex h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-sup font-extrabold text-texto2 hover:text-texto disabled:opacity-45"><Camera className="size-5" />Câmera</button>
           </div>
-          <p className={cx('-mt-1 text-center text-xs font-bold', cheio ? 'text-obra-forte' : 'text-texto3')}>
-            {fotos.length} de {MAX_FOTOS_POR_LAUDO} fotos{cheio ? ' — limite da fase de teste' : ''}
+          <p className={cx('-mt-1 flex flex-wrap items-center justify-center gap-x-2 text-center text-xs font-bold', cheio || cota?.restam === 0 ? 'text-obra-forte' : 'text-texto3')}>
+            <span>{fotos.length} {fotos.length === 1 ? 'foto' : 'fotos'}{cheio ? ' — máximo por laudo' : ''}</span>
+            {cota && cota.restam >= 0 && <>
+              <span aria-hidden>·</span>
+              {cota.restam === 0
+                ? <Link to="/configuracoes?aba=plano" className="underline">as fotos com IA do mês acabaram: ver pacotes</Link>
+                : <span>restam {milhar(cota.restam)} com IA no mês{cota.restam <= 30 && <> · <Link to="/configuracoes?aba=plano" className="underline">comprar mais</Link></>}</span>}
+            </>}
           </p>
 
           {p.analisadas > 0 && (

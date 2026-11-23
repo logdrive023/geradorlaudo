@@ -16,7 +16,7 @@ async function analisarVarias(pedido: Parameters<typeof import('./servidor').ana
   const { analisarServidor } = await import('./servidor');
   const res = await Promise.allSettled(ias.map((ia) => analisarServidor(pedido, base, ia)));
   const ok = res.flatMap((x, i) => (x.status === 'fulfilled' ? [{ ia: ias[i], env: x.value }] : []));
-  if (!ok.length) throw new Error((res[0] as PromiseRejectedResult).reason?.message ?? 'Nenhuma IA respondeu.');
+  if (!ok.length) throw (res[0] as PromiseRejectedResult).reason ?? new Error('Nenhuma IA respondeu.');
   const porIA: ResumoIA[] = res.map((x, i) => x.status === 'fulfilled'
     ? { ia: ias[i], modelo: x.value.modelo, ambiente: x.value.analise.ambiente, elemento: x.value.analise.elemento, legenda: x.value.analise.legenda, achados: x.value.analise.achados.length }
     : { ia: ias[i], erro: (x.reason as Error)?.message ?? 'falhou' });
@@ -54,9 +54,10 @@ async function analisar(laudo: Laudo, foto: Foto): Promise<Saida & { porIA?: Res
   return { r: await analisarDemo({ imagem: foto.imagem, tipoLaudo: laudo.tipo, contexto }), origem: 'demo' };
 }
 
-export async function analisarFoto(laudo: Laudo, fotoId: string) {
+/** Analisa uma foto. Devolve true quando as fotos com IA do plano acabaram (aí a fila para). */
+export async function analisarFoto(laudo: Laudo, fotoId: string): Promise<boolean> {
   const foto = await db.fotos.get(fotoId);
-  if (!foto) return;
+  if (!foto) return false;
   emAnalise.add(fotoId);
   await db.fotos.update(fotoId, { status: 'analisando', erro: undefined });
   try {
@@ -68,8 +69,13 @@ export async function analisarFoto(laudo: Laudo, fotoId: string) {
       origem, analisadoEm: Date.now(), ...(porIA ? { porIA } : {}),
     };
     await db.fotos.update(fotoId, { status: 'analisada', analise });
+    return false;
   } catch (e) {
-    await db.fotos.update(fotoId, { status: 'erro', erro: (e as Error).message });
+    const semFotos = (e as Error)?.name === 'ErroSemFotos';
+    // sem fotos no plano: a foto volta para a fila (analisa depois de comprar um pacote ou no mês que vem)
+    await db.fotos.update(fotoId, { status: semFotos ? 'pendente' : 'erro', erro: (e as Error).message });
+    if (semFotos) void import('../db/organizacao').then((m) => m.esquecerFotos());
+    return semFotos;
   } finally {
     emAnalise.delete(fotoId);
   }
@@ -83,9 +89,10 @@ export async function analisarPendentes(laudo: Laudo, aoAvancar?: (feitas: numbe
   // "analisando" sem análise rodando neste aparelho = ficou presa (o app fechou no meio): entra de novo
   const fila = (await fotosDoLaudo(laudo.id)).filter((f) => f.status === 'pendente' || f.status === 'erro' || (f.status === 'analisando' && !emAnalise.has(f.id)));
   let feitas = 0;
+  let semFotos = false;
   const trabalhador = async () => {
-    for (let f = fila.shift(); f; f = fila.shift()) {
-      await analisarFoto(laudo, f.id);
+    for (let f = fila.shift(); f && !semFotos; f = fila.shift()) {
+      if (await analisarFoto(laudo, f.id)) { semFotos = true; fila.length = 0; break; } // acabaram as fotos do plano: para
       aoAvancar?.(++feitas, feitas + fila.length);
     }
   };

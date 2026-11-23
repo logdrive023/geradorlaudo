@@ -10,6 +10,9 @@ import { instrucaoAnalise, lerPrompt } from './instrucoes';
 export const SERVIDOR_PADRAO = (import.meta.env.VITE_API_URL as string | undefined)
   || (import.meta.env.PROD ? 'https://laudotech-api.onrender.com' : 'http://localhost:8080');
 
+/** As fotos com IA do plano acabaram no mês (o servidor respondeu 402). */
+export class ErroSemFotos extends Error { constructor(msg: string) { super(msg); this.name = 'ErroSemFotos'; } }
+
 export interface Envelope { versao: string; origem: string; modelo: string; analise: ResultadoIA }
 
 /** Token da sessão (o servidor só faz IA para quem está logado). */
@@ -27,6 +30,7 @@ async function chamar<T>(base: string, caminho: string, init: RequestInit): Prom
   }
   const corpo = await r.json().catch(() => ({}));
   if (r.status === 401) throw new Error('Entre com a sua conta para usar a IA.');
+  if (r.status === 402) throw new ErroSemFotos((corpo as { erro?: string }).erro || 'As fotos com IA do seu plano acabaram neste mês.');
   if (!r.ok) throw new Error((corpo as { erro?: string }).erro || `Servidor respondeu ${r.status}.`);
   return corpo as T;
 }
