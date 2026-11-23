@@ -7,6 +7,7 @@ import { logadoNaNuvem } from '../../db/nuvem';
 import { PACOTES, PLANOS, milhar, porFoto, precoBR } from '../../dominio/planos';
 import { Botao, Cartao, Dica, useAviso } from '../../componentes/ui';
 import { cx } from '../../lib/util';
+import { exemploFotos } from '../../dominio/exemploPlano';
 import { HistoricoCobranca } from './HistoricoCobranca';
 import { AjudaPlano } from './AjudaPlano';
 import { CenaCarregando } from '../../componentes/CenaCarregando';
@@ -19,7 +20,7 @@ const proximoMes = () => {
 };
 
 /** Plano e fotos com IA: quanto já usou no mês, saldo dos pacotes e compra de mais fotos (só o admin compra). */
-export function PlanoFotos({ admin }: { admin: boolean }) {
+export function PlanoFotos({ admin, exemplo, setExemplo }: { admin: boolean; exemplo?: boolean; setExemplo?: (v: boolean) => void }) {
   // a parte fica no endereço (/plano?parte=cobranca): dá para mandar o link e o voltar do navegador funciona
   const [busca, setBusca] = useSearchParams();
   const pedida = busca.get('parte') as Parte | null;
@@ -59,7 +60,9 @@ export function PlanoFotos({ admin }: { admin: boolean }) {
   );
   if (!info) return <CenaCarregando texto={acordando ? 'Acordando o servidor… (pode levar até 1 minuto)' : 'Abrindo o seu plano…'} />;
 
-  const { cota, plano } = info;
+  const real = info;
+  const vis = exemplo ? exemploFotos() : info;
+  const { cota, plano } = vis;
   const semLimite = cota.restam < 0;
   const doPlano = Math.min(cota.usadas, cota.fotosMes);
   const pct = semLimite || !cota.fotosMes ? 0 : Math.min(100, Math.round((doPlano / cota.fotosMes) * 100));
@@ -82,6 +85,15 @@ export function PlanoFotos({ admin }: { admin: boolean }) {
   return (
     <>
     {/* três partes curtas: quanto usou, quanto paga, e ajuda */}
+    {/* fase de testes: a tela já mostra um exemplo de plano pago (e um toque volta para os dados reais) */}
+    {exemplo ? (
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-2xl border-2 border-dashed border-obra bg-obra-suave/40 px-4 py-3 text-sm">
+        <span><b>Exemplo:</b> é assim que fica um escritório no plano Completo. Na fase de testes não há cobrança e nada aqui é salvo.</span>
+        {setExemplo && <button onClick={() => setExemplo(false)} className="shrink-0 font-extrabold text-tinta">Ver os meus dados</button>}
+      </div>
+    ) : real.plano.id === 'teste' && setExemplo && (
+      <button onClick={() => setExemplo(true)} className="mb-4 text-sm font-extrabold text-tinta">Ver um exemplo de plano pago</button>
+    )}
     <div className="mb-4 inline-flex rounded-full bg-sup p-1 ring-1 ring-borda" role="tablist" aria-label="Plano">
       {partes.map((p) => (
         <button key={p.id} role="tab" aria-selected={parte === p.id} onClick={() => setParte(p.id)}
@@ -91,7 +103,7 @@ export function PlanoFotos({ admin }: { admin: boolean }) {
     {/* um carregamento só, no lugar do conteúdo da aba (a aba nova já monta por trás e busca os dados) */}
     {trocando && <CenaCarregando entrar={false} />}
     <div className={cx(trocando && 'hidden')}>
-    {parte === 'cobranca' && admin && <HistoricoCobranca irAjuda={() => setParte('ajuda')} abrirTroca={abrirTroca} />}
+    {parte === 'cobranca' && admin && <HistoricoCobranca irAjuda={() => setParte('ajuda')} abrirTroca={abrirTroca} exemplo={exemplo} />}
     {parte === 'ajuda' && <AjudaPlano />}
     {parte === 'uso' && <>
     <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">

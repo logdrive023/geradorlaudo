@@ -8,6 +8,7 @@ import { avisarPlanoMudou, cancelarPlano, lerCobrancas, mudarDiaCobranca, reativ
 import { PLANOS, milhar, precoBR } from '../../dominio/planos';
 import { Botao, Cartao, Modal, useAviso } from '../../componentes/ui';
 import { cx } from '../../lib/util';
+import { exemploCobrancas } from '../../dominio/exemploPlano';
 
 const reais = (c: number) => precoBR(c / 100);
 const dia = (d?: string) => (d ? new Date(d.length === 10 ? `${d}T12:00:00` : d).toLocaleDateString('pt-BR') : '—');
@@ -33,33 +34,33 @@ const STATUS: Record<Cobranca['status'], { t: string; c: string }> = {
 };
 const MOTIVOS = ['Está caro para mim', 'Uso pouco', 'Faltou algum recurso', 'Vou usar outro sistema', 'Outro motivo'];
 
-function LinhaCobranca({ c }: { c: Cobranca }) {
+function LinhaCobranca({ c, exemplo }: { c: Cobranca; exemplo?: boolean }) {
   const st = STATUS[c.status] ?? STATUS.pendente;
   const quando = c.status === 'pago' ? `pago em ${dia(c.pagoEm)}` : c.vencimento ? `vence em ${data(c.vencimento)}` : `pedido em ${dia(c.criadoEm)}`;
+  const recibo = `/recibo/${exemplo ? 'exemplo' : c.tipo === 'pacote' ? 'pacote' : 'mensalidade'}/${c.id}`;
+  const fatura = `/fatura/${exemplo ? 'exemplo' : 'mensalidade'}/${c.id}`;
+  const aberta = c.status === 'pendente' || c.status === 'vencido';
   return (
-    <li className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 rounded-xl bg-sup2 px-3 py-2.5">
-      <span className={cx('grid size-9 place-items-center rounded-lg', c.tipo === 'pacote' ? 'bg-obra-suave text-obra-texto' : 'bg-sup text-texto2')}>
+    <li className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-xl bg-sup2 px-3 py-2.5">
+      <span className={cx('grid size-9 shrink-0 place-items-center rounded-lg', c.tipo === 'pacote' ? 'bg-obra-suave text-obra-texto' : 'bg-sup text-texto2')}>
         {c.tipo === 'pacote' ? <Package className="size-4" /> : <Wallet className="size-4" />}
       </span>
-      <span className="min-w-0">
-        <b className="block truncate text-sm">{c.descricao}{c.referencia && c.tipo === 'mensalidade' ? ` · ${nomeMes(c.referencia)}` : ''}</b>
+      <span className="min-w-0 flex-1 basis-[55%]">
+        <b className="block text-sm leading-snug">{c.descricao}{c.referencia && c.tipo === 'mensalidade' ? ` · ${nomeMes(c.referencia)}` : ''}</b>
         <span className="text-xs text-texto3">{quando}</span>
       </span>
-      <span className="grid justify-items-end gap-1">
+      <span className="ml-auto flex flex-wrap items-center justify-end gap-x-2 gap-y-1">
         <b className="text-sm tabular-nums">{reais(c.valorCentavos)}</b>
-        <span className="flex items-center gap-1.5">
-          <span className={cx('rounded-full px-2 py-0.5 text-[11px] font-extrabold', st.c)}>{st.t}</span>
-          {c.status === 'pago'
-            ? <Link to={`/recibo/${c.tipo === 'pacote' ? 'pacote' : 'mensalidade'}/${c.id}`} target="_blank" className="flex items-center gap-0.5 text-[11px] font-extrabold text-tinta">recibo<ExternalLink className="size-3" /></Link>
-            : c.link && (c.status === 'pendente' || c.status === 'vencido') && <a href={c.link} target="_blank" rel="noopener noreferrer" className="flex items-center gap-0.5 text-[11px] font-extrabold text-tinta">pagar<ExternalLink className="size-3" /></a>}
-        </span>
+        <span className={cx('rounded-full px-2 py-0.5 text-[11px] font-extrabold', st.c)}>{st.t}</span>
+        {c.status === 'pago' && <Link to={recibo} target="_blank" className="flex items-center gap-0.5 text-[11px] font-extrabold text-tinta">recibo<ExternalLink className="size-3" /></Link>}
+        {aberta && c.tipo === 'mensalidade' && <Link to={fatura} target="_blank" className="flex items-center gap-0.5 rounded-full bg-obra px-2 py-0.5 text-[11px] font-extrabold text-[#121A2B]">pagar<ExternalLink className="size-3" /></Link>}
       </span>
     </li>
   );
 }
 
 /** Cobrança (só o admin): o plano e a próxima cobrança, mudar o dia, cancelar, próximas cobranças e histórico. */
-export function HistoricoCobranca({ irAjuda, abrirTroca }: { irAjuda: () => void; abrirTroca?: boolean }) {
+export function HistoricoCobranca({ irAjuda, abrirTroca, exemplo }: { irAjuda: () => void; abrirTroca?: boolean; exemplo?: boolean }) {
   const [troca, setTroca] = useState(!!abrirTroca);
   const [trocaInicial, setTrocaInicial] = useState<string | undefined>(undefined);
   const [h, setH] = useState<Historico | null>(null);
@@ -72,8 +73,9 @@ export function HistoricoCobranca({ irAjuda, abrirTroca }: { irAjuda: () => void
   const { avisar, el } = useAviso();
   const [acordando, setAcordando] = useState(false);
   const parar = useRef<() => void>(undefined);
-  const carregar = () => { setErro(''); parar.current?.(); parar.current = comPaciencia(lerCobrancas, setH, setErro, setAcordando); };
-  useEffect(() => { carregar(); return () => parar.current?.(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  // no exemplo nada vai ao servidor: as ações mudam só a tela
+  const carregar = () => { setErro(''); parar.current?.(); if (exemplo) { setH(exemploCobrancas()); return; } parar.current = comPaciencia(lerCobrancas, setH, setErro, setAcordando); };
+  useEffect(() => { carregar(); return () => parar.current?.(); }, [exemplo]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (erro) return (
     <Cartao className="grid justify-items-center gap-3 p-6 text-center">
@@ -99,19 +101,32 @@ export function HistoricoCobranca({ irAjuda, abrirTroca }: { irAjuda: () => void
   const salvarDia = async () => {
     if (mudandoDia == null) return;
     setOcupado(true);
-    try { const r = await mudarDiaCobranca(mudandoDia); avisar(`Pronto. A próxima cobrança é em ${data(r.proximaCobranca)}.`); setMudandoDia(null); carregar(); }
+    try {
+      if (exemplo && h) {
+        const hj = new Date(); let d = new Date(hj.getFullYear(), hj.getMonth(), mudandoDia, 12); if (d <= hj) d = new Date(hj.getFullYear(), hj.getMonth() + 1, mudandoDia, 12);
+        const prox = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        setH({ ...h, diaCobranca: mudandoDia, proximaCobranca: prox, cobrancas: h.cobrancas.map((c) => (c.status === 'pendente' ? { ...c, vencimento: prox, referencia: prox.slice(0, 7) } : c)) });
+        avisar(`Exemplo: a próxima cobrança iria para ${data(prox)}. Nada foi salvo.`); setMudandoDia(null);
+      } else { const r = await mudarDiaCobranca(mudandoDia); avisar(`Pronto. A próxima cobrança é em ${data(r.proximaCobranca)}.`); setMudandoDia(null); carregar(); }
+    }
     catch (e) { avisar((e as Error).message, 'erro'); }
     setOcupado(false);
   };
   const confirmarCancelar = async () => {
     setOcupado(true);
-    try { const r = await cancelarPlano(motivo); avisar(r.acessoAte ? `Plano cancelado. Você usa tudo até ${data(r.acessoAte)}.` : 'Plano cancelado.'); setCancelar(false); carregar(); avisarPlanoMudou(); }
+    try {
+      if (exemplo && h) { setH({ ...h, status: 'cancelada', acessoAte: h.proximaCobranca, canceladoEm: new Date().toISOString(), cobrancas: h.cobrancas.map((c) => (c.status === 'pendente' ? { ...c, status: 'cancelado' } : c)) }); avisar('Exemplo: assim fica um plano cancelado. Nada foi salvo.'); setCancelar(false); }
+      else { const r = await cancelarPlano(motivo); avisar(r.acessoAte ? `Plano cancelado. Você usa tudo até ${data(r.acessoAte)}.` : 'Plano cancelado.'); setCancelar(false); carregar(); avisarPlanoMudou(); }
+    }
     catch (e) { avisar((e as Error).message, 'erro'); }
     setOcupado(false);
   };
   const reativar = async () => {
     setOcupado(true);
-    try { await reativarPlano(); avisar('Plano reativado. Que bom que ficou!'); carregar(); avisarPlanoMudou(); }
+    try {
+      if (exemplo) { setH(exemploCobrancas()); avisar('Exemplo: plano reativado. Nada foi salvo.'); }
+      else { await reativarPlano(); avisar('Plano reativado. Que bom que ficou!'); carregar(); avisarPlanoMudou(); }
+    }
     catch (e) { avisar((e as Error).message, 'erro'); }
     setOcupado(false);
   };
@@ -177,12 +192,15 @@ export function HistoricoCobranca({ irAjuda, abrirTroca }: { irAjuda: () => void
         <Cartao className="grid gap-2 p-4">
           <h3 className="font-bold">Próximas cobranças</h3>
           <ul className="grid gap-2">
-            {emAberto.map((c) => <LinhaCobranca key={c.tipo + c.id} c={c} />)}
+            {emAberto.map((c) => <LinhaCobranca key={c.tipo + c.id} c={c} exemplo={exemplo} />)}
             {previstas.map((d, i) => (
-              <li key={d} className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 rounded-xl border border-dashed border-borda-forte px-3 py-2.5">
-                <span className="grid size-9 place-items-center rounded-lg bg-sup2 text-texto3"><Wallet className="size-4" /></span>
-                <span><b className="block text-sm">Mensalidade {h.plano.nome}</b><span className="text-xs text-texto3">{i === 0 && !emAberto.length ? 'próxima' : 'prevista'} · {data(d)}</span></span>
-                <b className="text-sm tabular-nums text-texto2">{reais(h.proximoValorCentavos)}</b>
+              <li key={d} className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-xl border border-dashed border-borda-forte px-3 py-2.5">
+                <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-sup2 text-texto3"><Wallet className="size-4" /></span>
+                <span className="min-w-0 flex-1 basis-[55%]"><b className="block text-sm">Mensalidade {h.plano.nome}</b><span className="text-xs text-texto3">{i === 0 && !emAberto.length ? 'próxima' : 'prevista'} · {data(d)}</span></span>
+                <span className="ml-auto flex items-center gap-2">
+                  <b className="text-sm tabular-nums text-texto2">{reais(h.proximoValorCentavos)}</b>
+                  <Link to={`/fatura/${exemplo ? 'exemplo' : 'prevista'}/${d}`} target="_blank" className="flex items-center gap-0.5 text-[11px] font-extrabold text-tinta">ver<ExternalLink className="size-3" /></Link>
+                </span>
               </li>
             ))}
           </ul>
@@ -196,7 +214,7 @@ export function HistoricoCobranca({ irAjuda, abrirTroca }: { irAjuda: () => void
           {historico.length > 0 && <span className="text-xs text-texto3">pago em {new Date().getFullYear()}: <b className="text-texto">{reais(historico.filter((c) => c.status === 'pago' && (c.pagoEm ?? '').startsWith(String(new Date().getFullYear()))).reduce((s, c) => s + c.valorCentavos, 0))}</b></span>}
         </div>
         {historico.length ? <>
-          <ul className="grid gap-2">{(todas ? historico : historico.slice(0, 5)).map((c) => <LinhaCobranca key={c.tipo + c.id} c={c} />)}</ul>
+          <ul className="grid gap-2">{(todas ? historico : historico.slice(0, 5)).map((c) => <LinhaCobranca key={c.tipo + c.id} c={c} exemplo={exemplo} />)}</ul>
           {historico.length > 5 && <button onClick={() => setTodas(!todas)} className="justify-self-start text-sm font-extrabold text-tinta">{todas ? 'Mostrar menos' : `Ver todas (${historico.length})`}</button>}
         </> : <p className="text-sm text-texto2">{h.pago ? 'Nenhum pagamento ainda.' : 'Na fase de testes não há cobrança. Quando o plano pago começar, cada mensalidade e cada pacote aparecem aqui.'}</p>}
       </Cartao>
@@ -235,7 +253,7 @@ export function HistoricoCobranca({ irAjuda, abrirTroca }: { irAjuda: () => void
         </Cartao>
       </div>
 
-      <TrocarPlano aberto={troca} aoFechar={() => { setTroca(false); setTrocaInicial(undefined); }} atual={h.plano.id} proximaCobranca={cancelado ? undefined : h.proximaCobranca}
+      <TrocarPlano simular={exemplo ? (id) => { const p = PLANOS.find((x) => x.id === id)!; setH({ ...h, plano: { ...h.plano, id: p.id, nome: p.nome, precoCentavos: p.preco * 100, fotosMes: p.fotosMes, usuariosMax: p.usuarios, obras: p.obras }, proximoValorCentavos: p.preco * 100 }); } : undefined} aberto={troca} aoFechar={() => { setTroca(false); setTrocaInicial(undefined); }} atual={h.plano.id} proximaCobranca={cancelado ? undefined : h.proximaCobranca}
         usoMes={Math.max(0, ...h.usoMensal.slice(0, 3).map((m) => m.total))} inicial={trocaInicial}
         aoTrocar={(msg) => { avisar(msg); carregar(); }} />
 

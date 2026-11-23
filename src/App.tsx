@@ -12,6 +12,7 @@ import { Painel } from './paginas/painel/Painel';
 import { Editor } from './paginas/editor/Editor';
 import { Plano } from './paginas/plano/Plano';
 import { Recibo } from './paginas/plano/Recibo';
+import { Fatura } from './paginas/plano/Fatura';
 import { Configuracoes } from './paginas/config/Configuracoes';
 import { Usuarios } from './paginas/admin/Usuarios';
 import { VerLaudo } from './paginas/publico/VerLaudo';
@@ -62,6 +63,7 @@ export function App() {
           <Route path="/privacidade" element={<Privacidade />} />
           <Route path="/sobre" element={<Sobre />} />
           <Route path="/recibo/:tipo/:id" element={<Protegido admin><Recibo /></Protegido>} />
+          <Route path="/fatura/:tipo/:id" element={<Protegido admin><Fatura /></Protegido>} />
           <Route element={<Protegido><Casco /></Protegido>}>
             <Route path="/painel" element={<Painel />} />
             <Route path="/laudo/:id" element={<Editor />} />

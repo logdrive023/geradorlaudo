@@ -6,6 +6,7 @@ import { lerRecibo, type Recibo as DadosRecibo } from '../../db/organizacao';
 import { reaisPorExtenso } from '../../lib/extenso';
 import { EMPRESA } from '../site/Legal';
 import { SUPORTE } from '../../dominio/suporte';
+import { exemploRecibo } from '../../dominio/exemploPlano';
 import { Botao, Carregando, Logo } from '../../componentes/ui';
 
 const reais = (c: number) => (c / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -31,7 +32,10 @@ export function Recibo() {
   const [r, setR] = useState<DadosRecibo | null>(null);
   const [erro, setErro] = useState('');
   const [acordando, setAcordando] = useState(false);
-  useEffect(() => comPaciencia(() => lerRecibo(tipo, id), setR, setErro, setAcordando), [tipo, id]);
+  useEffect(() => {
+    if (tipo === 'exemplo') { const x = exemploRecibo(id); if (x) setR(x); else setErro('Recibo de exemplo não encontrado.'); return; }
+    return comPaciencia(() => lerRecibo(tipo, id), setR, setErro, setAcordando);
+  }, [tipo, id]);
   useEffect(() => { if (r) document.title = `Recibo ${r.numero} · LaudoTech`; }, [r]);
 
   if (erro) return (
